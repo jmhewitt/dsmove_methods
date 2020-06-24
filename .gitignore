@@ -1,0 +1,9 @@
+*.png
+*.Rproj*
+.Rhistory
+.gitattributes
+.RData
+*.Rout
+output/
+.Rproj.user
+scrape_dates.txt
