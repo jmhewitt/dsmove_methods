@@ -1,0 +1,9 @@
+^\.travis\.yml$
+README.md
+NEWS.md
+examples/
+data_gen/
+cran-comments.md
+^.*\.Rproj$
+^\.Rproj\.user$
+.*\.tmp
