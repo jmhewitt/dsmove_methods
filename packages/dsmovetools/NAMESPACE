@@ -3,5 +3,7 @@
 export(build_ctds)
 export(filter_edges)
 export(intContains)
+export(intWhich)
+export(local_generator)
 import(igraph)
 import(nimble)
