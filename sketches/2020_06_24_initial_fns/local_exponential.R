@@ -38,17 +38,16 @@ local_edges = filter_edges(locs = nbs.inds,
 # "which" indexing function in nimble.  it will be a crude search, but it will 
 # be simple to write and require few assumptions about the inputs.
 
-clocal_generator = compileNimble(local_generator)
-
-A = clocal_generator(edges = local_edges, 
+A = local_generator(edges = local_edges, 
                     tolocs_by_edge = ctds_struct$edge_df$to,
-                fromlocs_by_edge = ctds_struct$edge_df$from,
-                outedges_by_loc = do.call(c, ctds_struct$out_edges_inds),
-                loc_start = c(1, 1 + cumsum(ctds_struct$out_degree)), 
-                locs = nbs.inds, Xloc = ctds_struct$Xloc, 
-                betaLoc = matrix(1, nrow = 1, ncol = 1), 
-                Xdir = matrix(0, nrow = nrow(ctds_struct$edge_df), ncol = 1), 
-                betaDir = 0, W = ctds_struct$w_ij, betaAR = .5)
+                    fromlocs_by_edge = ctds_struct$edge_df$from,
+                    outedges_by_loc = do.call(c, ctds_struct$out_edges_inds),
+                    loc_start = c(1, 1 + cumsum(ctds_struct$out_degree)), 
+                    locs = nbs.inds, Xloc = ctds_struct$Xloc, 
+                    betaLoc = matrix(1, nrow = 1, ncol = 1), 
+                    Xdir = matrix(0, nrow = nrow(ctds_struct$edge_df), 
+                                  ncol = 1), 
+                    betaDir = 0, W = ctds_struct$w_ij, betaAR = .5)
 
 
 #
