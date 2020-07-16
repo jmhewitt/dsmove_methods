@@ -1,5 +1,3 @@
-source('sketches/2020_06_24_initial_fns/domain.R')
-
 library(nimble)
 
 #
@@ -38,7 +36,7 @@ local_edges = filter_edges(locs = nbs.inds,
 # "which" indexing function in nimble.  it will be a crude search, but it will 
 # be simple to write and require few assumptions about the inputs.
 
-A = local_generator(edges = local_edges, 
+A = local_generator(row_edges = local_edges, col_edges = local_edges,
                     tolocs_by_edge = ctds_struct$edge_df$to,
                     fromlocs_by_edge = ctds_struct$edge_df$from,
                     outedges_by_loc = do.call(c, ctds_struct$out_edges_inds),
@@ -49,6 +47,12 @@ A = local_generator(edges = local_edges,
                                   ncol = 1), 
                     betaDir = 0, W = ctds_struct$w_ij, betaAR = .5)
 
+# TODO: Finish (re)writing(?) this function!
+document('packages/dsmovetools/')
+ctds_sim = ctds.fwdsim(ctds_struct = ctds_struct, 
+                       beta_loc = matrix(1, nrow = 1, ncol = 1), 
+                       beta_dir = 0, v0 = box.ind, t0 = 0, tf = 100, 
+                       max.steps = 100, beta_ar = .5, v0.last = NULL)
 
 #
 # compute likelihood!  ...it's a little scary because with directional 
@@ -63,3 +67,9 @@ A = local_generator(edges = local_edges,
 # impute path from observation
 imputed = ctds.shortest_impute(states = ctds_obs$states, times = ctds_obs$times, 
                                ctds_struct = ctds_struct)
+
+# next steps (for likelihood):
+#  1) determine obervation likelihood for latent ctds states from imputed
+#  2) HMM-like forward/backward algorithm to diffuse probability mass, yielding 
+#      likelihood... this will be slightly complicated by the need to transfer 
+#      only the overlapping components of the densities for the 3x3 cells.
