@@ -47,12 +47,18 @@ A = local_generator(row_edges = local_edges, col_edges = local_edges,
                                   ncol = 1), 
                     betaDir = 0, W = ctds_struct$w_ij, betaAR = .5)
 
-# TODO: Finish (re)writing(?) this function!
-document('packages/dsmovetools/')
+ctds_struct$coords = data.frame(ctds_struct$coords)
+ctds_struct$coords$x = ctds_struct$coords$s1
+ctds_struct$coords$y = ctds_struct$coords$s2
+
 ctds_sim = ctds.fwdsim(ctds_struct = ctds_struct, 
-                       beta_loc = matrix(1, nrow = 1, ncol = 1), 
+                       beta_loc = matrix(.01, nrow = 1, ncol = 1), 
                        beta_dir = 0, v0 = box.ind, t0 = 0, tf = 100, 
-                       max.steps = 100, beta_ar = .5, v0.last = NULL)
+                       max.steps = 200, beta_ar = 1, v0.last = NULL)
+
+
+
+plot.ctds_realization(x = ctds_sim, ctds_struct = ctds_struct)
 
 #
 # compute likelihood!  ...it's a little scary because with directional 
