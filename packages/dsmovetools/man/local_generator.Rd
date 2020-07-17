@@ -6,7 +6,8 @@
 \usage{
 local_generator(
   locs,
-  edges,
+  row_edges,
+  col_edges,
   tolocs_by_edge,
   fromlocs_by_edge,
   outedges_by_loc,
@@ -22,7 +23,9 @@ local_generator(
 \arguments{
 \item{locs}{vector of locations associated with \code{edges}}
 
-\item{edges}{vector of edges to build generator matrix for}
+\item{row_edges}{vector of edges to build generator matrix for}
+
+\item{col_edges}{vector of edges to build generator matrix for}
 
 \item{tolocs_by_edge}{location at which each edge in domain ends}
 
