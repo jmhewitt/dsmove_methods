@@ -78,7 +78,8 @@ local_generator = nimbleFunction(
         # restrict to "off-diagonal" entries for A
         if(edge_i != edge_j) {
           # process out-edge edge_j if it has a column in our matrix
-          if(intContains(x = edge_j, vec = col_edges)) {
+          col_ind <- intWhich(x = edge_j, vec = col_edges)
+          if(col_ind > 0) {
             dst_loc <- tolocs_by_edge[edge_j]
             
             # unstandardized infinitesimal rate for transition to_loc -> dst_loc
@@ -90,7 +91,7 @@ local_generator = nimbleFunction(
             )
             
             # set unstandardized rate at which edge_i is transitioning to edge_j
-            A[i,intWhich(x = edge_j, vec = col_edges)] <- lambda
+            A[i, col_ind] <- lambda
             
             # aggregate unstandardized off-diagonal mass
             offdiagMass <- offdiagMass + lambda
