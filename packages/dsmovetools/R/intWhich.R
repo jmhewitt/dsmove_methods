@@ -22,7 +22,7 @@ intWhich = nimbleFunction(
     
     returnType(integer(0))
     
-    res <- 0
+    res <- -1
     
     N <- length(vec)
     
