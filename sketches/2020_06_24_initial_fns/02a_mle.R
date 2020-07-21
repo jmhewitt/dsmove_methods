@@ -19,12 +19,17 @@ ctds_sim = ctds.fwdsim(ctds_struct = ctds_struct,
                        max.steps = 1e3, beta_ar = 0, v0.last = NULL)
 
 
-document('packages/dsmovetools/')
+# document('packages/dsmovetools/')
 
-ctds_obs = ctds.observe(states = ctds_sim$states, times = ctds_sim$times, 
-                        t.obs = seq(from = ctds_sim$times[1], 
-                                    to = ctds_sim$times[length(ctds_sim$times)], 
-                                    length.out = 1800))
+ctds_obs = ctds.observe(
+  states = ctds_sim$states, 
+  times = ctds_sim$times, 
+  # t.obs = seq(from = ctds_sim$times[1], 
+  #             to = ctds_sim$times[length(ctds_sim$times)] + min(ctds_sim$durations), 
+  #             by = min(ctds_sim$durations)))
+  t.obs = seq(from = ctds_sim$times[1], 
+              to = ctds_sim$times[length(ctds_sim$times)],
+              length.out = 50))
 
 
 
@@ -38,7 +43,7 @@ plot.ctds_realization(x = ctds_sim, ctds_struct = ctds_struct,
 plot.ctds_realization(x = imputed, ctds_struct = ctds_struct,
                       ctds_obs = ctds_obs)
 
-# document('packages/dsmovetools/')
+document('packages/dsmovetools/')
 
 
 # cctds_nbhd_ll = compileNimble(ctds_nbhd_ll)
