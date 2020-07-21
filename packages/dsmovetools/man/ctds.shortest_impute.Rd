@@ -4,7 +4,7 @@
 \alias{ctds.shortest_impute}
 \title{Shortest-path CTDS imputation}
 \usage{
-ctds.shortest_impute(states, times, ctds_struct, output.einds = FALSE)
+ctds.shortest_impute(states, times, ctds_struct)
 }
 \arguments{
 \item{states}{Sequence of nodes at which a CTDS is observed}
@@ -13,9 +13,6 @@ ctds.shortest_impute(states, times, ctds_struct, output.einds = FALSE)
 
 \item{ctds_struct}{Output of \code{build_ctds}; a representation of a 
 CTDS domain formatted for computing}
-
-\item{output.einds}{\code{TRUE} to include the edge indices associated with 
-each transition}
 }
 \description{
 This method returns a CTDS imputation that uses the shortest path to connect 
