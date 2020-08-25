@@ -44,5 +44,8 @@ spatial_lattice_ctds = function(n_coord_dimensions, cells_per_dimension) {
   # precompute quantities used to determine CTDS transition rates
   #
   
-  build_ctds(g = g, coords = coords)
+  ctds_struct = build_ctds(g = g, coords = coords)
+  ctds_struct$nbs.local = nbs.local
+  
+  ctds_struct
 }
