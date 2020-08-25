@@ -14,7 +14,7 @@ library(sp)
 dim = 2
 
 # number of cells per dimension
-n.dim = 100
+n.dim = 5
 
 # construct lattice
 gr = GridTopology(cellcentre.offset = rep(0,dim), cellsize = rep(1,dim), 
@@ -53,9 +53,11 @@ g = make_graph(
   }))
 )
 
+nbs.extended = neighborhood(graph = g, order = 10, mode = 'out')
 
 #
 # precompute quantities used to determine CTDS transition rates
 #
 
 ctds_struct = build_ctds(g = g, coords = coords)
+

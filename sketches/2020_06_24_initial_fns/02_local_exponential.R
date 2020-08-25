@@ -5,7 +5,7 @@ library(nimble)
 #
 
 # central location coordinates
-box.center = c(s1 = 50, s2 = 50)
+box.center = c(s1 = 5, s2 = 5)
 
 # central location index
 box.ind = which(
