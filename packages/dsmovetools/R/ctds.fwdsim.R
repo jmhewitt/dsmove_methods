@@ -107,7 +107,8 @@ ctds.fwdsim = function(ctds_struct, beta_loc, beta_dir, v0, t0, tf,
   # package results
   #
   
-  res = list(states = states, times = times, durations = diff(times))
+  res = list(states = states, times = times, durations = diff(times),
+             edges = edge_path)
   
   class(res) = 'ctds_realization'
   

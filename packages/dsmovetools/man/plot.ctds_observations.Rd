@@ -4,7 +4,7 @@
 \alias{plot.ctds_observations}
 \title{Plot observations of a CTDS object}
 \usage{
-\method{plot}{ctds_observations}(
+plot.ctds_observations(
   x,
   ctds_struct,
   pt_size = 0.1,
