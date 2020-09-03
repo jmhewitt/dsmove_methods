@@ -46,7 +46,7 @@ plot_imputations = function(ctds_struct, trajectory, imputations,
   pl = ggarrange(pl.x, pl.y, nrow = 2, ncol = 1, common.legend = TRUE,
                  legend = 'right')
   
-  ggsave(pl, filename = file.path(plot_dir, paste('imputations_vs_truth_', 
+  ggsave(pl, filename = file.path(plot_dir, paste('hanks_imputations_vs_truth_', 
                                                   round(tstep, 2),
                                                   '.pdf', sep = ''))
          )
