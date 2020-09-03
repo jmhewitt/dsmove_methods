@@ -1,11 +1,9 @@
-fit_hanks = function(ctds_struct, obs) {
+fit_hanks = function(ctds_struct, obs, plot_dir) {
   
   # load observations
   ctds_obs = readRDS(obs)
   
   # following package use from help('ctmcmove')
-  
-  
   
   # extract coordinate/time triples
   xyt = cbind(ctds_struct$coords[ctds_obs$states,], ctds_obs$times)
@@ -38,7 +36,7 @@ fit_hanks = function(ctds_struct, obs) {
   #
   
   X = raster(
-    ctds_struct$Xloc, 
+    matrix(ctds_struct$Xloc, nrow = length(unique(ctds_struct$coords[, 's1']))), 
     xmn = min(ctds_struct$coords[, 's1']),
     xmx = max(ctds_struct$coords[, 's1']), 
     ymn = min(ctds_struct$coords[, 's2']), 
@@ -53,6 +51,8 @@ fit_hanks = function(ctds_struct, obs) {
   #
   
   glm.list=list()
+  ctmc.list = list()
+  path.list = list()
   
   P = 5
   
@@ -66,6 +66,10 @@ fit_hanks = function(ctds_struct, obs) {
     ctmc=path2ctmc(path$xy,path$t, X, method="LinearInterp")
     glm.list[[i]]=ctmc2glm(ctmc, X, X)
     
+    # save path 
+    ctmc.list[[i]] = ctmc
+    path.list[[i]] = path
+    
     ## remove transitions that are nearly instantaneous
     ##  (These are essentially outliers in the following regression analyses)
     idx.0=which(glm.list[[i]]$tau<10^-5)
@@ -76,6 +80,8 @@ fit_hanks = function(ctds_struct, obs) {
     
   }
   
+  
+
   
   ##
   ## Stack the P imputations together
@@ -97,5 +103,12 @@ fit_hanks = function(ctds_struct, obs) {
   fit.SWL=glm(z ~ crw, weights = rep(1/P, nrow(glm.data)), 
               family = "poisson", offset = log(tau), data = glm.data)
   
-  fit.SWL
+  list(
+    fit = fit.SWL,
+    tstep = mean(diff(ctds_obs$times)),
+    ctmc.list = ctmc.list,
+    glm.list = glm.list,
+    path.list = path.list,
+    raster.coords = coordinates(X)
+  )
 }
