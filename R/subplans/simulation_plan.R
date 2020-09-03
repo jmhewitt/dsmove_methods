@@ -106,6 +106,13 @@ simulation_plan = drake_plan(
     dynamic = map(sim_fit_hanks)
   ),
   
+  # compare shortest path imputation to truth
+  shortest_path_plots = target(
+    plot_shortest_path(ctds_struct = sim_domain, trajectory = sim_trajectory, 
+                       obs = sim_obs, plot_dir = sim_plots),
+    dynamic = map(sim_obs)
+  ),
+  
   # fit model to completely observed trajectory
   sim_fit_exact = target(
     fit_exact(ctds_struct = sim_domain, trajectory = sim_trajectory, 
