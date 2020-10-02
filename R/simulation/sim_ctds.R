@@ -1,5 +1,9 @@
 sim_ctds = function(sim_domain, beta_loc, beta_dir, beta_ar, t0, tf, 
-                    max.steps, sim_dir) {
+                    max.steps, weibull_shape, seed = NA) {
+  
+  if(!is.na(seed)) {
+    set.seed(seed)
+  }
   
   # define central coordinate as average coordinate value in all dimensions
   coord.center = colMeans(apply(sim_domain$coords, 2, range))
@@ -14,14 +18,9 @@ sim_ctds = function(sim_domain, beta_loc, beta_dir, beta_ar, t0, tf,
   ctds_sim = ctds.fwdsim(ctds_struct = sim_domain, beta_loc = beta_loc, 
                          beta_dir = beta_dir, v0 = center.ind, t0 = t0, tf = tf, 
                          max.steps = max.steps, beta_ar = beta_ar, 
-                         v0.last = NULL)
+                         v0.last = NULL, weibull.shape = weibull_shape)
   
-  # save simulation object
-  f = file.path(sim_dir, 'ctds_sim.rds')
-  dir.create(sim_dir, recursive = TRUE, showWarnings = FALSE)
-  saveRDS(ctds_sim, file = f)
-  
-  f
+  ctds_sim
 }
 
 
