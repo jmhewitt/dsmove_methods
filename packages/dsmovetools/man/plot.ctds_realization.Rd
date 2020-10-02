@@ -4,7 +4,7 @@
 \alias{plot.ctds_realization}
 \title{Plot a realization of a CTDS object}
 \usage{
-plot.ctds_realization(
+\method{plot}{ctds_realization}(
   x,
   ctds_struct,
   pt_size = 0.1,
