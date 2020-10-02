@@ -13,7 +13,8 @@ ctds.fwdsim(
   tf,
   max.steps = Inf,
   beta_ar = NULL,
-  v0.last = NULL
+  v0.last = NULL,
+  weibull.shape = 1
 )
 }
 \arguments{
@@ -36,6 +37,10 @@ domain formatted for computing}
 
 \item{v0.last}{the last-exited node before \code{v0}, if using directional
 persistence---e.g., if \code{beta_ar != 0}.}
+
+\item{weibull.shape}{the shape parameter used to generate holding times; 
+if \code{weibull.shape==1}, then the distribution is exactly the 
+exponential distribution}
 }
 \description{
 Forward-samples from the generating distributions for the CTDS model until 

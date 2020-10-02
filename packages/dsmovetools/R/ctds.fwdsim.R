@@ -15,14 +15,18 @@
 #' @param t0 the time at which sampling begins
 #' @param tf the time after which sampling should end
 #' @param max.steps the maximum number of transitions to simulate
-#' 
+#' @param weibull.shape the shape parameter used to generate holding times; 
+#'   if \code{weibull.shape==1}, then the distribution is exactly the 
+#'   exponential distribution
+#'   
 #' 
 #' @importFrom stats rexp
 #' 
 #' @export
 #' 
 ctds.fwdsim = function(ctds_struct, beta_loc, beta_dir, v0, t0, tf, 
-                       max.steps = Inf, beta_ar = NULL, v0.last = NULL) {
+                       max.steps = Inf, beta_ar = NULL, v0.last = NULL,
+                       weibull.shape = 1) {
   
   if(tf < t0) {
     stop('tf occurs before t0; no sampling is required!')
@@ -81,7 +85,7 @@ ctds.fwdsim = function(ctds_struct, beta_loc, beta_dir, v0, t0, tf,
                         betaAR = beta_ar_computational)
     
     # sample and update transition times
-    dur = rexp(n = 1, rate = -A[1])
+    dur = rweibull(n = 1, scale = -1/A[1], shape = weibull.shape)
     tcurrent = tcurrent + dur
     times = c(times, tcurrent)
     
