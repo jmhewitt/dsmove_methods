@@ -1,7 +1,4 @@
-fit_hanks = function(ctds_struct, obs, plot_dir) {
-  
-  # load observations
-  ctds_obs = readRDS(obs)
+fit_hanks = function(ctds_struct, ctds_obs, weibull_est) {
   
   # following package use from help('ctmcmove')
   
@@ -12,6 +9,7 @@ fit_hanks = function(ctds_struct, obs, plot_dir) {
   x = xyt[, 'x']
   y = xyt[, 'y']
   t = xyt[, 't']
+  
   
   #
   # fit functional movement model to telemetry data
@@ -63,7 +61,8 @@ fit_hanks = function(ctds_struct, obs, plot_dir) {
     
     # discretize and format path
     path=out$pathlist[[i]]
-    ctmc=path2ctmc(path$xy,path$t, X, method="LinearInterp")
+    ctmc=path2ctmc(path$xy,path$t, X, method="ShortestPath")
+    
     glm.list[[i]]=ctmc2glm(ctmc, X, X)
     
     # save path 
@@ -100,15 +99,40 @@ fit_hanks = function(ctds_struct, obs, plot_dir) {
   ##
   ##########################################################################
   
-  fit.SWL=glm(z ~ crw, weights = rep(1/P, nrow(glm.data)), 
+  if(weibull_est) {
+    fit = glm(z ~ crw, weights = rep(1/P, nrow(glm.data)), 
               family = "poisson", offset = log(tau), data = glm.data)
+  } else {
+    X = cbind(1, glm.data$crw)
+    offsets = log(glm.data$tau)
+    fit = optim(par = c(0,0,1), fn = function(theta) {
+      ll = 0
+      log_lambdas = X %*% theta[1:2]
+      for(i in 1:(nrow(glm.data)/4)) {
+        inds = (i-1)*4 + 1:4
+        lambdas = exp(log_lambdas[inds])
+        lambdas_total = sum(lambdas)
+        tau = glm.data$tau[inds[1]]
+        ll = ll +
+          # cell transition
+          sum(log_lambdas[inds] * glm.data$z[inds]) - log(lambdas_total) +
+          # weibull cell duration
+          # dweibull(x = tau, shape = theta[3], scale = 1/lambdas_total, 
+          #          log = TRUE)
+          dweibull(x = tau, shape = theta[3], scale = 1/exp(theta[1]), 
+                   log = TRUE)
+      }
+      ll/P
+    }, control = list(fnscale = -1), hessian = TRUE)
+  }
+  
   
   list(
-    fit = fit.SWL,
+    fit = fit,
     tstep = mean(diff(ctds_obs$times)),
     ctmc.list = ctmc.list,
-    glm.list = glm.list,
-    path.list = path.list,
+    # glm.list = glm.list,
+    # path.list = path.list,
     raster.coords = coordinates(X)
   )
 }
