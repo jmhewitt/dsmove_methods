@@ -48,7 +48,7 @@ local_generator = nimbleFunction(
     A <- matrix(0, nrow = nrows, ncol = ncols)
     
     # pre-compute common, location-based drivers of movement
-    lambda_loc <- exp((Xloc[locs,] %*% betaLoc)[,1])
+    lambda_loc <- (Xloc[locs,] %*% betaLoc)[,1]
     
     # loop over matrix rows
     for(i in 1:nrows) {
@@ -61,9 +61,6 @@ local_generator = nimbleFunction(
       # edge_i exists in col_edges, so we can store the infinitesimal 
       # transition rate in the correct location
       identity_column <- intWhich(x = edge_i, vec = col_edges)
-      
-      # set infinitesimal rate at which edge_i is being left
-      A[i, identity_column] <- - lambda_loc[intWhich(x = to_loc, vec = locs)]
       
       # initialize off-diagonal mass counter
       offdiagMass <- 0
@@ -84,10 +81,12 @@ local_generator = nimbleFunction(
             
             # unstandardized infinitesimal rate for transition to_loc -> dst_loc
             lambda <- exp(
+              # location-based drivers of movement
+              lambda_loc[intWhich(x = to_loc, vec = locs)] + 
               # directional drivers of movement
               (Xdir[edge_j,] %*% betaDir)[1,1] + 
-                # directional persistence
-                (t(w_i) %*% W[edge_j,])[1,1] * betaAR
+              # directional persistence
+              (t(w_i) %*% W[edge_j,])[1,1] * betaAR
             )
             
             # set unstandardized rate at which edge_i is transitioning to edge_j
@@ -98,6 +97,12 @@ local_generator = nimbleFunction(
           }
         }
       }
+      
+      # # set infinitesimal rate at which edge_i is being left
+      A[i, identity_column] <- - exp(
+        lambda_loc[intWhich(x = to_loc, vec = locs)]
+      )
+      # A[i, identity_column] <- - offdiagMass
       
       # standardize off-diagonal entries so that the rowsum is 0
       for(j in 1:ncols) {
