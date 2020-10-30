@@ -15,7 +15,14 @@ extract_segment = function(epath, tpath, tmin, tmax) {
     iend = length(tpath)
   }
   
+  
   # extract and return trajectory segment that covers [tmin, tmax]
   inds = istart:iend
-  list(epath = epath[inds], tpath = tpath[inds])
+  res = list(epath = epath[inds], tpath = tpath[inds])
+  
+  if(tail(res$tpath, 1) < tmax) {
+    res$tpath = c(res$tpath, tmax)
+  }
+    
+  res
 }
