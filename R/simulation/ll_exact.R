@@ -1,0 +1,58 @@
+ll_exact = function(epath, durations, beta_loc, beta_dir, beta_ar, 
+                    ctds_struct) {
+  
+  # precompute common infinitesimal generator elements
+  outedges_by_loc = do.call(c, ctds_struct$out_edges_inds)
+  loc_start = c(1, 1 + cumsum(ctds_struct$out_degree))
+
+  # initialize output
+  nll = 0
+  
+  # reformat/extract AR component
+  beta_ar_computational = ifelse(is.null(beta_ar), 0, beta_ar)
+
+  # extract number of edges visited by trajectory
+  npath = length(epath)
+  
+  # build likelihood by looping over trajectory
+  for(i in 2:npath) {
+
+    # edge from which trajectory moved
+    e_prev = epath[i-1]
+    
+    # location in spatial domain associated with previous edge
+    v_prev = ctds_struct$edge_df$to[e_prev]
+    
+    # edges that could have been transitioned to
+    edges = ctds_struct$out_edges_inds[[v_prev]]
+    
+    # destination locations associated with transition edges
+    locs = ctds_struct$edge_df$to[edges]
+    
+    # get local transition parameters via infinitesimal generator extract
+    A_cols = c(e_prev, edges)
+    A = local_generator(locs = c(v_prev, locs), row_edges = e_prev,
+                        col_edges = A_cols,
+                        tolocs_by_edge = ctds_struct$edge_df$to,
+                        fromlocs_by_edge = ctds_struct$edge_df$from,
+                        outedges_by_loc = outedges_by_loc,
+                        loc_start = loc_start, Xloc = ctds_struct$Xloc,
+                        betaLoc = beta_loc,
+                        Xdir = matrix(0, nrow = nrow(ctds_struct$edge_df),
+                                      ncol = 1),
+                        betaDir = beta_dir, W = ctds_struct$w_ij,
+                        betaAR = beta_ar_computational)
+    
+    # identify column that denotes the state transitioned to 
+    tx_ind = which(epath[i] == A_cols)
+    
+    # aggregate likelihood
+    nll = nll + 
+      # holding time
+      dexp(x = durations[i-1], rate = -A[1], log = TRUE) + 
+      # transition probability
+      log(A[tx_ind]) - log(sum(A[-1]))
+  }
+
+  nll
+}
