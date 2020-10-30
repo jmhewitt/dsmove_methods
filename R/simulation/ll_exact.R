@@ -15,23 +15,21 @@ ll_exact = function(epath, durations, beta_loc, beta_dir, beta_ar,
   npath = length(epath)
   
   # build likelihood by looping over trajectory
-  for(i in 2:npath) {
-
-    # edge from which trajectory moved
-    e_prev = epath[i-1]
+  for(i in 1:npath) { 
     
-    # location in spatial domain associated with previous edge
-    v_prev = ctds_struct$edge_df$to[e_prev]
+    # extract current edge
+    e_cur = epath[i]
     
-    # edges that could have been transitioned to
-    edges = ctds_struct$out_edges_inds[[v_prev]]
+    # location in spatial domain associated with current edge
+    v_cur = ctds_struct$edge_df$to[e_cur]
     
-    # destination locations associated with transition edges
+    # edges and destination locations that could have been transitioned to
+    edges = ctds_struct$out_edges_inds[[v_cur]]
     locs = ctds_struct$edge_df$to[edges]
     
     # get local transition parameters via infinitesimal generator extract
-    A_cols = c(e_prev, edges)
-    A = local_generator(locs = c(v_prev, locs), row_edges = e_prev,
+    A_cols = c(e_cur, edges)
+    A = local_generator(locs = c(v_cur, locs), row_edges = e_cur,
                         col_edges = A_cols,
                         tolocs_by_edge = ctds_struct$edge_df$to,
                         fromlocs_by_edge = ctds_struct$edge_df$from,
@@ -43,15 +41,19 @@ ll_exact = function(epath, durations, beta_loc, beta_dir, beta_ar,
                         betaDir = beta_dir, W = ctds_struct$w_ij,
                         betaAR = beta_ar_computational)
     
-    # identify column that denotes the state transitioned to 
-    tx_ind = which(epath[i] == A_cols)
+    # aggregate transition likelihood
+    if(i+1 <= npath) {
+      # identify column that denotes the state transitioned to
+      tx_ind = which(epath[i+1] == A_cols)
+      # aggregate likelihood
+      nll = nll + log(A[tx_ind]) - log(sum(A[-1]))
+    }
     
-    # aggregate likelihood
-    nll = nll + 
-      # holding time
-      dexp(x = durations[i-1], rate = -A[1], log = TRUE) + 
-      # transition probability
-      log(A[tx_ind]) - log(sum(A[-1]))
+    # aggregate holding time likelihood
+    if(is.finite(durations[i])) {
+      nll = nll + dexp(x = durations[i], rate = -A[1], log = TRUE)
+    }
+    
   }
 
   nll
