@@ -30,6 +30,12 @@ plot.ctds_observations = function(
   x, ctds_struct, pt_size = .1, pt_col = 'grey60', jitter.factor = 0, 
   ctds_realization = NULL, realization_alpha = .55, ...) {
   
+  # standardize coordinates data structure
+  ctds_struct$coords = data.frame(
+    x = ctds_struct$coords[, 1],
+    y = ctds_struct$coords[, 2]
+  )
+  
   # associate (jittered) coordinates with every observation in x
   obs.df = data.frame(
     x = jitter(ctds_struct$coords$x[x$states], factor = jitter.factor),
