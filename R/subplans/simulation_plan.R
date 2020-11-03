@@ -33,6 +33,13 @@ simulation_plan = drake_plan(
     .tag_out = shape_param
   ),
   
+  prior_params = list(
+    # maximum transition rate allowed for imputations. chosen such that 
+    # max_lambda >> exp(max(sim_domain$Xloc %*% sim_params_1$beta_loc))
+    max_lambda = 5,
+    p_max = .99
+  ),
+  
   # simulate a CTDS trajectory
   sim_trajectory = target(
     command = {
@@ -94,8 +101,12 @@ simulation_plan = drake_plan(
       sim_pkg = readRDS(sim_trajectory)
       ctds_sim = sim_pkg$sim
       sim_params = sim_pkg$params
-      n_obs = obs_per_sec * (sim_params$tf - sim_params$t0)
-      obs = observe_ctds(ctds_sim, n_obs)
+      # observe ctds trajectory at regular timepoints
+      tseq = seq(from = ctds_sim$times[1], to = tail(ctds_sim$times, 1), 
+                 by =  1 / obs_per_sec)
+      n_obs = length(tseq)
+      obs = ctds.observe(states = ctds_sim$states, times = ctds_sim$times, 
+                         t.obs = tseq)
       # save object
       f = file.path(sim_dir, paste(id_chr(), '.rds', sep = ''))
       saveRDS(list(obs = obs, params = sim_pkg$params, nobs = n_obs), file = f)
@@ -104,6 +115,78 @@ simulation_plan = drake_plan(
     transform = cross(sim_trajectory, 
                       obs_per_sec = c(0.5, 1, 2, 4, 8)),
     format = 'file'
+  ),
+  
+  impute_segments = target(
+    command = {
+      # load observations
+      sim = readRDS(sim_obs)
+      obs = sim$obs
+      # sample segments
+      segments = sample_segments(states = obs$states, times = obs$times, 
+                                 ctds_domain = sim_domain, 
+                                 max_lambda = prior_params$max_lambda, 
+                                 p_max = prior_params$p_max, nsamples = 100)
+      # save object
+      f = file.path(sim_dir, paste(id_chr(), '.rds', sep = ''))
+      saveRDS(list(params = sim$params, segments = segments, obs = obs), 
+              file = f)
+      f
+    },
+    transform = map(sim_obs), 
+    format = 'file'
+  ),
+  
+  proposed_path = target(
+    command = {
+      segments = readRDS(impute_segments)
+      proposed = propose_trajectory(states = segments$obs$states, 
+                                    times = segments$obs$times, 
+                                    ctds_domain = sim_domain, 
+                                    segments = segments$segments, 
+                                    beta_loc = 0)
+      proposed
+    },
+    transform = map(impute_segments)
+  ),
+  
+  plot_proposals = target(
+    command = {
+      segments = readRDS(readd(impute_segments_sim_obs_0.5_sim_trajectory_sim_params_10))
+      sim_obs = readRDS(readd(sim_obs_0.5_sim_trajectory_sim_params_1))
+      loadd(sim_domain)
+      imputations = replicate(10, 
+                              propose_trajectory(states = segments$obs$states, 
+                                                 times = segments$obs$times, 
+                                                 ctds_domain = sim_domain, 
+                                                 segments = segments$segments, 
+                                                 beta_loc = 0),
+                              simplify = FALSE)
+
+      plot.ctds_observations(x = sim_obs$obs, ctds_struct = sim_domain, 
+                             ctds_realization = imputations)
+      
+      0
+    },
+    transform = map(impute_segments)
+  ),
+  
+  fit_path_imputations = target(
+    command = {
+      dat = readRDS(impute_segments)
+      # browser()
+      samples = fit_integration(segments = dat$segments, obs = dat$obs, 
+                                inits = list(beta_loc = 0, beta_ar = 0), 
+                                priors = list(), niter = 100, 
+                                ctds_domain = sim_domain)
+    },
+    transform = map(impute_segments)
+  ),
+  
+  # optimize likelihood surface
+  sim_mle = target(
+    max_obs_lik(ctds_struct = sim_domain, obs = sim_obs),
+    transform = map(sim_obs)
   ),
   
   # 
@@ -159,6 +242,33 @@ simulation_plan = drake_plan(
     ggsave(pl, filename = file.path(sim_plots,
                                     paste(id_chr(), '.pdf', sep = '')))
 
+  },
+  
+  sim_mle_ests = target(
+    sim_mle$est,
+    transform = map(sim_mle)
+  ),
+  
+  aggregated_summaries_3x3 = target(
+    dplyr::bind_rows(sim_mle_ests),
+    transform = combine(sim_mle_ests)
+  ),
+  
+  plot_3x3_summary = {
+    pl = ggplot(aggregated_summaries_3x3 %>% 
+                  dplyr::filter(weibull_shape == 1),
+                aes(x = tstep, y = est, ymin = lwr, ymax = upr)) +
+      geom_pointrange() +
+      geom_hline(mapping = aes(yintercept = truth), lty = 3) +
+      xlab('Time between observations') +
+      ylab('Estimate') + 
+      ggtitle('3x3 recovery of true parameters (Truth at dotted line)') +
+      facet_grid(param~., scales = 'free') +
+      theme_few()
+    
+    ggsave(pl, filename = file.path(sim_plots,
+                                    paste(id_chr(), '.pdf', sep = '')))
+    
   }
 
   # 
