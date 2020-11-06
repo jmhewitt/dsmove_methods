@@ -207,7 +207,7 @@ simulation_plan = drake_plan(
     unique(pmin(c(0, 
                   seq(from = 0, to = 1, length.out = npaths) + 
                     runif(n = npaths, min = 0, max = 1/npaths), 
-                  1)
+                  1), 1
     ))
   }, hpc = FALSE),
   
