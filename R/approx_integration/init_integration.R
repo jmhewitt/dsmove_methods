@@ -70,9 +70,10 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
         unlist()
     }, error = function(e) {
       save.image(paste(id_chr(), 'testErr.RData', sep =''))
-      save(list(p = p, plen = plen, 
-                pathwts.aggregated = pathwts.aggregated, segind = segind,
-                u = u), file = paste(id_chr(), 'err.RData', sep = ''))
+      obj = list(p = p, plen = plen, 
+                 pathwts.aggregated = pathwts.aggregated, segind = segind,
+                 u = u)
+      save(obj, file = paste(id_chr(), 'err.RData', sep = ''))
     })
     
     
