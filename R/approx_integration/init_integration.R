@@ -59,13 +59,23 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
       dplyr::select(pathlen) %>% 
       unlist()
     
-    # sample segment conditional on segment length
-    seg_ind = p %>% 
-      dplyr::mutate(rowind = 1:dplyr::n()) %>%
-      dplyr::filter(pathlen == plen) %>% 
-      dplyr::sample_n(size = 1, weight = w) %>% 
-      dplyr::select(rowind) %>%
-      unlist()
+    
+    tryCatch({
+      # sample segment conditional on segment length
+      seg_ind = p %>% 
+        dplyr::mutate(rowind = 1:dplyr::n()) %>%
+        dplyr::filter(pathlen == plen) %>% 
+        dplyr::sample_n(size = 1, weight = w) %>% 
+        dplyr::select(rowind) %>%
+        unlist()
+    }, error = function(e) {
+      save.image(paste(id_chr(), 'testErr.RData', sep =''))
+      save(list(p = p, plen = plen, 
+                pathwts.aggregated = pathwts.aggregated, segind = segind,
+                u = u), file = paste(id_chr(), 'err.RData', sep = ''))
+    })
+    
+    
     
     path_components[[i]]$path_ind = seg_ind
     
