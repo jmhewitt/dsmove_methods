@@ -151,7 +151,7 @@ simulation_plan = drake_plan(
     },
     transform = map(sim_obs), 
     format = 'file',
-    hpc = FALSE
+    hpc = TRUE
   ),
   
   # proposed_path = target(
