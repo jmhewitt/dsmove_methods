@@ -1,19 +1,27 @@
 simulation_plan = drake_plan(
 
   # directory for simulation files
-  sim_dir = file.path('output', 'simulation'),
-  sim_plots = file.path('plots', 'simulation'),
+  sim_dir = target(
+    file.path('output', 'simulation'),
+    hpc = FALSE
+  ),
+  sim_plots = target(
+    file.path('plots', 'simulation'),
+    hpc = FALSE
+  ),
   
   # build directories
-  make_dirs = {
+  make_dirs = target({
     dir.create(sim_dir, recursive = TRUE)
     dir.create(sim_plots, recursive = TRUE)
-  },
+  }, hpc = FALSE),
   
   # build domain and CTDS representation
-  sim_domain = spatial_lattice_ctds(
-    n_coord_dimensions = 2, 
-    cells_per_dimension = c(100, 100)),
+  sim_domain = target(
+    spatial_lattice_ctds(n_coord_dimensions = 2, 
+                         cells_per_dimension = c(100, 100)),
+    hpc = FALSE
+  ),
   
   # simulation parameters
   sim_params = target(
@@ -29,15 +37,19 @@ simulation_plan = drake_plan(
         seed = 2020
       )
     },
-    transform = map(shape_param = c(1,5,10)),
-    .tag_out = shape_param
+    transform = map(shape_param = 1),
+    .tag_out = shape_param,
+    hpc = FALSE
   ),
   
-  prior_params = list(
-    # maximum transition rate allowed for imputations. chosen such that 
-    # max_lambda >> exp(max(sim_domain$Xloc %*% sim_params_1$beta_loc))
-    max_lambda = 5,
-    p_max = .99
+  prior_params = target(
+    list(
+      # maximum transition rate allowed for imputations. chosen such that 
+      # max_lambda >> exp(max(sim_domain$Xloc %*% sim_params_1$beta_loc))
+      max_lambda = 5,
+      p_max = .99
+    ),
+    hpc = FALSE
   ),
   
   # simulate a CTDS trajectory
@@ -57,43 +69,46 @@ simulation_plan = drake_plan(
       f
     },
     transform = map(sim_params),
-    format = 'file'
+    format = 'file',
+    hpc = FALSE
   ),
 
-  plot_durations = target(
-    command = {
-      sim_pkg = readRDS(sim_trajectory)
-      ctds_sim = sim_pkg$sim
-      pl = ggplot(data.frame(x = ctds_sim$durations), aes(x=x)) +
-        stat_density(geom = 'line') +
-        theme_few() +
-        theme(panel.border = element_blank()) +
-        xlab('Duration') +
-        ylab('Density') + 
-        ggtitle(paste('Weibull shape = ', sim_pkg$params$weibull_shape, 
-                      sep = ''))
-      ggsave(pl, filename = file.path(sim_plots,
-                                      paste(id_chr(), '.png', sep = '')))
-    },
-    transform = map(sim_trajectory)
-  ),
+  # # plot_durations = target(
+  #   command = {
+  #     sim_pkg = readRDS(sim_trajectory)
+  #     ctds_sim = sim_pkg$sim
+  #     pl = ggplot(data.frame(x = ctds_sim$durations), aes(x=x)) +
+  #       stat_density(geom = 'line') +
+  #       theme_few() +
+  #       theme(panel.border = element_blank()) +
+  #       xlab('Duration') +
+  #       ylab('Density') + 
+  #       ggtitle(paste('Weibull shape = ', sim_pkg$params$weibull_shape, 
+  #                     sep = ''))
+  #     ggsave(pl, filename = file.path(sim_plots,
+  #                                     paste(id_chr(), '.png', sep = '')))
+  #   },
+  #   transform = map(sim_trajectory),
+  #   hpc = FALSE
+  # ),
 
-  # plot simulation
-  sim_plot = target(
-    command = {
-      sim_pkg = readRDS(sim_trajectory)
-      ctds_sim = sim_pkg$sim
-      colnames(sim_domain$coords) = c('x', 'y')
-      sim_domain$coords = data.frame(sim_domain$coords)
-      pl = plot(x = ctds_sim, ctds_struct = sim_domain) +
-        ggtitle(paste('Simulated trajectory (Weibull shape = ', 
-                      sim_pkg$params$weibull_shape, ')',
-                      sep = ''))
-      ggsave(pl, filename = file.path(sim_plots,
-                                      paste(id_chr(), '.png', sep = '')))
-    },
-    transform = map(sim_trajectory)
-  ),
+  # # plot simulation
+  # sim_plot = target(
+  #   command = {
+  #     sim_pkg = readRDS(sim_trajectory)
+  #     ctds_sim = sim_pkg$sim
+  #     colnames(sim_domain$coords) = c('x', 'y')
+  #     sim_domain$coords = data.frame(sim_domain$coords)
+  #     pl = plot(x = ctds_sim, ctds_struct = sim_domain) +
+  #       ggtitle(paste('Simulated trajectory (Weibull shape = ', 
+  #                     sim_pkg$params$weibull_shape, ')',
+  #                     sep = ''))
+  #     ggsave(pl, filename = file.path(sim_plots,
+  #                                     paste(id_chr(), '.png', sep = '')))
+  #   },
+  #   transform = map(sim_trajectory),
+  #   hpc = FALSE
+  # ),
   
   # observe simulated trajectory
   sim_obs = target(
@@ -114,7 +129,8 @@ simulation_plan = drake_plan(
     },
     transform = cross(sim_trajectory, 
                       obs_per_sec = c(0.5, 1, 2, 4, 8)),
-    format = 'file'
+    format = 'file',
+    hpc = FALSE
   ),
   
   impute_segments = target(
@@ -134,60 +150,85 @@ simulation_plan = drake_plan(
       f
     },
     transform = map(sim_obs), 
-    format = 'file'
+    format = 'file',
+    hpc = FALSE
   ),
   
-  proposed_path = target(
-    command = {
-      segments = readRDS(impute_segments)
-      proposed = propose_trajectory(states = segments$obs$states, 
-                                    times = segments$obs$times, 
-                                    ctds_domain = sim_domain, 
-                                    segments = segments$segments, 
-                                    beta_loc = 0)
-      proposed
-    },
-    transform = map(impute_segments)
-  ),
+  # proposed_path = target(
+  #   command = {
+  #     segments = readRDS(impute_segments)
+  #     proposed = propose_trajectory(states = segments$obs$states, 
+  #                                   times = segments$obs$times, 
+  #                                   ctds_domain = sim_domain, 
+  #                                   segments = segments$segments, 
+  #                                   beta_loc = 0)
+  #     proposed
+  #   },
+  #   transform = map(impute_segments)
+  # ),
   
-  plot_proposals = target(
-    command = {
-      segments = readRDS(readd(impute_segments_sim_obs_0.5_sim_trajectory_sim_params_10))
-      sim_obs = readRDS(readd(sim_obs_0.5_sim_trajectory_sim_params_1))
-      loadd(sim_domain)
-      imputations = replicate(10, 
-                              propose_trajectory(states = segments$obs$states, 
-                                                 times = segments$obs$times, 
-                                                 ctds_domain = sim_domain, 
-                                                 segments = segments$segments, 
-                                                 beta_loc = 0),
-                              simplify = FALSE)
-
-      plot.ctds_observations(x = sim_obs$obs, ctds_struct = sim_domain, 
-                             ctds_realization = imputations)
-      
-      0
-    },
-    transform = map(impute_segments)
-  ),
+  # plot_proposals = target(
+  #   command = {
+  #     segments = readRDS(readd(impute_segments_sim_obs_0.5_sim_trajectory_sim_params_10))
+  #     sim_obs = readRDS(readd(sim_obs_0.5_sim_trajectory_sim_params_1))
+  #     loadd(sim_domain)
+  #     imputations = replicate(10, 
+  #                             propose_trajectory(states = segments$obs$states, 
+  #                                                times = segments$obs$times, 
+  #                                                ctds_domain = sim_domain, 
+  #                                                segments = segments$segments, 
+  #                                                beta_loc = 0),
+  #                             simplify = FALSE)
+  # 
+  #     plot.ctds_observations(x = sim_obs$obs, ctds_struct = sim_domain, 
+  #                            ctds_realization = imputations)
+  #     
+  #     0
+  #   },
+  #   transform = map(impute_segments)
+  # ),
   
-  fit_path_imputations = target(
+  # fit_path_imputations = target(
+  #   command = {
+  #     dat = readRDS(impute_segments)
+  #     # browser()
+  #     samples = fit_integration(segments = dat$segments, obs = dat$obs, 
+  #                               inits = list(beta_loc = 0, beta_ar = 0), 
+  #                               priors = list(), niter = 100, 
+  #                               ctds_domain = sim_domain)
+  #   },
+  #   transform = map(impute_segments)
+  # ),
+  
+  # 
+  useq = target({
+    set.seed(2020)
+    npaths = 10
+    unique(pmin(c(0, 
+                  seq(from = 0, to = 1, length.out = npaths) + 
+                    runif(n = npaths, min = 0, max = 1/npaths), 
+                  1)
+    ))
+  }, hpc = FALSE),
+  
+  init_fits = target(
     command = {
       dat = readRDS(impute_segments)
-      # browser()
-      samples = fit_integration(segments = dat$segments, obs = dat$obs, 
+      samples = init_integration(segments = dat$segments, obs = dat$obs, 
                                 inits = list(beta_loc = 0, beta_ar = 0), 
-                                priors = list(), niter = 100, 
+                                priors = list(), niter = 50,  u = useq,
                                 ctds_domain = sim_domain)
     },
-    transform = map(impute_segments)
+    transform = map(impute_segments),
+    dynamic = map(useq),
+    format = 'rds'
   ),
   
-  # optimize likelihood surface
-  sim_mle = target(
-    max_obs_lik(ctds_struct = sim_domain, obs = sim_obs),
-    transform = map(sim_obs)
-  ),
+  # # optimize likelihood surface
+  # sim_mle = target(
+  #   max_obs_lik(ctds_struct = sim_domain, obs = sim_obs),
+  #   transform = map(sim_obs)
+  # ),
   
   # 
   # # plot likelihood surface
@@ -212,7 +253,7 @@ simulation_plan = drake_plan(
       list(fit = fit, weibull_est = weibull_est, 
            params = obs_pkg$params, nobs = obs_pkg$nobs)
     },
-    transform = cross(sim_obs, weibull_est = c(TRUE, FALSE))
+    transform = cross(sim_obs, weibull_est = FALSE)
   ),
   
   # assemble crawl approximation results across timesteps
@@ -220,15 +261,17 @@ simulation_plan = drake_plan(
     command = {
       summarize_fit_hanks(fit_output = sim_fit_hanks)
     },
-    transform = map(sim_fit_hanks)
+    transform = map(sim_fit_hanks),
+    hpc = FALSE
   ),
   
   aggregated_summaries = target(
     dplyr::bind_rows(sim_fit_hanks_summary),
-    transform = combine(sim_fit_hanks_summary, by = weibull_est)
+    transform = combine(sim_fit_hanks_summary, by = weibull_est),
+    hpc = FALSE
   ),
 
-  plot_hanks_summary = {
+  plot_hanks_summary = target({
     pl = ggplot(aggregated_summaries,
            aes(x = tstep, y = Estimate, ymin = lwr, ymax = upr,
                col = weibull_est)) +
@@ -242,34 +285,34 @@ simulation_plan = drake_plan(
     ggsave(pl, filename = file.path(sim_plots,
                                     paste(id_chr(), '.pdf', sep = '')))
 
-  },
+  }, hpc = FALSE)
   
-  sim_mle_ests = target(
-    sim_mle$est,
-    transform = map(sim_mle)
-  ),
+  # sim_mle_ests = target(
+  #   sim_mle$est,
+  #   transform = map(sim_mle)
+  # ),
   
-  aggregated_summaries_3x3 = target(
-    dplyr::bind_rows(sim_mle_ests),
-    transform = combine(sim_mle_ests)
-  ),
+  # aggregated_summaries_3x3 = target(
+  #   dplyr::bind_rows(sim_mle_ests),
+  #   transform = combine(sim_mle_ests)
+  # ),
   
-  plot_3x3_summary = {
-    pl = ggplot(aggregated_summaries_3x3 %>% 
-                  dplyr::filter(weibull_shape == 1),
-                aes(x = tstep, y = est, ymin = lwr, ymax = upr)) +
-      geom_pointrange() +
-      geom_hline(mapping = aes(yintercept = truth), lty = 3) +
-      xlab('Time between observations') +
-      ylab('Estimate') + 
-      ggtitle('3x3 recovery of true parameters (Truth at dotted line)') +
-      facet_grid(param~., scales = 'free') +
-      theme_few()
-    
-    ggsave(pl, filename = file.path(sim_plots,
-                                    paste(id_chr(), '.pdf', sep = '')))
-    
-  }
+  # plot_3x3_summary = {
+  #   pl = ggplot(aggregated_summaries_3x3 %>% 
+  #                 dplyr::filter(weibull_shape == 1),
+  #               aes(x = tstep, y = est, ymin = lwr, ymax = upr)) +
+  #     geom_pointrange() +
+  #     geom_hline(mapping = aes(yintercept = truth), lty = 3) +
+  #     xlab('Time between observations') +
+  #     ylab('Estimate') + 
+  #     ggtitle('3x3 recovery of true parameters (Truth at dotted line)') +
+  #     facet_grid(param~., scales = 'free') +
+  #     theme_few()
+  #   
+  #   ggsave(pl, filename = file.path(sim_plots,
+  #                                   paste(id_chr(), '.pdf', sep = '')))
+  #   
+  # }
 
   # 
   # # compare imputed trajectories to truth
