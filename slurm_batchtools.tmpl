@@ -32,7 +32,7 @@ if (!"ncpus" %in% names(resources)) {
 if (!"walltime" %in% names(resources)) {
   # Default time format is minutes but we later divide by 60 so set time in secs.
   # Set 48 hours by default.
-  resources$walltime = 48 * 3600
+  resources$walltime = 12 * 3600
 }
 
 if (!"partition" %in% names(resources)) {
