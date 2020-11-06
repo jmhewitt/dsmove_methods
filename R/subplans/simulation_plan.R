@@ -244,48 +244,48 @@ simulation_plan = drake_plan(
   # # ),
   # 
   
-  # fit model using crawl approximation
-  sim_fit_hanks = target(
-    command = {
-      obs_pkg = readRDS(sim_obs)
-      fit = fit_hanks(ctds_struct = sim_domain, ctds_obs = obs_pkg$obs, 
-                weibull_est = weibull_est)
-      list(fit = fit, weibull_est = weibull_est, 
-           params = obs_pkg$params, nobs = obs_pkg$nobs)
-    },
-    transform = cross(sim_obs, weibull_est = FALSE)
-  ),
+  # # fit model using crawl approximation
+  # sim_fit_hanks = target(
+  #   command = {
+  #     obs_pkg = readRDS(sim_obs)
+  #     fit = fit_hanks(ctds_struct = sim_domain, ctds_obs = obs_pkg$obs, 
+  #               weibull_est = weibull_est)
+  #     list(fit = fit, weibull_est = weibull_est, 
+  #          params = obs_pkg$params, nobs = obs_pkg$nobs)
+  #   },
+  #   transform = cross(sim_obs, weibull_est = FALSE)
+  # ),
   
-  # assemble crawl approximation results across timesteps
-  sim_fit_hanks_summary = target(
-    command = {
-      summarize_fit_hanks(fit_output = sim_fit_hanks)
-    },
-    transform = map(sim_fit_hanks),
-    hpc = FALSE
-  ),
+  # # assemble crawl approximation results across timesteps
+  # sim_fit_hanks_summary = target(
+  #   command = {
+  #     summarize_fit_hanks(fit_output = sim_fit_hanks)
+  #   },
+  #   transform = map(sim_fit_hanks),
+  #   hpc = FALSE
+  # ),
   
-  aggregated_summaries = target(
-    dplyr::bind_rows(sim_fit_hanks_summary),
-    transform = combine(sim_fit_hanks_summary, by = weibull_est),
-    hpc = FALSE
-  ),
+  # aggregated_summaries = target(
+  #   dplyr::bind_rows(sim_fit_hanks_summary),
+  #   transform = combine(sim_fit_hanks_summary, by = weibull_est),
+  #   hpc = FALSE
+  # ),
 
-  plot_hanks_summary = target({
-    pl = ggplot(aggregated_summaries,
-           aes(x = tstep, y = Estimate, ymin = lwr, ymax = upr,
-               col = weibull_est)) +
-      geom_pointrange() +
-      geom_hline(mapping = aes(yintercept = truth), lty = 3) +
-      xlab('Time between observations') +
-      ggtitle('Hanks recovery of true parameters (Truth at dotted line)') +
-      facet_grid(param~weibull_truth, scales = 'free') +
-      theme_few()
-
-    ggsave(pl, filename = file.path(sim_plots,
-                                    paste(id_chr(), '.pdf', sep = '')))
-
-  }, hpc = FALSE)
+  # plot_hanks_summary = target({
+  #   pl = ggplot(aggregated_summaries,
+  #          aes(x = tstep, y = Estimate, ymin = lwr, ymax = upr,
+  #              col = weibull_est)) +
+  #     geom_pointrange() +
+  #     geom_hline(mapping = aes(yintercept = truth), lty = 3) +
+  #     xlab('Time between observations') +
+  #     ggtitle('Hanks recovery of true parameters (Truth at dotted line)') +
+  #     facet_grid(param~weibull_truth, scales = 'free') +
+  #     theme_few()
+  # 
+  #   ggsave(pl, filename = file.path(sim_plots,
+  #                                   paste(id_chr(), '.pdf', sep = '')))
+  # 
+  # }, hpc = FALSE)
   
   # sim_mle_ests = target(
   #   sim_mle$est,
