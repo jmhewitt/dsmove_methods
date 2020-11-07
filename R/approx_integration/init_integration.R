@@ -58,26 +58,15 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
       dplyr::slice(1) %>% 
       dplyr::select(pathlen) %>% 
       unlist()
-    
-    
-    tryCatch({
-      # sample segment conditional on segment length
-      seg_ind = p %>% 
-        dplyr::mutate(rowind = 1:dplyr::n()) %>%
-        dplyr::filter(pathlen == plen) %>% 
-        dplyr::sample_n(size = 1, weight = w) %>% 
-        dplyr::select(rowind) %>%
-        unlist()
-    }, error = function(e) {
-      save.image(paste(id_chr(), 'testErr.RData', sep =''))
-      obj = list(p = p, plen = plen, 
-                 pathwts.aggregated = pathwts.aggregated, segind = segind,
-                 u = u)
-      save(obj, file = paste(id_chr(), 'err.RData', sep = ''))
-    })
-    
-    
-    
+  
+    # sample segment conditional on segment length
+    seg_ind = p %>% 
+      dplyr::mutate(rowind = 1:dplyr::n()) %>%
+      dplyr::filter(pathlen == plen) %>% 
+      dplyr::sample_n(size = 1, weight = w) %>% 
+      dplyr::select(rowind) %>%
+      unlist()
+  
     path_components[[i]]$path_ind = seg_ind
     
     # extract path
@@ -122,6 +111,7 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
   # update initial parameters and extract initial likelihood
   param_vec = o$par
   ll = o$value
+  hessian = o$hessian
   
   # TODO: add in convergence criteria
   
@@ -130,8 +120,6 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
     #
     # update path
     #
-    
-    message(paste('Step: ', it, '\n'))
     
     # sample path segments
     for(i in 2:length(path_components)) {
@@ -210,12 +198,7 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
     # update parameters and likelihood
     param_vec = o$par
     ll = o$value
-    
-    message('----------')
-    print(c(path_len = length(epath)))
-    print(c(ll = ll))
-    print(c(param_vec = param_vec))
-    print(c(optim_counts = o$counts))
+    hessian = o$hessian
     
   }
   
@@ -225,6 +208,7 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
       beta_ar = param_vec[1], 
       beta_loc = param_vec[-1]
     ),
-    ll = ll
+    ll = ll,
+    hessian = hessian
   )
 }
