@@ -218,6 +218,7 @@ simulation_plan = drake_plan(
                                 inits = list(beta_loc = 0, beta_ar = 0), 
                                 priors = list(), niter = 50,  u = useq,
                                 ctds_domain = sim_domain)
+      list(samples)
     },
     transform = map(impute_segments),
     dynamic = map(useq),
