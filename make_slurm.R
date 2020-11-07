@@ -8,4 +8,4 @@ source('R/plan.R')
 
 future::plan(batchtools_slurm, template = "slurm_batchtools.tmpl")
 
-make(the_plan, lock_envir = FALSE, parallelism = "future", jobs = 24)
+make(the_plan, lock_envir = FALSE, parallelism = "future", jobs = 50)
