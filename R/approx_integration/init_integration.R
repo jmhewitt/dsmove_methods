@@ -103,10 +103,10 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
              beta_loc = matrix(theta[-1], ncol = 1), beta_dir = 0,
              beta_ar = theta[1], ctds_struct = ctds_domain) + 
     # prior
-    dnorm(x = theta[1], mean = priors$beta_ar['mean'], 
-          sd = priors$beta_ar['sd'], log = TRUE) + 
-    dnorm(x = theta[-1], mean = priors$beta_loc['mean'], 
-          sd = priors$beta_loc['sd'], log = TRUE)
+    dnorm(x = theta[1], mean = priors$beta_ar$mean, 
+          sd = priors$beta_ar$sd, log = TRUE) + 
+    dnorm(x = theta[-1], mean = priors$beta_loc$mean, 
+          sd = priors$beta_loc$sd, log = TRUE)
   }
   
   # posterior mode for initial conditions
