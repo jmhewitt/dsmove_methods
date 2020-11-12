@@ -98,9 +98,15 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
   
   # wrapper to evaluate log-posterior 
   lpfn = function(theta, epath, durations) {
+    # likelihood
     ll_exact(epath = epath, durations = durations,
              beta_loc = matrix(theta[-1], ncol = 1), beta_dir = 0,
-             beta_ar = theta[1], ctds_struct = ctds_domain)
+             beta_ar = theta[1], ctds_struct = ctds_domain) + 
+    # prior
+    dnorm(x = theta[1], mean = priors$beta_ar['mean'], 
+          sd = priors$beta_ar['sd'], log = TRUE) + 
+    dnorm(x = theta[-1], mean = priors$beta_loc['mean'], 
+          sd = priors$beta_loc['sd'], log = TRUE)
   }
   
   # posterior mode for initial conditions
@@ -159,14 +165,10 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
         
         
         # compute likelihood on original and changed path segments
-        ll0 = ll_exact(epath = x0$epath, durations = diff(x0$tpath),
-                       beta_loc = matrix(param_vec[-1], ncol = 1),
-                       beta_dir = 0, beta_ar = param_vec[1],
-                       ctds_struct = ctds_domain)
-        ll_prop = ll_exact(epath = x_prop$epath, durations = diff(x_prop$tpath),
-                           beta_loc = matrix(param_vec[-1], ncol = 1),
-                           beta_dir = 0, beta_ar = param_vec[1],
-                           ctds_struct = ctds_domain)
+        ll0 = lpfn(theta = param_vec, epath = x0$epath, 
+                   durations = diff(x0$tpath))
+        ll_prop = lpfn(theta = param_vec, epath = x_prop$epath, 
+                       durations = diff(x_prop$tpath))
         
         # accept/reject 
         logR = ll_prop - ll0 + 
@@ -178,10 +180,6 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
         
         if(accept) {
           path_components = prop_components_all
-          ll = ll_exact(epath = epath_prop, durations = diff(tpath_prop),
-                        beta_loc = matrix(param_vec[-1], ncol = 1),
-                        beta_dir = 0, beta_ar = param_vec[1],
-                        ctds_struct = ctds_domain)
           epath = epath_prop
           tpath = tpath_prop
         }
