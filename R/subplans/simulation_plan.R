@@ -47,7 +47,9 @@ simulation_plan = drake_plan(
       # maximum transition rate allowed for imputations. chosen such that 
       # max_lambda >> exp(max(sim_domain$Xloc %*% sim_params_1$beta_loc))
       max_lambda = 5,
-      p_max = .99
+      p_max = .99,
+      beta_ar = list(mean = 0, sd = 1e2),
+      beta_loc = list(mean = 0, sd = 1e2)
     ),
     hpc = FALSE
   ),
@@ -73,43 +75,6 @@ simulation_plan = drake_plan(
     hpc = FALSE
   ),
 
-  # # plot_durations = target(
-  #   command = {
-  #     sim_pkg = readRDS(sim_trajectory)
-  #     ctds_sim = sim_pkg$sim
-  #     pl = ggplot(data.frame(x = ctds_sim$durations), aes(x=x)) +
-  #       stat_density(geom = 'line') +
-  #       theme_few() +
-  #       theme(panel.border = element_blank()) +
-  #       xlab('Duration') +
-  #       ylab('Density') + 
-  #       ggtitle(paste('Weibull shape = ', sim_pkg$params$weibull_shape, 
-  #                     sep = ''))
-  #     ggsave(pl, filename = file.path(sim_plots,
-  #                                     paste(id_chr(), '.png', sep = '')))
-  #   },
-  #   transform = map(sim_trajectory),
-  #   hpc = FALSE
-  # ),
-
-  # # plot simulation
-  # sim_plot = target(
-  #   command = {
-  #     sim_pkg = readRDS(sim_trajectory)
-  #     ctds_sim = sim_pkg$sim
-  #     colnames(sim_domain$coords) = c('x', 'y')
-  #     sim_domain$coords = data.frame(sim_domain$coords)
-  #     pl = plot(x = ctds_sim, ctds_struct = sim_domain) +
-  #       ggtitle(paste('Simulated trajectory (Weibull shape = ', 
-  #                     sim_pkg$params$weibull_shape, ')',
-  #                     sep = ''))
-  #     ggsave(pl, filename = file.path(sim_plots,
-  #                                     paste(id_chr(), '.png', sep = '')))
-  #   },
-  #   transform = map(sim_trajectory),
-  #   hpc = FALSE
-  # ),
-  
   # observe simulated trajectory
   sim_obs = target(
     command = {
@@ -133,6 +98,7 @@ simulation_plan = drake_plan(
     hpc = FALSE
   ),
   
+  # pre-compute family of path segments that could connect observations
   impute_segments = target(
     command = {
       # load observations
@@ -154,96 +120,71 @@ simulation_plan = drake_plan(
     hpc = TRUE
   ),
   
-  # proposed_path = target(
-  #   command = {
-  #     segments = readRDS(impute_segments)
-  #     proposed = propose_trajectory(states = segments$obs$states, 
-  #                                   times = segments$obs$times, 
-  #                                   ctds_domain = sim_domain, 
-  #                                   segments = segments$segments, 
-  #                                   beta_loc = 0)
-  #     proposed
-  #   },
-  #   transform = map(impute_segments)
-  # ),
-  
-  # plot_proposals = target(
-  #   command = {
-  #     segments = readRDS(readd(impute_segments_sim_obs_0.5_sim_trajectory_sim_params_10))
-  #     sim_obs = readRDS(readd(sim_obs_0.5_sim_trajectory_sim_params_1))
-  #     loadd(sim_domain)
-  #     imputations = replicate(10, 
-  #                             propose_trajectory(states = segments$obs$states, 
-  #                                                times = segments$obs$times, 
-  #                                                ctds_domain = sim_domain, 
-  #                                                segments = segments$segments, 
-  #                                                beta_loc = 0),
-  #                             simplify = FALSE)
-  # 
-  #     plot.ctds_observations(x = sim_obs$obs, ctds_struct = sim_domain, 
-  #                            ctds_realization = imputations)
-  #     
-  #     0
-  #   },
-  #   transform = map(impute_segments)
-  # ),
-  
-  # fit_path_imputations = target(
-  #   command = {
-  #     dat = readRDS(impute_segments)
-  #     # browser()
-  #     samples = fit_integration(segments = dat$segments, obs = dat$obs, 
-  #                               inits = list(beta_loc = 0, beta_ar = 0), 
-  #                               priors = list(), niter = 100, 
-  #                               ctds_domain = sim_domain)
-  #   },
-  #   transform = map(impute_segments)
-  # ),
-  
-  # 
+  # path "seeds" used to explore the posterior space to initialize gibbs sampler
   useq = target({
     set.seed(2020)
     npaths = 10
-    unique(pmin(c(0, 
-                  seq(from = 0, to = 1, length.out = npaths) + 
-                    runif(n = npaths, min = 0, max = 1/npaths), 
+    unique(pmin(c(0,
+                  seq(from = 0, to = 1, length.out = npaths) +
+                    runif(n = npaths, min = 0, max = 1/npaths),
                   1), 1
     ))
   }, hpc = FALSE),
   
+  # use path seeds to sample initial paths and optimize associated model params.
   init_fits = target(
     command = {
       dat = readRDS(impute_segments)
-      samples = init_integration(segments = dat$segments, obs = dat$obs, 
+      inits = init_integration(segments = dat$segments, obs = dat$obs, 
                                 inits = list(beta_loc = 0, beta_ar = 0), 
-                                priors = list(), niter = 50,  u = useq,
+                                priors = prior_params, niter = 50,  u = useq,
                                 ctds_domain = sim_domain)
-      list(samples)
+      list(list(inits = inits, file.segments = impute_segments))
     },
     transform = map(impute_segments),
     dynamic = map(useq),
-    format = 'rds'
+    format = 'rds',
+    hpc = TRUE
   ),
   
-  # # optimize likelihood surface
-  # sim_mle = target(
-  #   max_obs_lik(ctds_struct = sim_domain, obs = sim_obs),
-  #   transform = map(sim_obs)
-  # ),
-  
-  # 
-  # # plot likelihood surface
-  # # sim_lik_surface = target(
-  # #   plot_obs_lik(ctds_struct = sim_domain, obs = sim_obs, plot_dir = sim_plots,
-  # #                beta_loc_seq = seq(from = -1.5, to = 2.5, length.out = 25),
-  # #                beta_ar_seq = seq(from = -1, to = 5, length.out = 25),
-  # #                # beta_loc_seq = seq(from = 2, to = 8, length.out = 25),
-  # #                # beta_ar_seq = seq(from = -1, to = 1, length.out = 25),
-  # #                beta_loc, beta_ar),
-  # #   dynamic = map(sim_obs), 
-  # #   max_expand = 1
-  # # ),
-  # 
+  # approximate posterior for initial path with highest log-posterior
+  gibbs_fits = target(
+    command = {
+      
+      # extract the best-fitting initial trajectory 
+      selected_init = which.max(sapply(init_fits, function(init) {
+        init$inits$ll
+      }))
+      init = init_fits[[selected_init]]
+      
+      # re-package the initial parameters
+      init$inits$beta_ar = init$inits$params$beta_ar
+      init$inits$beta_loc = init$inits$params$beta_loc
+      init$inits$prop_cov = solve(-init$inits$hessian)
+      
+      # load family of path segments (and observations)
+      segment.group = readRDS(init$file.segments)
+      
+      # define priors
+      priors = list(
+        beta_ar = c(mean = 0, sd = 1e2),
+        beta_loc = list(mean = 0, sd = 1e2)
+      )
+      
+      # run gibbs sampler, receive file name with outputs
+      fit = fit_integration(
+        segments = segment.group$segments, obs = segment.group$obs, niter = 1e4, 
+        ncheckpoints = 1e2, inits = init$inits, priors = priors, 
+        ctds_domain = sim_domain, output_dir = sim_dir
+      )
+      
+      # return 
+      fit
+      
+    },
+    transform = map(init_fits),
+    format = 'file'
+  )
   
   # # fit model using crawl approximation
   # sim_fit_hanks = target(
@@ -293,65 +234,4 @@ simulation_plan = drake_plan(
   #   transform = map(sim_mle)
   # ),
   
-  # aggregated_summaries_3x3 = target(
-  #   dplyr::bind_rows(sim_mle_ests),
-  #   transform = combine(sim_mle_ests)
-  # ),
-  
-  # plot_3x3_summary = {
-  #   pl = ggplot(aggregated_summaries_3x3 %>% 
-  #                 dplyr::filter(weibull_shape == 1),
-  #               aes(x = tstep, y = est, ymin = lwr, ymax = upr)) +
-  #     geom_pointrange() +
-  #     geom_hline(mapping = aes(yintercept = truth), lty = 3) +
-  #     xlab('Time between observations') +
-  #     ylab('Estimate') + 
-  #     ggtitle('3x3 recovery of true parameters (Truth at dotted line)') +
-  #     facet_grid(param~., scales = 'free') +
-  #     theme_few()
-  #   
-  #   ggsave(pl, filename = file.path(sim_plots,
-  #                                   paste(id_chr(), '.pdf', sep = '')))
-  #   
-  # }
-
-  # 
-  # # compare imputed trajectories to truth
-  # # imputed_plots = target(
-  # #   plot_imputations(ctds_struct = sim_domain, trajectory = sim_trajectory,
-  # #                    imputations = sim_fit_hanks$ctmc.list,
-  # #                    raster.coords = sim_fit_hanks$raster.coords,
-  # #                    tstep = sim_fit_hanks$tstep,
-  # #                    plot_dir = sim_plots),
-  # #   dynamic = map(sim_fit_hanks)
-  # # ),
-  # 
-  # # compare shortest path imputation to truth
-  # # shortest_path_plots = target(
-  # #   plot_shortest_path(ctds_struct = sim_domain, trajectory = sim_trajectory, 
-  # #                      obs = sim_obs, plot_dir = sim_plots, 
-  # #                      beta_loc = beta_loc),
-  # #   transform = map(sim_obs)
-  # # ),
-  # 
-  # # fit model to completely observed trajectory
-  # # sim_fit_exact = target(
-  # #   fit_exact(ctds_struct = sim_domain, trajectory = sim_trajectory, 
-  # #             beta_loc = beta_loc, beta_dir = beta_dir, beta_ar = beta_ar)
-  # # ),
-  # 
-  # # assemble exact fit results
-  # # sim_fit_exact_summary = 
-  # #   data.frame(
-  # #     param = c('beta_loc', 'beta_ar'), 
-  # #     truth = c(beta_loc, beta_ar),
-  # #     est = sim_fit_exact$par[-2],
-  # #     se = sqrt(diag(solve(-sim_fit_exact$hessian[-2,-2])))
-  # #   ) %>% 
-  # #   dplyr::mutate(
-  # #     lwr = est - 1.96 * se,
-  # #     upr = est + 1.96 * se,
-  # #     covered = (lwr <= truth) & (truth <= upr)
-  # #   )
-  # 
 )
