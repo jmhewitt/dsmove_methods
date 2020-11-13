@@ -28,7 +28,8 @@ fit_integration = function(segments, obs, inits, priors, niter, ctds_domain,
   samples = list(
     path = vector('list', niter),
     param_vec = matrix(nrow = niter, ncol = length(param_vec)),
-    ll = numeric(niter)
+    ll = numeric(niter),
+    mem = vector('list', niter)
   )
   
   # flatten path
@@ -151,6 +152,7 @@ fit_integration = function(segments, obs, inits, priors, niter, ctds_domain,
     samples$path[[it]] = cbind(epath = epath, tpath = tpath)
     samples$param_vec[it, ] = param_vec
     samples$ll[it] =  ll
+    samples$mem[[it]] = sapply(ls(), object_size)
     
     # checkpoint operations
     if(it %in% checkpoint.inds) {
