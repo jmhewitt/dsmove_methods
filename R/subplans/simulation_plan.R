@@ -167,7 +167,7 @@ simulation_plan = drake_plan(
       
       # define priors
       priors = list(
-        beta_ar = c(mean = 0, sd = 1e2),
+        beta_ar = list(mean = 0, sd = 1e2),
         beta_loc = list(mean = 0, sd = 1e2)
       )
       
