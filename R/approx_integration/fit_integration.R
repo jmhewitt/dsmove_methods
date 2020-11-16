@@ -1,5 +1,5 @@
 fit_integration = function(segments, obs, inits, priors, niter, ctds_domain,
-                           ncheckpoints, output_dir) {
+                           ncheckpoints, checkpoint_fn) {
   
   # extract sampling weights and indexes for all segments
   pathwts = lapply(segments, function(sfam) {
@@ -70,9 +70,6 @@ fit_integration = function(segments, obs, inits, priors, niter, ctds_domain,
   
   # set checkpoint indices
   checkpoint.inds = seq(from = 1, to = niter, length.out = ncheckpoints)[-1]
-  
-  # set file output
-  f = file.path(output_dir, paste(id_chr(), '.rds', sep = ''))
     
   for(it in 1:niter) {
     
@@ -156,14 +153,11 @@ fit_integration = function(segments, obs, inits, priors, niter, ctds_domain,
     
     # checkpoint operations
     if(it %in% checkpoint.inds) {
-      saveRDS(samples, file = f)
+      checkpoint_fn(samples)
     }
     
   }
   
-  # save final samples
-  saveRDS(samples, file = f)
-  
-  # return output file name
-  f
+  # return final samples
+  samples
 }

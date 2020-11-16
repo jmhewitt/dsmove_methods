@@ -171,19 +171,60 @@ simulation_plan = drake_plan(
         beta_loc = list(mean = 0, sd = 1e2)
       )
       
+      # set file output
+      f = file.path(sim_dir, paste(id_chr(), '.rds', sep = ''))
+      
+      # sample save function
+      checkpoint_fn = function(samples) {
+        o = list(
+          samples = samples,
+          obs_per_sec = 1/unique(diff(segment.group$obs$times)),
+          params = segment.group$params
+        )
+        saveRDS(o, file = f)
+      }
+      
       # run gibbs sampler, receive file name with outputs
-      fit = fit_integration(
-        segments = segment.group$segments, obs = segment.group$obs, niter = 1e4, 
-        ncheckpoints = 1e2, inits = init$inits, priors = priors, 
-        ctds_domain = sim_domain, output_dir = sim_dir
+      samples = fit_integration(
+        segments = segment.group$segments, obs = segment.group$obs, niter = 1e2, 
+        ncheckpoints = 1e1, inits = init$inits, priors = priors, 
+        ctds_domain = sim_domain, checkpoint_fn = checkpoint_fn
       )
       
       # return 
-      fit
+      checkpoint_fn(samples)
       
+      # return file name
+      f
     },
     transform = map(init_fits),
     format = 'file'
+  ),
+  
+  # summarize approximate posterior
+  gibbs_summaries = target(
+    command = {
+      # read mcmc output
+      mcout = readRDS(gibbs_fits)
+      # extract posterior samples for model parameters
+      niter = sum(mcout$samples$ll != 0)
+      nburn = 1e3
+      m = mcmc(mcout$samples$param_vec[nburn:niter, , drop = FALSE])
+      # aggregate and return posterior summaries
+      hpd = HPDinterval(m)
+      data.frame(
+        parameter = c('beta_ar', 'beta_loc'),
+        mean = colMeans(m),
+        se = apply(m, 2, sd),
+        lwr = hpd[, 1],
+        upr = hpd[, 2],
+        obs_per_second = mcout$obs_per_sec,
+        truth = c(mcout$params$beta_ar, mcout$params$beta_loc)
+      ) %>% 
+        dplyr::mutate(covered = lwr <= truth & truth <= upr)
+    },
+    transform = map(gibbs_fits),
+    hpc = TRUE
   )
   
   # # fit model using crawl approximation

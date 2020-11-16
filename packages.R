@@ -4,6 +4,7 @@ library(drake)
 
 devtools::document('packages/dsmovetools/')
 
+library(coda)
 library(ctmcmove)
 library(fda)
 library(future)
@@ -17,6 +18,7 @@ library(nimble)
 library(pryr)
 library(sp)
 library(spdep)
+library(stringr)
 library(viridis)
 
 # compile likelihood function if needed
