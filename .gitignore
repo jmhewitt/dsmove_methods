@@ -8,3 +8,4 @@ output/
 .Rproj.user
 scrape_dates.txt
 *.pdf
+*.csv
