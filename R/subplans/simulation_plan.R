@@ -351,33 +351,38 @@ simulation_plan = drake_plan(
     transform = map(init_fits),
     format = 'file'
   )#,
+  ),
   
-  # # summarize approximate posterior
-  # gibbs_summaries = target(
-  #   command = {
-  #     # read mcmc output
-  #     mcout = readRDS(gibbs_fits)
-  #     # extract posterior samples for model parameters
-  #     niter = sum(mcout$samples$ll != 0)
-  #     nburn = 1e3
-  #     m = mcmc(mcout$samples$param_vec[nburn:niter, , drop = FALSE])
-  #     # aggregate and return posterior summaries
-  #     hpd = HPDinterval(m)
-  #     data.frame(
-  #       parameter = c('beta_ar', 'beta_loc'),
-  #       mean = colMeans(m),
-  #       se = apply(m, 2, sd),
-  #       lwr = hpd[, 1],
-  #       upr = hpd[, 2],
-  #       obs_per_second = mcout$obs_per_sec,
-  #       truth = c(mcout$params$beta_ar, mcout$params$beta_loc)
-  #     ) %>% 
-  #       dplyr::mutate(covered = lwr <= truth & truth <= upr)
-  #   },
-  #   transform = map(gibbs_fits),
-  #   hpc = TRUE
-  # ),
-  # 
+  # summarize approximate posterior
+  gibbs_summaries = target(
+    command = {
+      if(file.exists(gibbs_fits)) {
+        # read mcmc output
+        mcout = readRDS(gibbs_fits)
+        # extract posterior samples for model parameters
+        niter = sum(mcout$samples$ll != 0)
+        nburn = 1e3
+        m = mcmc(mcout$samples$param_vec[nburn:niter, , drop = FALSE])
+        # aggregate and return posterior summaries
+        hpd = HPDinterval(m)
+        data.frame(
+          parameter = c('beta_ar', 'beta_loc'),
+          mean = colMeans(m),
+          se = apply(m, 2, sd),
+          lwr = hpd[, 1],
+          upr = hpd[, 2],
+          obs_per_second = mcout[['obs_per_sec']],
+          truth = c(mcout$params[['beta_ar']], mcout$params[['beta_loc']])
+        ) %>% 
+          dplyr::mutate(covered = lwr <= truth & truth <= upr)
+      } else {
+        NULL
+      }
+    },
+    transform = map(gibbs_fits),
+    hpc = TRUE
+  ),
+  
   # gibbs_summary_plots = target(
   #   command = {
   #     # merge simulation output
