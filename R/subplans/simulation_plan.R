@@ -49,7 +49,7 @@ simulation_plan = drake_plan(
       max_lambda = 5,
       p_max = .99,
       beta_ar = list(mean = 0, sd = 1e2),
-      beta_loc = list(mean = 0, sd = 1e2)
+      beta_loc = list(mean = sim_params_1$beta_loc[1], sd = .1)
     ),
     hpc = FALSE
   ),
