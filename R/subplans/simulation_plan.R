@@ -296,7 +296,7 @@ simulation_plan = drake_plan(
     transform = map(init_fits),
     hpc = TRUE,
     format = 'file'
-  ),
+  )
   
   # # approximate posterior for initial path with highest log-posterior
   # gibbs_fits = target(
@@ -393,45 +393,45 @@ simulation_plan = drake_plan(
   #   hpc = FALSE
   # )
   
-  # fit model using crawl approximation
-  sim_fit_hanks = target(
-    command = {
-      obs_pkg = readRDS(sim_obs)
-      fit = fit_hanks(ctds_struct = sim_domain, ctds_obs = obs_pkg$obs)
-      list(fit = fit, params = obs_pkg$params, nobs = obs_pkg$nobs)
-    },
-    transform = cross(sim_obs),
-    hpc = TRUE
-  ),
-  
-  # assemble crawl approximation results across timesteps
-  sim_fit_hanks_summary = target(
-    command = {
-      summarize_fit_hanks(fit_output = sim_fit_hanks)
-    },
-    transform = map(sim_fit_hanks),
-    hpc = TRUE
-  ),
-  
-  aggregated_summaries = target(
-    dplyr::bind_rows(sim_fit_hanks_summary),
-    transform = combine(sim_fit_hanks_summary),
-    hpc = TRUE
-  ),
-
-  plot_hanks_summary = target({
-      pl = ggplot(aggregated_summaries,
-           aes(x = tstep, y = Estimate, ymin = lwr, ymax = upr)) +
-      geom_pointrange() +
-      geom_hline(mapping = aes(yintercept = truth), lty = 3) +
-      xlab('Time between observations') +
-      ggtitle('Hanks recovery of true parameters (Truth at dotted line)') +
-      facet_wrap(~param, scales = 'free') +
-      theme_few()
-
-    ggsave(pl, filename = file.path(sim_plots,
-                                    paste(id_chr(), '.pdf', sep = '')))
-
-  }, hpc = TRUE)
+  # # fit model using crawl approximation
+  # sim_fit_hanks = target(
+  #   command = {
+  #     obs_pkg = readRDS(sim_obs)
+  #     fit = fit_hanks(ctds_struct = sim_domain, ctds_obs = obs_pkg$obs)
+  #     list(fit = fit, params = obs_pkg$params, nobs = obs_pkg$nobs)
+  #   },
+  #   transform = cross(sim_obs),
+  #   hpc = TRUE
+  # ),
+  # 
+  # # assemble crawl approximation results across timesteps
+  # sim_fit_hanks_summary = target(
+  #   command = {
+  #     summarize_fit_hanks(fit_output = sim_fit_hanks)
+  #   },
+  #   transform = map(sim_fit_hanks),
+  #   hpc = TRUE
+  # ),
+  # 
+  # aggregated_summaries = target(
+  #   dplyr::bind_rows(sim_fit_hanks_summary),
+  #   transform = combine(sim_fit_hanks_summary),
+  #   hpc = TRUE
+  # ),
+  # 
+  # plot_hanks_summary = target({
+  #     pl = ggplot(aggregated_summaries,
+  #          aes(x = tstep, y = Estimate, ymin = lwr, ymax = upr)) +
+  #     geom_pointrange() +
+  #     geom_hline(mapping = aes(yintercept = truth), lty = 3) +
+  #     xlab('Time between observations') +
+  #     ggtitle('Hanks recovery of true parameters (Truth at dotted line)') +
+  #     facet_wrap(~param, scales = 'free') +
+  #     theme_few()
+  # 
+  #   ggsave(pl, filename = file.path(sim_plots,
+  #                                   paste(id_chr(), '.pdf', sep = '')))
+  # 
+  # }, hpc = TRUE)
   
 )
