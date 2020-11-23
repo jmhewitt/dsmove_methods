@@ -19,6 +19,7 @@ library(pryr)
 library(sp)
 library(spdep)
 library(stringr)
+library(tidyr)
 library(viridis)
 
 # compile likelihood function if needed
