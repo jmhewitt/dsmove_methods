@@ -350,7 +350,6 @@ simulation_plan = drake_plan(
     },
     transform = map(init_fits),
     format = 'file'
-  )#,
   ),
   
   # summarize approximate posterior
