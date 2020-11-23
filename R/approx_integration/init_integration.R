@@ -3,8 +3,6 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
   # Parameters:
   #  u - common variate used to draw path lengths across all segments for this 
   #      path
-
-  inits$beta_loc = -1
   
   # extract sampling weights and indexes for all segments
   pathwts = lapply(1:length(segments), function(segind) {
@@ -112,12 +110,12 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
   }
   
   # posterior mode for initial conditions
-  o = optim(par = param_vec[1], function(theta) {
-    lpfn(theta = c(theta, inits$beta_loc), epath = epath, durations = diff(tpath))
+  o = optim(par = param_vec, function(theta) {
+    lpfn(theta = theta, epath = epath, durations = diff(tpath))
   }, control = list(fnscale = -1), method = 'BFGS', hessian = TRUE)
   
   # update initial parameters and extract initial likelihood
-  param_vec = c(o$par, inits$beta_loc)
+  param_vec = o$par
   ll = o$value
   hessian = o$hessian
   
@@ -191,12 +189,12 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
     }
     
     # update model parameters
-    o = optim(par = param_vec[1], function(theta) {
-      lpfn(theta = c(theta, inits$beta_loc), epath = epath, durations = diff(tpath))
+    o = optim(par = param_vec, function(theta) {
+      lpfn(theta = theta, epath = epath, durations = diff(tpath))
     }, control = list(fnscale = -1), method = 'BFGS', hessian = TRUE)
     
     # update parameters and likelihood
-    param_vec = c(o$par, inits$beta_loc)
+    param_vec = o$par
     ll = o$value
     hessian = o$hessian
     
