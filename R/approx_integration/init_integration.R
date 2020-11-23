@@ -3,7 +3,7 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
   # Parameters:
   #  u - common variate used to draw path lengths across all segments for this 
   #      path
-  
+
   inits$beta_loc = -1
   
   # extract sampling weights and indexes for all segments
@@ -117,7 +117,7 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
   }, control = list(fnscale = -1), method = 'BFGS', hessian = TRUE)
   
   # update initial parameters and extract initial likelihood
-  param_vec = o$par
+  param_vec = c(o$par, inits$beta_loc)
   ll = o$value
   hessian = o$hessian
   
@@ -196,7 +196,7 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
     }, control = list(fnscale = -1), method = 'BFGS', hessian = TRUE)
     
     # update parameters and likelihood
-    param_vec = o$par
+    param_vec = c(o$par, inits$beta_loc)
     ll = o$value
     hessian = o$hessian
     
