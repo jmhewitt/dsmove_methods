@@ -193,6 +193,111 @@ simulation_plan = drake_plan(
     hpc = TRUE
   ),
   
+  # plot observations alongside true trajectory
+  plot_init_fits = target(
+    command = {
+    
+      ctds_paths = lapply(init_fits, function(init) {
+        # extract and flatten optimized path
+        path_components = init$inits$path_components
+        epath = do.call(c, sapply(path_components, function(p) {
+          unlist(p$epath)
+        }))
+        tpath = do.call(c, sapply(path_components, function(p) { p$tpath }))
+        list(epath = epath, tpath = tpath, durations = diff(tpath))
+      })
+      
+      # extract optimized initialization paths
+      init_paths = lapply(init_fits, function(init) {
+        # extract and flatten optimized path
+        path_components = init$inits$path_components
+        epath = do.call(c, sapply(path_components, function(p) {
+          unlist(p$epath)
+        }))
+        tpath = do.call(c, sapply(path_components, function(p) { p$tpath }))
+        spath = sim_domain$edge_df$to[epath]
+        # convert optimized path to locations
+        init_coords = data.frame(
+          sim_domain$coords[spath,],
+          time = tpath
+        ) %>% 
+          pivot_longer(cols = s1:s2, names_to = 'coord')
+      })
+      
+      # load true trajectory and observations
+      sim_pkg = readRDS(sim_trajectory)
+      obs = readRDS(sim_obs)
+      
+      # extract spatial coordinates for trajectory and observations
+      sim_coords = data.frame(
+        sim_domain$coords[sim_pkg$sim$states,],
+        time = sim_pkg$sim$times
+      ) %>% 
+        pivot_longer(cols = s1:s2, names_to = 'coord')
+      obs_coords = data.frame(
+        sim_domain$coords[obs$obs$states,],
+        time = obs$obs$times
+      ) %>% 
+        pivot_longer(cols = s1:s2, names_to = 'coord')
+      
+      # build plots
+      pl_inits = mapply(function(ipath, u) {
+        df = rbind(
+          cbind(sim_coords, type = 'Exact/Simulated'),
+          cbind(ipath, type = 'Initial imputation')
+        )
+        ggplot(df, aes(x = time, y = value, col = type)) + 
+          # complete trajectories
+          geom_step() + 
+          scale_color_brewer('Trajectory', type = 'qual', palette = 'Dark2') + 
+          # observations
+          geom_point(data = obs_coords, col = 'red', size = .1) + 
+          # plot each spatial coordinate separately
+          facet_wrap(~coord, nrow = 2, ncol = 1, scales = 'free',
+                     strip.position = 'left') +
+          theme_few() +  
+          theme(strip.placement = 'outside', 
+                strip.text.y = element_text(angle = 180)) + 
+          xlab('Time') + 
+          ylab('Coord.') + 
+          ggtitle(paste('CTDS trajectory (observations in red; u=', u, ')', 
+                        sep = ''))
+      }, init_paths, useq, SIMPLIFY = FALSE)
+      
+      # save objects
+      mapply(function(pl, u) {
+        f = file.path(sim_plots, paste(id_chr(), '_u', u, '.pdf', sep = ''))
+        ggsave(pl, filename = f)
+        f
+      }, pl_inits, useq)
+      
+    },
+    transform = map(init_fits),
+    hpc = TRUE,
+    format = 'file'
+  ),
+  
+  init_fits_summary = target(
+    command = {
+      
+      # extract optimized parameters
+      init_params = cbind(
+        u = useq,
+        do.call(rbind, lapply(init_fits, function(init) {
+          data.frame(init$inits$params, ll = init$inits$ll)
+        }))
+      )
+      
+      # save as csv
+      f = file.path(sim_plots, paste(id_chr(), '.csv', sep = ''))
+      write.csv(init_params, file = f, row.names = FALSE)
+      f
+    },
+    transform = map(init_fits),
+    hpc = TRUE,
+    format = 'file'
+  ),
+  
   # approximate posterior for initial path with highest log-posterior
   gibbs_fits = target(
     command = {
