@@ -434,9 +434,4 @@ simulation_plan = drake_plan(
 
   }, hpc = TRUE)
   
-  # sim_mle_ests = target(
-  #   sim_mle$est,
-  #   transform = map(sim_mle)
-  # ),
-  
 )
