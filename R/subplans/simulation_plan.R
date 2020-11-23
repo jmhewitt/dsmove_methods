@@ -298,89 +298,89 @@ simulation_plan = drake_plan(
     format = 'file'
   ),
   
-  # approximate posterior for initial path with highest log-posterior
-  gibbs_fits = target(
-    command = {
-      
-      # extract the best-fitting initial trajectory 
-      selected_init = which.max(sapply(init_fits, function(init) {
-        init$inits$ll
-      }))
-      init = init_fits[[selected_init]]
-      
-      # re-package the initial parameters
-      init$inits$beta_ar = init$inits$params$beta_ar
-      init$inits$beta_loc = init$inits$params$beta_loc
-      init$inits$prop_cov = solve(-init$inits$hessian)
-      
-      # load family of path segments (and observations)
-      segment.group = readRDS(init$file.segments)
-      
-      # define priors
-      priors = list(
-        beta_ar = list(mean = 0, sd = 1e2),
-        beta_loc = list(mean = 0, sd = 1e2)
-      )
-      
-      # set file output
-      f = file.path(sim_dir, paste(id_chr(), '.rds', sep = ''))
-      
-      # sample save function
-      checkpoint_fn = function(samples) {
-        o = list(
-          samples = samples,
-          obs_per_sec = 1/unique(diff(segment.group$obs$times)),
-          params = segment.group$params
-        )
-        saveRDS(o, file = f)
-      }
-      
-      # # run gibbs sampler, receive file name with outputs
-      # samples = fit_integration(
-      #   segments = segment.group$segments, obs = segment.group$obs, niter = 1e4, 
-      #   ncheckpoints = 1e2, inits = init$inits, priors = priors, 
-      #   ctds_domain = sim_domain, checkpoint_fn = checkpoint_fn
-      # )
-      # 
-      # # return 
-      # checkpoint_fn(samples)
-      
-      # return file name
-      f
-    },
-    transform = map(init_fits),
-    format = 'file'
-  ),
-  
-  # summarize approximate posterior
-  gibbs_summaries = target(
-    command = {
-      if(file.exists(gibbs_fits)) {
-        # read mcmc output
-        mcout = readRDS(gibbs_fits)
-        # extract posterior samples for model parameters
-        niter = sum(mcout$samples$ll != 0)
-        nburn = 1e3
-        m = mcmc(mcout$samples$param_vec[nburn:niter, , drop = FALSE])
-        # aggregate and return posterior summaries
-        hpd = HPDinterval(m)
-        data.frame(
-          parameter = c('beta_ar', 'beta_loc'),
-          mean = colMeans(m),
-          se = apply(m, 2, sd),
-          lwr = hpd[, 1],
-          upr = hpd[, 2],
-          obs_per_second = mcout[['obs_per_sec']],
-          truth = c(mcout$params[['beta_ar']], mcout$params[['beta_loc']])
-        ) %>% 
-          dplyr::mutate(covered = lwr <= truth & truth <= upr)
-      } else {
-        NULL
-      }
-    },
-    transform = map(gibbs_fits),
-    hpc = TRUE
-  ),
+  # # approximate posterior for initial path with highest log-posterior
+  # gibbs_fits = target(
+  #   command = {
+  #     
+  #     # extract the best-fitting initial trajectory 
+  #     selected_init = which.max(sapply(init_fits, function(init) {
+  #       init$inits$ll
+  #     }))
+  #     init = init_fits[[selected_init]]
+  #     
+  #     # re-package the initial parameters
+  #     init$inits$beta_ar = init$inits$params$beta_ar
+  #     init$inits$beta_loc = init$inits$params$beta_loc
+  #     init$inits$prop_cov = solve(-init$inits$hessian)
+  #     
+  #     # load family of path segments (and observations)
+  #     segment.group = readRDS(init$file.segments)
+  #     
+  #     # define priors
+  #     priors = list(
+  #       beta_ar = list(mean = 0, sd = 1e2),
+  #       beta_loc = list(mean = 0, sd = 1e2)
+  #     )
+  #     
+  #     # set file output
+  #     f = file.path(sim_dir, paste(id_chr(), '.rds', sep = ''))
+  #     
+  #     # sample save function
+  #     checkpoint_fn = function(samples) {
+  #       o = list(
+  #         samples = samples,
+  #         obs_per_sec = 1/unique(diff(segment.group$obs$times)),
+  #         params = segment.group$params
+  #       )
+  #       saveRDS(o, file = f)
+  #     }
+  #     
+  #     # # run gibbs sampler, receive file name with outputs
+  #     # samples = fit_integration(
+  #     #   segments = segment.group$segments, obs = segment.group$obs, niter = 1e4, 
+  #     #   ncheckpoints = 1e2, inits = init$inits, priors = priors, 
+  #     #   ctds_domain = sim_domain, checkpoint_fn = checkpoint_fn
+  #     # )
+  #     # 
+  #     # # return 
+  #     # checkpoint_fn(samples)
+  #     
+  #     # return file name
+  #     f
+  #   },
+  #   transform = map(init_fits),
+  #   format = 'file'
+  # ),
+  # 
+  # # summarize approximate posterior
+  # gibbs_summaries = target(
+  #   command = {
+  #     if(file.exists(gibbs_fits)) {
+  #       # read mcmc output
+  #       mcout = readRDS(gibbs_fits)
+  #       # extract posterior samples for model parameters
+  #       niter = sum(mcout$samples$ll != 0)
+  #       nburn = 1e3
+  #       m = mcmc(mcout$samples$param_vec[nburn:niter, , drop = FALSE])
+  #       # aggregate and return posterior summaries
+  #       hpd = HPDinterval(m)
+  #       data.frame(
+  #         parameter = c('beta_ar', 'beta_loc'),
+  #         mean = colMeans(m),
+  #         se = apply(m, 2, sd),
+  #         lwr = hpd[, 1],
+  #         upr = hpd[, 2],
+  #         obs_per_second = mcout[['obs_per_sec']],
+  #         truth = c(mcout$params[['beta_ar']], mcout$params[['beta_loc']])
+  #       ) %>% 
+  #         dplyr::mutate(covered = lwr <= truth & truth <= upr)
+  #     } else {
+  #       NULL
+  #     }
+  #   },
+  #   transform = map(gibbs_fits),
+  #   hpc = TRUE
+  # ),
   
   # gibbs_summary_plots = target(
   #   command = {
