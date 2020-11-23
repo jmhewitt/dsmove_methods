@@ -99,33 +99,24 @@ fit_hanks = function(ctds_struct, ctds_obs, weibull_est) {
   ##
   ##########################################################################
   
-  if(weibull_est) {
-    fit = glm(z ~ crw, weights = rep(1/P, nrow(glm.data)), 
-              family = "poisson", offset = log(tau), data = glm.data)
-  } else {
-    X = cbind(1, glm.data$crw)
-    offsets = log(glm.data$tau)
-    fit = optim(par = c(0,0,1), fn = function(theta) {
-      ll = 0
-      log_lambdas = X %*% theta[1:2]
-      for(i in 1:(nrow(glm.data)/4)) {
-        inds = (i-1)*4 + 1:4
-        lambdas = exp(log_lambdas[inds])
-        lambdas_total = sum(lambdas)
-        tau = glm.data$tau[inds[1]]
-        ll = ll +
-          # cell transition
-          sum(log_lambdas[inds] * glm.data$z[inds]) - log(lambdas_total) +
-          # weibull cell duration
-          # dweibull(x = tau, shape = theta[3], scale = 1/lambdas_total, 
-          #          log = TRUE)
-          dweibull(x = tau, shape = theta[3], scale = 1/exp(theta[1]), 
-                   log = TRUE)
-      }
-      ll/P
-    }, control = list(fnscale = -1), hessian = TRUE)
-  }
-  
+  X = cbind(1, glm.data$crw)
+  offsets = log(glm.data$tau)
+  fit = optim(par = c(0,0), fn = function(theta) {
+    ll = 0
+    log_lambdas = X %*% theta[1:2]
+    for(i in 1:(nrow(glm.data)/4)) {
+      inds = (i-1)*4 + 1:4
+      lambdas = exp(log_lambdas[inds])
+      lambdas_total = sum(lambdas)
+      tau = glm.data$tau[inds[1]]
+      ll = ll +
+        # cell transition
+        sum(log_lambdas[inds] * glm.data$z[inds]) - log(lambdas_total) +
+        # exponential cell duration
+        dexp(x = tau, rate = exp(theta[1]), log = TRUE)
+    }
+    ll/P
+  }, control = list(fnscale = -1), hessian = TRUE)
   
   list(
     fit = fit,
