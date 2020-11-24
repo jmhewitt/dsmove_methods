@@ -45,7 +45,7 @@ simulation_plan = drake_plan(
   prior_params = target(
     list(
       beta_ar = list(mean = 0, sd = 1e2),
-      beta_loc = list(mean = sim_params_1$beta_loc[1], sd = 1e-8)
+      beta_loc = list(mean = sim_params_1$beta_loc[1], sd = 1e-4)
     ),
     hpc = FALSE
   ),
