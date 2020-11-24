@@ -44,15 +44,23 @@ simulation_plan = drake_plan(
   
   prior_params = target(
     list(
-      # maximum transition rate allowed for imputations. chosen such that 
-      # max_lambda >> exp(max(sim_domain$Xloc %*% sim_params_1$beta_loc))
-      max_lambda = 5,
-      p_max = .99,
       beta_ar = list(mean = 0, sd = 1e2),
       beta_loc = list(mean = sim_params_1$beta_loc[1], sd = 1e-16)
     ),
     hpc = FALSE
   ),
+  
+  imputation_params = target(
+    list(
+      # maximum transition rate allowed for imputations. chosen such that 
+      # max_lambda >> exp(max(sim_domain$Xloc %*% sim_params_1$beta_loc))
+      max_lambda = 5,
+      p_max = .99
+    ),
+    hpc = FALSE
+  ),
+  
+  
   
   # simulate a CTDS trajectory
   sim_trajectory = target(
@@ -153,8 +161,9 @@ simulation_plan = drake_plan(
       # sample segments
       segments = sample_segments(states = obs$states, times = obs$times, 
                                  ctds_domain = sim_domain, 
-                                 max_lambda = prior_params$max_lambda, 
-                                 p_max = prior_params$p_max, nsamples = 100)
+                                 max_lambda = imputation_params$max_lambda, 
+                                 p_max = imputation_params$p_max, 
+                                 nsamples = 100)
       # save object
       f = file.path(sim_dir, paste(id_chr(), '.rds', sep = ''))
       saveRDS(list(params = sim$params, segments = segments, obs = obs), 
