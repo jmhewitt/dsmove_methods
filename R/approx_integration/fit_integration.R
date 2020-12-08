@@ -125,10 +125,18 @@ fit_integration = function(segments, obs, inits, priors, niter, ctds_domain,
         ll_prop = lpfn(theta = param_vec, epath = x_prop$epath, 
                        durations = diff(x_prop$tpath))
         
+        ltrange = log(obs$times[i] - obs$times[i-1])
+        ntimesprop = length(prop_components$tpath)
+        ntimespath = length(path_components[[i]]$tpath)
+        
         # accept/reject 
         logR = ll_prop - ll0 + 
+          # path proposal
           log(pathwts[[i-1]]$w[path_components[[i]]$path_ind]) -
-          log(pathwts[[i-1]]$w[prop_components$path_ind])
+          log(pathwts[[i-1]]$w[prop_components$path_ind]) + 
+          # times proposal
+          (lfactorial(ntimespath) - ntimespath * ltrange ) -
+          (lfactorial(ntimesprop) - ntimesprop * ltrange )
         accept = log(runif(n = 1)) < logR
         
         if(accept) {
