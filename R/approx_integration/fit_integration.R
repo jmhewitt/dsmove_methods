@@ -5,8 +5,14 @@ fit_integration = function(segments, obs, inits, priors, niter, ctds_domain,
   pathwts = lapply(segments, function(sfam) {
     do.call(rbind, lapply(1:length(sfam), function(lengthind) {
       s = sfam[[lengthind]]
-      npaths = ifelse(is.null(s$paths), 1, nrow(s$paths))
-      data.frame(lengthind = lengthind, pathind = 1:npaths, w = s$weights)
+      if(is.null(s$paths)) {
+        npaths = 1
+        s$ll = 0
+      } else {
+        npaths = nrow(s$paths)
+      }
+      data.frame(lengthind = lengthind, pathind = 1:npaths, w = s$weights, 
+                 ll = s$ll)
     }))
   })
   
@@ -131,9 +137,12 @@ fit_integration = function(segments, obs, inits, priors, niter, ctds_domain,
         
         # accept/reject 
         logR = ll_prop - ll0 + 
-          # path proposal
+          # path length proposal
           log(pathwts[[i-1]]$w[path_components[[i]]$path_ind]) -
           log(pathwts[[i-1]]$w[prop_components$path_ind]) + 
+          # exact path proposal
+          pathwts[[i-1]]$ll[path_components[[i]]$path_ind] -
+          pathwts[[i-1]]$ll[prop_components$path_ind] + 
           # times proposal
           (lfactorial(ntimespath) - ntimespath * ltrange ) -
           (lfactorial(ntimesprop) - ntimesprop * ltrange )

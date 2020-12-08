@@ -60,22 +60,25 @@ sample_segments = function(states, times, ctds_domain, max_lambda, p_max,
     npaths = npaths[nzpaths]
     pathlens = pathlens[nzpaths]
     # sample path segments
-    lapply(1:length(pathlens), function(j) {
+    lapply(1:length(pathlens), function(j) {  
       if(pathlens[j] == 0) {
         list(paths = NULL, weights = npaths[j] / nsamples)
       } else {
         # backward-sample paths
-        paths = data.frame(matrix(
-          ctds.bsrw(n = npaths[j], ctds_struct = ctds_domain, af = af,
-                    ff = ff[1:(pathlens[j]+1)]), 
-          nrow = npaths[j], byrow = TRUE
+        samples = ctds.bsrw(n = npaths[j], ctds_struct = ctds_domain, af = af,
+                            ff = ff[1:(pathlens[j]+1)])
+        paths = data.frame(cbind(
+          do.call(rbind, lapply(samples, function(x) x$path)),
+          sapply(samples, function(x) x$ll)
         ))
         colnames(paths) = paste('e', 1:pathlens[j], sep = '')
+        colnames(paths)[ncol(paths)] = 'll'
         # count and consolidate duplicate paths
         paths.aggregated = aggregate(cbind(paths[0], numdup = 1), paths, length)
         # format return
         list(paths = paths.aggregated[, 1:pathlens[j], drop = FALSE],
-             weights = paths.aggregated$numdup / nsamples)
+             weights = paths.aggregated$numdup / nsamples,
+             ll = paths.aggregated[, 'll'])
       }
     })
   })

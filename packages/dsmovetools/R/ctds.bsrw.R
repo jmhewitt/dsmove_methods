@@ -29,9 +29,11 @@ ctds.bsrw = function(n, ctds_struct, af, ff) {
     # initialize path
     p = numeric(length = len)
     nzinds = which(b > 0)
-    p[len] = ifelse(length(nzinds) > 1, 
-                    sample(x = nzinds, size = 1, prob = b[nzinds]),
-                    nzinds)
+    sampled_ind = ifelse(length(nzinds) > 1, 
+                         sample(x = length(nzinds), size = 1, prob = b[nzinds]),
+                         1)
+    p[len] = nzinds[sampled_ind]
+    ll = log(b[nzinds][sampled_ind])
     # backward-sample
     if(len > 1) {
       for(k in (len-1):1) {
@@ -46,14 +48,16 @@ ctds.bsrw = function(n, ctds_struct, af, ff) {
         bs[in_edges] = ff[[k+1]][in_edges]
         # sample next edge
         nzinds = which(bs > 0)
-        p[k] = ifelse(length(nzinds) > 1, 
-                      sample(x = nzinds, size = 1, prob = bs[nzinds]),
-                      nzinds)
+        sampled_ind = ifelse(length(nzinds) > 1,
+                             sample(x = length(nzinds), size = 1, prob = bs[nzinds]),
+                             1)
+        p[k] = nzinds[sampled_ind]
+        ll = ll + log(bs[nzinds][sampled_ind])
       }
     }
     # return path
-    p
-  })
+    list(path = p, ll = ll)
+  }, simplify = FALSE)
   
   paths
 }
