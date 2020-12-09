@@ -104,10 +104,13 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
              beta_loc = matrix(theta[-1], ncol = 1), beta_dir = 0,
              beta_ar = theta[1], ctds_struct = ctds_domain) + 
     # prior
-    dnorm(x = theta[1], mean = priors$beta_ar$mean, 
-          sd = priors$beta_ar$sd, log = TRUE) + 
-    dnorm(x = theta[-1], mean = priors$beta_loc$mean, 
-          sd = priors$beta_loc$sd, log = TRUE)
+    # dnorm(x = theta[1], mean = priors$beta_ar$mean, 
+    #       sd = priors$beta_ar$sd, log = TRUE) + 
+    # dnorm(x = theta[-1], mean = priors$beta_loc$mean, 
+    #       sd = priors$beta_loc$sd, log = TRUE)
+    joint_prior(beta_loc = theta[-1], beta_ar = theta[1], 
+                ctds_struct = ctds_domain, penalty_rate = priors$penalty_rate,
+                log = TRUE)
   }
   
   # posterior mode for initial conditions
@@ -164,13 +167,11 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
         x_prop = extract_segment(epath = epath_prop, tpath = tpath_prop, 
                                  tmin = obs$times[i-1], tmax = obs$times[i])
         
-        
         # compute likelihood on original and changed path segments
         ll0 = lpfn(theta = param_vec, epath = x0$epath, 
                    durations = diff(x0$tpath))
         ll_prop = lpfn(theta = param_vec, epath = x_prop$epath, 
                        durations = diff(x_prop$tpath))
-        
         
         ltrange = log(obs$times[i] - obs$times[i-1])
         ntimesprop = length(prop_components$tpath)
@@ -181,9 +182,6 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
           # path proposal
           log(pathwts[[i-1]]$w[path_components[[i]]$path_ind]) -
           log(pathwts[[i-1]]$w[prop_components$path_ind]) + 
-          # # exact path proposal
-          # pathwts[[i-1]]$ll[path_components[[i]]$path_ind] -
-          # pathwts[[i-1]]$ll[prop_components$path_ind] + 
           # times proposal
           (lfactorial(ntimespath) - ntimespath * ltrange ) -
           (lfactorial(ntimesprop) - ntimesprop * ltrange )
