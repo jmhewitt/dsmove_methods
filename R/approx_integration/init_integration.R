@@ -178,12 +178,12 @@ init_integration = function(segments, obs, inits, priors, niter, ctds_domain,
         
         # accept/reject 
         logR = ll_prop - ll0 + 
-          # path length proposal
+          # path proposal
           log(pathwts[[i-1]]$w[path_components[[i]]$path_ind]) -
           log(pathwts[[i-1]]$w[prop_components$path_ind]) + 
-          # exact path proposal
-          pathwts[[i-1]]$ll[path_components[[i]]$path_ind] -
-          pathwts[[i-1]]$ll[prop_components$path_ind] + 
+          # # exact path proposal
+          # pathwts[[i-1]]$ll[path_components[[i]]$path_ind] -
+          # pathwts[[i-1]]$ll[prop_components$path_ind] + 
           # times proposal
           (lfactorial(ntimespath) - ntimespath * ltrange ) -
           (lfactorial(ntimesprop) - ntimesprop * ltrange )
