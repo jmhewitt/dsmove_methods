@@ -329,21 +329,24 @@ simulation_plan = drake_plan(
       # set file output
       f = file.path(sim_dir, paste(id_chr(), '.rds', sep = ''))
 
+      # extract priors
+      priors = init[['prior_params']]
+      
       # sample save function
       checkpoint_fn = function(samples) {
         o = list(
           samples = samples,
           obs_per_sec = 1/unique(diff(segment.group$obs$times)),
           params = segment.group$params,
-          priors = prior_params
+          priors = priors
         )
         saveRDS(o, file = f)
       }
 
       # run gibbs sampler
       samples = fit_integration(
-        segments = segment.group$segments, obs = segment.group$obs, niter = 1e4,
-        ncheckpoints = 1e2, inits = init$inits, priors = init_fits$prior_params,
+        segments = segment.group$segments, obs = segment.group$obs, niter = 1e3,
+        ncheckpoints = 1e2, inits = init$inits, priors = priors,
         ctds_domain = sim_domain, checkpoint_fn = checkpoint_fn
       )
 
