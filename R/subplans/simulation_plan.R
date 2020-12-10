@@ -194,9 +194,10 @@ simulation_plan = drake_plan(
                                 inits = list(beta_loc = 0, beta_ar = 0), 
                                 priors = prior_params, niter = 50,  u = useq,
                                 ctds_domain = sim_domain)
-      list(list(inits = inits, file.segments = impute_segments))
+      list(list(inits = inits, file.segments = impute_segments, 
+                prior_params = prior_params))
     },
-    transform = map(impute_segments),
+    transform = cross(impute_segments, prior_params),
     dynamic = map(useq),
     format = 'rds',
     hpc = TRUE
@@ -305,7 +306,7 @@ simulation_plan = drake_plan(
     transform = map(init_fits),
     hpc = TRUE,
     format = 'file'
-  )
+  ),
   
   # # approximate posterior for initial path with highest log-posterior
   # gibbs_fits = target(
