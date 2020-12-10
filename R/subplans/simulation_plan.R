@@ -62,8 +62,6 @@ simulation_plan = drake_plan(
     hpc = FALSE
   ),
   
-  
-  
   # simulate a CTDS trajectory
   sim_trajectory = target(
     command = {
@@ -103,7 +101,7 @@ simulation_plan = drake_plan(
       f
     },
     transform = cross(sim_trajectory, 
-                      obs_per_sec = c(0.5, 1, 2, 4, 8)),
+                      obs_per_sec = c(0.125, 0.25, 0.5, 1, 2, 4)),
     format = 'file',
     hpc = FALSE
   ),
