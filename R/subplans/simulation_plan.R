@@ -46,9 +46,10 @@ simulation_plan = drake_plan(
     list(
       beta_ar = list(mean = 0, sd = 1e2),
       beta_loc = list(mean = sim_params_1$beta_loc[1], sd = 1e2),
-      penalty_rate = 1/0.125
+      penalty_rate = penalty_rate
     ),
-    hpc = FALSE
+    hpc = FALSE,
+    transform = map(penalty_rate = c(0.0625, 0.125, 0.25, 0.5))
   ),
   
   imputation_params = target(
