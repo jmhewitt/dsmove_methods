@@ -54,11 +54,14 @@ fit_integration = function(segments, obs, inits, priors, niter, ctds_domain,
     ll_exact(epath = epath, durations = durations,
              beta_loc = matrix(theta[-1], ncol = 1), beta_dir = 0,
              beta_ar = theta[1], ctds_struct = ctds_domain) + 
-    # prior
-    dnorm(x = theta[1], mean = priors$beta_ar$mean, 
-          sd = priors$beta_ar$sd, log = TRUE) + 
-      dnorm(x = theta[-1], mean = priors$beta_loc$mean, 
-            sd = priors$beta_loc$sd, log = TRUE)
+      # prior
+      # dnorm(x = theta[1], mean = priors$beta_ar$mean, 
+      #       sd = priors$beta_ar$sd, log = TRUE) + 
+      # dnorm(x = theta[-1], mean = priors$beta_loc$mean, 
+      #       sd = priors$beta_loc$sd, log = TRUE)
+      joint_prior(beta_loc = theta[-1], beta_ar = theta[1], 
+                  ctds_struct = ctds_domain, penalty_rate = priors$penalty_rate,
+                  log = TRUE)
   }
   
   # construct MHRW sampler
@@ -140,9 +143,6 @@ fit_integration = function(segments, obs, inits, priors, niter, ctds_domain,
           # path proposal
           log(pathwts[[i-1]]$w[path_components[[i]]$path_ind]) -
           log(pathwts[[i-1]]$w[prop_components$path_ind]) + 
-          # # exact path proposal
-          # pathwts[[i-1]]$ll[path_components[[i]]$path_ind] -
-          # pathwts[[i-1]]$ll[prop_components$path_ind] + 
           # times proposal
           (lfactorial(ntimespath) - ntimespath * ltrange ) -
           (lfactorial(ntimesprop) - ntimesprop * ltrange )
