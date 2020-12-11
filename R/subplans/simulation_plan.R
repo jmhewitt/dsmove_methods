@@ -345,7 +345,7 @@ simulation_plan = drake_plan(
 
       # run gibbs sampler
       samples = fit_integration(
-        segments = segment.group$segments, obs = segment.group$obs, niter = 1e3,
+        segments = segment.group$segments, obs = segment.group$obs, niter = 1e4,
         ncheckpoints = 1e2, inits = init$inits, priors = priors,
         ctds_domain = sim_domain, checkpoint_fn = checkpoint_fn
       )
