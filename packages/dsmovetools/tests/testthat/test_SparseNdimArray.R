@@ -1,0 +1,33 @@
+context('SparseNDimArray.h C++ methods')
+
+test_that('Validating basic input and output', {
+
+  # number of dimensions
+  dim = 3
+  # number of coordinates
+  n = 10
+  
+  # random coordinates and values
+  coords = matrix(runif(n*dim), nrow = n)
+  x = runif(n)
+  
+  # lexicographic ordering fn. from statnet.common package
+  # author: Pavel N. Krivitsky
+  order.matrix<-function(..., na.last = TRUE, decreasing=FALSE){
+    x <- list(...)[[1L]]
+    do.call(base::order,c(lapply(seq_len(ncol(x)), function(i) x[,i]), 
+                          na.last=na.last, 
+                          decreasing=decreasing)
+    )
+  }
+  
+  # lexicographic ordering for coordinates
+  o = order.matrix(coords)
+  
+  # verify r/w data to the SparseNDimArray class in a predictable manner
+  expect_identical(
+    cbind(coords[o,,drop = FALSE], x[o]),
+    TestSparseNdimArrayReadWrite(coords = coords, values = x)
+  )
+  
+})
