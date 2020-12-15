@@ -9,3 +9,7 @@ TestSparseNdimArrayReadWrite <- function(coords, values) {
     .Call('_dsmovetools_TestSparseNdimArrayReadWrite', PACKAGE = 'dsmovetools', coords, values)
 }
 
+TestFFRW <- function(a0coords, a0values, dims, steps) {
+    .Call('_dsmovetools_TestFFRW', PACKAGE = 'dsmovetools', a0coords, a0values, dims, steps)
+}
+

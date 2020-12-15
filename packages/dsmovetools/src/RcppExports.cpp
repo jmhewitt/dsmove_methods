@@ -7,13 +7,13 @@
 using namespace Rcpp;
 
 // TestRookNeighborhood
-NumericMatrix TestRookNeighborhood(std::vector<uint> dims, std::vector<uint> x);
+NumericMatrix TestRookNeighborhood(std::vector<int> dims, std::vector<int> x);
 RcppExport SEXP _dsmovetools_TestRookNeighborhood(SEXP dimsSEXP, SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< std::vector<uint> >::type dims(dimsSEXP);
-    Rcpp::traits::input_parameter< std::vector<uint> >::type x(xSEXP);
+    Rcpp::traits::input_parameter< std::vector<int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< std::vector<int> >::type x(xSEXP);
     rcpp_result_gen = Rcpp::wrap(TestRookNeighborhood(dims, x));
     return rcpp_result_gen;
 END_RCPP
@@ -30,10 +30,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// TestFFRW
+NumericMatrix TestFFRW(NumericMatrix a0coords, NumericVector a0values, std::vector<int> dims, int steps);
+RcppExport SEXP _dsmovetools_TestFFRW(SEXP a0coordsSEXP, SEXP a0valuesSEXP, SEXP dimsSEXP, SEXP stepsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type a0coords(a0coordsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type a0values(a0valuesSEXP);
+    Rcpp::traits::input_parameter< std::vector<int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< int >::type steps(stepsSEXP);
+    rcpp_result_gen = Rcpp::wrap(TestFFRW(a0coords, a0values, dims, steps));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_TestRookNeighborhood", (DL_FUNC) &_dsmovetools_TestRookNeighborhood, 2},
     {"_dsmovetools_TestSparseNdimArrayReadWrite", (DL_FUNC) &_dsmovetools_TestSparseNdimArrayReadWrite, 2},
+    {"_dsmovetools_TestFFRW", (DL_FUNC) &_dsmovetools_TestFFRW, 4},
     {NULL, NULL, 0}
 };
 

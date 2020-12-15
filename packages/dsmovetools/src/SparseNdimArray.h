@@ -13,6 +13,7 @@ class SparseNdimArray {
         Storage data;
 
         void set(const Index&, const ValueType&);
+        void add(const Index&, const ValueType&);
         ValueType get(const Index&);
 
 };
@@ -20,6 +21,11 @@ class SparseNdimArray {
 template <typename Index, typename ValueType, typename Storage>
 void SparseNdimArray<Index, ValueType, Storage>::set(const Index &i, const ValueType &v) {
     data[i] = v;
+}
+
+template <typename Index, typename ValueType, typename Storage>
+void SparseNdimArray<Index, ValueType, Storage>::add(const Index &i, const ValueType &v) {
+    data[i] += v;
 }
 
 template <typename Index, typename ValueType, typename Storage>
