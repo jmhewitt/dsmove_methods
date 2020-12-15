@@ -257,3 +257,25 @@ test_that('Validating feasibility on a large, 3D grid', {
   
   expect_equal(sum(xf[,4]), 1)
 })
+
+
+test_that('Validating lightweight implementation of forward filtering', {
+  
+  # number of dimensions
+  ndim = 2
+  # number of coordinates in each dimension
+  dims = c(100, 100)
+  
+  # initial probability mass
+  x0 = matrix(c(4,8, 1,0), ncol = ndim, byrow = TRUE)
+  p0 = runif(2)
+  p0 = p0 / sum(p0)
+  
+  nsteps = 50
+  
+  expect_equal(
+    TestFFRWLight(a0coords = x0, a0values = p0, dims = dims, steps = nsteps),
+    TestFFRW(a0coords = x0, a0values = p0, dims = dims, steps = nsteps)
+  )
+  
+})
