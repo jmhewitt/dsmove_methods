@@ -6,6 +6,18 @@
 
 using namespace Rcpp;
 
+// TestRookNeighborhood
+NumericMatrix TestRookNeighborhood(std::vector<uint> dims, std::vector<uint> x);
+RcppExport SEXP _dsmovetools_TestRookNeighborhood(SEXP dimsSEXP, SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<uint> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< std::vector<uint> >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(TestRookNeighborhood(dims, x));
+    return rcpp_result_gen;
+END_RCPP
+}
 // TestSparseNdimArrayReadWrite
 NumericMatrix TestSparseNdimArrayReadWrite(NumericMatrix coords, NumericVector values);
 RcppExport SEXP _dsmovetools_TestSparseNdimArrayReadWrite(SEXP coordsSEXP, SEXP valuesSEXP) {
@@ -20,6 +32,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_dsmovetools_TestRookNeighborhood", (DL_FUNC) &_dsmovetools_TestRookNeighborhood, 2},
     {"_dsmovetools_TestSparseNdimArrayReadWrite", (DL_FUNC) &_dsmovetools_TestSparseNdimArrayReadWrite, 2},
     {NULL, NULL, 0}
 };
