@@ -1,0 +1,345 @@
+---
+title: "NAVFAC Harbor Seals Exploration"
+author: "Josh"
+date: "12/16/2020"
+output: 
+  pdf_document:
+    number_sections: true
+---
+
+# Overview
+
+Living document with some basic explorations of SATTAG data to better understand the (computational) complexity of the analysis.  Specifically, ultimate goals are to try to investigate:
+
+1. Size of discrete spatial domain.
+3. Prior information about an animal's maximum speed, and how this influences the lengths of longest paths between observations.
+2. Lengths of shortest paths between observations.
+4. (Throughout) Points that should be excluded from analysis.  For example, this includes observations with redundant timestamps and observations with nearly-redundant timestamps but large disagreement in location, potentially due to ARGOS measurement error.  If large disagreements are within measurement error, then the analysis could include the points as long as measurement error is incdlued in analysis.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE, message = FALSE, fig.align = 'center')
+```
+
+```{r libraries, warning=FALSE}
+library(readr)
+library(dplyr)
+library(fields)
+library(ggplot2)
+library(ggthemes)
+library(ggspatial)
+library(ggpubr)
+library(ncdf4)
+library(raster)
+library(sp)
+library(mapproj)
+library(ggnewscale)
+library(viridis)
+library(scales)
+```
+
+```{r load_gps}
+# subject to explore
+animal_id = 166450
+
+# load all gps data
+daflocsAll <- readr::read_csv(
+  file.path('..', '..', 'data', 'NAVFAC-Harbor-Seals', 
+            '2018-06-20-navfacOutput.txt')
+)
+
+# remove poor GPS fixes
+daflocs <- dplyr::filter(daflocsAll, outlier_al == 0)
+
+# extract data for individual animal
+animalobs = daflocs %>% filter(tag_ident == animal_id)
+```
+
+```{r load_bathymetry}
+# set spatial extents to extract
+extent_vec = c(min_lon = -77, max_lon = -69, min_lat = 35, max_lat = 42)
+# extent_vec = c(min_lon = -75, max_lon = -70, min_lat = 38, max_lat = 41)
+
+domain.extent = extent(extent_vec)
+
+# load, crop, and merge bathymetry files
+bathy = do.call(merge, lapply(
+  dir(path = file.path('..', '..', 'data', 'STRM_15_PLUS'), pattern = '.nc',
+      full.names = TRUE),
+  function(f) crop(raster(f), domain.extent)
+))
+
+# set CRS
+crs(bathy) = '+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0'
+```
+
+```{r ellipse_fn}
+ellipsePoints = function(center, major, minor, angle, segments) {
+  angles = (0:segments) * 2 * pi/segments
+  unit.circle = cbind(cos(angles), sin(angles))
+  cos.angle = cos(angle)
+  sin.angle = sin(angle)
+  Q = matrix(c(
+    minor * cos.angle, minor * -sin.angle,
+    major * sin.angle, major * cos.angle
+  ), ncol = 2, byrow = TRUE)
+  t(center + t(unit.circle %*% Q))
+}
+```
+
+```{r preassemble_plot}
+# plotting projection
+plot_crs = '+proj=aea +lat_1=27.333 +lat_2=40.666 +lon_0=-78'
+
+animalobs.unprojected = SpatialPoints(
+  coords = animalobs[, c('long', 'lat')], 
+  proj4string = crs(bathy)
+)
+
+obserrors.projected = do.call(rbind,apply(
+  animalobs[, c('FID', 'long', 'lat', 'semi_major', 'semi_minor', 'orientatio')], 1,
+  function(r) {
+    # project lon/lat GPS reading to a local coordinate system
+    # so that the coordinates are compatible with the error scale (m)
+    ctr = SpatialPoints(coords = matrix(r[c('long', 'lat')], nrow = 1), 
+                        proj4string = crs(bathy))
+    ctr.projected = spTransform(ctr, CRS(plot_crs))
+    # points for error ellipse
+    res = data.frame(
+      ellipsePoints(center = as.numeric(coordinates(ctr.projected)), 
+                  major = as.numeric(r['semi_major']), 
+                  minor = as.numeric(r['semi_minor']), segments = 50,
+                  angle = (90 - as.numeric(r['orientatio'])) / 180 * pi)
+    )
+    res$id = r['FID']
+    res
+}))
+
+# projected GPS coordinates, for plotting
+animalobs.projected = spTransform(animalobs.unprojected, CRS(plot_crs))
+
+# subsample data, for faster plotting
+bathy.downsampled = sampleRegular(x = bathy, size = 1e6, asRaster = TRUE)
+
+# projected bathymetry coordinates, for plotting
+bathy.projected = projectRaster(from = bathy.downsampled, crs = plot_crs)
+
+# separate land from bathymetry
+land.mask = bathy.projected
+land.mask[land.mask <= 0] = NA
+land.mask[land.mask > 0] = 1
+bathy.projected[bathy.projected > 0] = NA
+bathy.projected = bathy.projected * -1
+
+# munge raster to tidy format
+df = data.frame(coordinates(bathy.projected), depth = values(bathy.projected))
+df.land = data.frame(coordinates(land.mask), mask = values(land.mask))
+
+```
+
+# Spatial domain
+
+```{r build_plot, dependson='preassemble_plot', fig.cap='GPS tracks with ARGOS error ellipses for target animal, plotted against bathymetry and coastline.'}
+# plot gps track against bathymetry and coastline
+ggplot(mapping = aes(x = x, y = y)) + 
+  # bathymetry
+  geom_raster(mapping = aes(fill = depth), data = df) + 
+  scale_fill_distiller('Depth (m)', palette = 'Blues', direction = -1,
+                       na.value = 'transparent', trans = 'reverse') +
+  # land mask
+  new_scale_fill() + 
+  guides(fill = 'none') + 
+  geom_raster(mapping = aes(fill = mask), data = df.land) + 
+  scale_fill_viridis_c(na.value = 'transparent') +
+  # observation error ellipses
+  geom_polygon(mapping = aes(x = X1, y = X2, group = id), 
+               data = obserrors.projected, inherit.aes = FALSE, 
+               fill = NA, col = rgb(0,0,0,.2), size = .125) + 
+  # observations
+  geom_path(mapping = aes(x = long, y = lat), inherit.aes = FALSE,
+            data = data.frame(animalobs.projected)) +
+  geom_point(mapping = aes(x = long, y = lat), inherit.aes = FALSE,
+             data = data.frame(animalobs.projected), size = .5) +
+  # map extent labels
+  scale_x_continuous(
+    breaks = range(coordinates(bathy.projected)[,1]),
+    labels = telefit:::lon_trans()$format(
+      extent_vec[c('min_lon', 'max_lon')]
+  )) +
+  scale_y_continuous(
+    breaks = range(coordinates(bathy.projected)[,2]),
+    labels = telefit:::lat_trans()$format(
+      extent_vec[c('min_lat', 'max_lat')]
+  )) +
+  # formatting
+  coord_equal() + 
+  theme_few() + 
+  theme(panel.border = element_blank(), 
+        axis.title = element_blank(), 
+        axis.ticks = element_blank())
+
+```
+
+```{r, eval = FALSE}
+# compute distances between observations (in km)
+obs_dists = sapply(2:nrow(animalobs), function(obs_ind) {
+  rdist.earth(x1 = as.matrix(animalobs[obs_ind - 1, c('long','lat')]),
+              x2 = as.matrix(animalobs[obs_ind, c('long','lat')]), 
+              miles = FALSE)
+})
+```
+
+```{r observed_distances}
+# distances between gps fixes (km)
+obs_changes = data.frame(
+  dist = sapply(2:nrow(animalobs), function(obs_ind) {
+    rdist.earth(x1 = as.matrix(animalobs[obs_ind - 1, c('long','lat')]),
+                x2 = as.matrix(animalobs[obs_ind, c('long','lat')]), 
+                miles = FALSE)
+    })
+)
+
+# times between gps fixes (h)
+obs_changes$time = diff(animalobs$timestamp)
+units(obs_changes$time) = 'hours'
+```
+
+# Observed speeds
+
+```{r plot_obs_speeds, fig.cap='We see that distances decrease with speed, which is important because there are a few pairs of observations with identical timestamps.  This EDA plot suggests we can treat the redundant timestamps as equivalent observations, and use timestamps to deduplicate data.', fig.height=4, fig.width=8,}
+pl1 = ggplot(obs_changes, aes(x = time, y = dist)) + 
+  geom_point() + 
+  xlab('Time between observations (h)') + 
+  # ylab('Distance between observations (km)') + 
+  ylab('') + 
+  theme_few() + 
+  theme(panel.border = element_blank()) + 
+  ggtitle('All times')
+
+pl2 = ggplot(obs_changes %>% filter(time<.5), aes(x = time, y = dist)) + 
+  geom_point() + 
+  xlab('Time between observations (h)') + 
+  ylab('Distance between observations (km)') +
+  theme_few() + 
+  theme(panel.border = element_blank()) + 
+  ggtitle('Short times')
+
+ggarrange(pl2, pl1, ncol = 2)
+```
+
+```{r observed_speeds}
+# compute the average speed between observations, 
+# but only for non-duplicate timestamps
+finite_speeds = obs_changes %>% 
+  filter(time > 0) %>% 
+  mutate(speed = dist/as.numeric(time))
+```
+
+```{r observed_speed_plot, fig.cap='A) Empirical, average speed the animal was moving between GPS fixes (after removing duplicate timestamps, which would otherwise suggest infinite speed).  B) The fastest speeds are associated with measurements taken at very short time intervals.  In conjunction with Figure \\ref{fig:plot_obs_speeds}, the issue might be due to ARGOS measurement error because there are many temporally-adjacent observations that have apparently large distances between them.', fig.height=4, fig.width=8}
+pl1 = ggplot(finite_speeds, aes(x = speed)) + 
+  stat_density(geom = 'line') + 
+  scale_x_log10('Observed speed (km/h)', labels = comma) + 
+  ylab('Density') + 
+  theme_few() + 
+  theme(panel.border = element_blank())
+
+# finite_speeds$ecdf = ecdf(finite_speeds$speed)(finite_speeds$speed)
+# pl2 = ggplot(finite_speeds %>% 
+#                dplyr::select(speed, ecdf) %>% 
+#                unique(), 
+#              aes(x = speed, y = ecdf)) + 
+#   geom_line() + 
+#   scale_x_log10('Observed speed (km/h)', labels = comma) + 
+#   ylab('Empirical CDF') + 
+#   geom_point() + 
+#   # theme_few() + 
+#   theme(panel.border = element_blank())
+
+pl2 = ggplot(finite_speeds, aes(x = as.numeric(time)*3600, y = speed)) + 
+  geom_point() + 
+  theme_few() + 
+  scale_x_log10('Time between observations (sec)', labels = comma) +
+  scale_y_log10('Observed speed (km/h)', labels = comma) + 
+  theme(panel.border = element_blank())
+  
+ggarrange(pl1, pl2, nrow = 1, labels = 'AUTO')
+```
+
+
+# Measurement error
+
+```{r build_plot_zoom, dependson='preassemble_plot', fig.cap='GPS tracks near Norfolk, VA with ARGOS error ellipses for target animal, plotted against bathymetry and coastline.', warning=FALSE}
+
+xlimcuts = c(0.12, .31)
+ylimcuts = c(.22, .41)
+
+convex_combination = function(points, alpha) {
+  sapply(alpha, function(a) {
+    points[1] * (1-a) + points[2] * a
+  })
+}
+
+xlims = convex_combination(range(coordinates(bathy.projected)[,1]), xlimcuts)
+ylims = convex_combination(range(coordinates(bathy.projected)[,2]), ylimcuts)
+
+cut_extents = SpatialPoints(expand.grid(x = xlims, y = ylims), CRS(plot_crs))
+cut_extents = spTransform(cut_extents, crs(bathy))
+
+# plot gps track against bathymetry and coastline
+ggplot(mapping = aes(x = x, y = y)) + 
+  # bathymetry
+  geom_raster(mapping = aes(fill = depth), data = df) + 
+  scale_fill_distiller('Depth (m)', palette = 'Blues', direction = -1,
+                       na.value = 'transparent', trans = 'reverse') +
+  # land mask
+  new_scale_fill() + 
+  guides(fill = 'none') + 
+  geom_raster(mapping = aes(fill = mask), data = df.land) + 
+  scale_fill_viridis_c(na.value = 'transparent') +
+  # observation error ellipses
+  geom_polygon(mapping = aes(x = X1, y = X2, group = id), 
+               data = obserrors.projected, inherit.aes = FALSE, 
+               fill = NA, col = rgb(0,0,0,.2), size = .125) + 
+  # observations
+  geom_path(mapping = aes(x = long, y = lat), inherit.aes = FALSE,
+            data = data.frame(animalobs.projected)) +
+  geom_point(mapping = aes(x = long, y = lat), inherit.aes = FALSE,
+             data = data.frame(animalobs.projected), size = .5) +
+  # map extent labels
+  scale_x_continuous(
+    breaks = xlims,
+    labels = telefit:::lon_trans()$format(
+      range(round(cut_extents@coords[,1]))
+    ), 
+    limits = xlims
+  ) +
+  scale_y_continuous(
+    breaks = ylims,
+    labels = telefit:::lat_trans()$format(
+      range(round(cut_extents@coords[,2]))
+    ),
+    limits = ylims
+  ) +
+  # formatting
+  coord_equal() + 
+  theme_few() + 
+  theme(panel.border = element_blank(), 
+        axis.title = element_blank(), 
+        axis.ticks = element_blank())
+```
+
+```{r measurement_error_parameterization}
+# Parameterizing covariance matrices following McClintock et al. (2015)
+error_params = apply(animalobs[, c('semi_major', 'semi_minor', 'orientatio')], 
+                     1, function(r) {
+  Mtsq = r['semi_major']^2
+  mtsq = r['semi_minor']^2
+  ct = (90 - r['orientatio']) / 180 * pi
+  ct.sin = sin(ct)
+  ct.cos = cos(ct)
+  sigma_xy = (Mtsq - mtsq) / 2 * ct.cos * ct.sin
+  matrix(c(
+    Mtsq / 2 * ct.sin^2 + mtsq / 2 * ct.cos^2, sigma_xy, 
+    sigma_xy, Mtsq / 2 * ct.cos^2 + mtsq / 2 * ct.sin^2
+  ), nrow = 2, byrow = TRUE)
+})
+```
