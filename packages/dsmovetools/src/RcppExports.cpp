@@ -31,16 +31,44 @@ BEGIN_RCPP
 END_RCPP
 }
 // TestFFRW
-NumericMatrix TestFFRW(NumericMatrix a0coords, NumericVector a0values, std::vector<int> dims, int steps);
+NumericMatrix TestFFRW(NumericMatrix a0coords, NumericVector a0values, std::vector<unsigned int> dims, int steps);
 RcppExport SEXP _dsmovetools_TestFFRW(SEXP a0coordsSEXP, SEXP a0valuesSEXP, SEXP dimsSEXP, SEXP stepsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type a0coords(a0coordsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type a0values(a0valuesSEXP);
-    Rcpp::traits::input_parameter< std::vector<int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type dims(dimsSEXP);
     Rcpp::traits::input_parameter< int >::type steps(stepsSEXP);
     rcpp_result_gen = Rcpp::wrap(TestFFRW(a0coords, a0values, dims, steps));
+    return rcpp_result_gen;
+END_RCPP
+}
+// TestFFRWLight
+NumericMatrix TestFFRWLight(NumericMatrix a0coords, NumericVector a0values, std::vector<unsigned int> dims, int steps);
+RcppExport SEXP _dsmovetools_TestFFRWLight(SEXP a0coordsSEXP, SEXP a0valuesSEXP, SEXP dimsSEXP, SEXP stepsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type a0coords(a0coordsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type a0values(a0valuesSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< int >::type steps(stepsSEXP);
+    rcpp_result_gen = Rcpp::wrap(TestFFRWLight(a0coords, a0values, dims, steps));
+    return rcpp_result_gen;
+END_RCPP
+}
+// TestFFRWLightLog
+NumericMatrix TestFFRWLightLog(NumericMatrix a0coords, NumericVector log_a0values, std::vector<unsigned int> dims, int steps);
+RcppExport SEXP _dsmovetools_TestFFRWLightLog(SEXP a0coordsSEXP, SEXP log_a0valuesSEXP, SEXP dimsSEXP, SEXP stepsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type a0coords(a0coordsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type log_a0values(log_a0valuesSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< int >::type steps(stepsSEXP);
+    rcpp_result_gen = Rcpp::wrap(TestFFRWLightLog(a0coords, log_a0values, dims, steps));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -49,6 +77,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_TestRookNeighborhood", (DL_FUNC) &_dsmovetools_TestRookNeighborhood, 2},
     {"_dsmovetools_TestSparseNdimArrayReadWrite", (DL_FUNC) &_dsmovetools_TestSparseNdimArrayReadWrite, 2},
     {"_dsmovetools_TestFFRW", (DL_FUNC) &_dsmovetools_TestFFRW, 4},
+    {"_dsmovetools_TestFFRWLight", (DL_FUNC) &_dsmovetools_TestFFRWLight, 4},
+    {"_dsmovetools_TestFFRWLightLog", (DL_FUNC) &_dsmovetools_TestFFRWLightLog, 4},
     {NULL, NULL, 0}
 };
 

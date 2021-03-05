@@ -13,3 +13,11 @@ TestFFRW <- function(a0coords, a0values, dims, steps) {
     .Call('_dsmovetools_TestFFRW', PACKAGE = 'dsmovetools', a0coords, a0values, dims, steps)
 }
 
+TestFFRWLight <- function(a0coords, a0values, dims, steps) {
+    .Call('_dsmovetools_TestFFRWLight', PACKAGE = 'dsmovetools', a0coords, a0values, dims, steps)
+}
+
+TestFFRWLightLog <- function(a0coords, log_a0values, dims, steps) {
+    .Call('_dsmovetools_TestFFRWLightLog', PACKAGE = 'dsmovetools', a0coords, log_a0values, dims, steps)
+}
+
