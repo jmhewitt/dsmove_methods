@@ -19,6 +19,35 @@ test_that('Validating random walk forward filtering on a grid: 1D simple', {
   
 })
 
+test_that('Validating random walk forward filtering on a grid: 1D, log-scale', {
+  
+  # number of dimensions
+  ndim = 1
+  # number of coordinates in each dimension
+  dims = 20
+  # number of steps to take
+  nsteps = 100
+  
+  # initial probability mass
+  coords = matrix(c(0,1), ncol = ndim)
+  p0 = rep(.5,2)
+  lp0 = log(p0)
+  
+  # standard evaluation of diffused mass
+  af_std = TestFFRWLight(a0coords = coords, a0values = p0, dims = dims, 
+                         steps = nsteps)
+  
+  # diffused probability mass accumulated on log scale
+  af_alt =TestFFRWLightLog(a0coords = coords, log_a0values = lp0, dims = dims, 
+                           steps = nsteps)
+  
+  # back-transform probabilities to (natural) linear scale
+  af_alt[,ncol(af_alt)] = exp(af_alt[,ncol(af_alt)])
+  
+  # n-step diffusion
+  expect_equal(af_std, af_alt)
+})
+
 test_that('Validating random walk forward filtering on a grid: 2D simple', {
 
   # number of dimensions
@@ -91,10 +120,14 @@ test_that('Validating random walk forward filtering on a grid: 2D simple', {
 
 test_that('Validating random walk forward filtering on a grid: 2D multiple', {
   
+  # NOTE: This test is slow because the P matrix benchmark is computationally
+  #  expensive both to construct and use in dense matrix multiplications.
+  #  Test is made faster by reducing dims from c(100,100) to c(25,25)
+  
   # number of dimensions
   ndim = 2
   # number of coordinates in each dimension
-  dims = c(10,10)
+  dims = c(25,25)
   # coordinates
   coords = expand.grid(x = 0:(dims[1]-1), y = 0:(dims[2]-1))
   
@@ -162,7 +195,6 @@ test_that('Validating random walk forward filtering on a grid: 2D multiple', {
     TestFFRW(a0coords = x0, a0values = p0, dims = dims, steps = nsteps),
     as.matrix(pstep(steps = nsteps, loc = x0, p0 = p0))
   )
-  
 })
 
 test_that('Validating random walk forward filtering on a grid: 2D two-step', {
@@ -258,6 +290,29 @@ test_that('Validating feasibility on a large, 3D grid', {
   expect_equal(sum(xf[,4]), 1)
 })
 
+test_that('Validating feasibility on a large, 3D grid with alternate methods', {
+
+  # This test is slow since the "Light" algorithm does lots of memory swapping,
+  # but the memory overhead is mostly fixed.
+  
+  # number of dimensions
+  ndim = 3
+  # number of coordinates in each dimension
+  dims = c(1128, 1287, 300)
+
+  # initial probability mass
+  x0 = matrix(c(4,8,0, 1,0,150), ncol = ndim, byrow = TRUE)
+  p0 = runif(2)
+  p0 = p0 / sum(p0)
+
+  # use smaller number of steps for faster package testing
+  # nsteps = 200
+  nsteps = 100
+  xf = TestFFRWLightLog(a0coords = x0, log_a0values = log(p0), dims = dims, 
+                        steps = nsteps)
+
+  expect_equal(sum(exp(xf[,4])), 1)
+})
 
 test_that('Validating lightweight implementation of forward filtering', {
   
