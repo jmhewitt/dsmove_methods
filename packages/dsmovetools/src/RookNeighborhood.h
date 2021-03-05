@@ -22,6 +22,7 @@ class RookNeighborhood {
         Index center;                       // neighborhood center
         std::vector<bool> lwr_nbr, upr_nbr; // indicators for whether nbr exists
         size_type nnbrs;                    // number of neighbors
+        double log_nnbrs;                   // log of number of neighbors
         size_type nbrs_visited;             // number of neighbors iterated over
         size_type dim_cur;                  // current dimension iterator is on
         bool onLwr;                         // true when iterator is on lower
@@ -34,6 +35,7 @@ class RookNeighborhood {
         }
         void setCenter(const Index&);
         size_type neighborhoodSize() { return nnbrs; }
+        double logNeighborhoodSize() { return log_nnbrs; }
         Index nextNeighbor();
 
 };
@@ -62,6 +64,8 @@ void RookNeighborhood<size_type, Index>::setCenter(const Index& coord) {
             break;
         }
     }
+    // update constants
+    log_nnbrs = log(nnbrs);
     // initialize neighborhood counters
     onLwr = true;
     dim_cur = 0;
