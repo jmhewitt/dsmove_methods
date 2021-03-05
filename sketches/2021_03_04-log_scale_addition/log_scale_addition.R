@@ -10,14 +10,12 @@ logAdd = function(log_a, log_b) {
     x = log_a - log_b
     exp_x = exp(x)
     
-    if(is.finite(exp_x)) {
-      log_b + log(1 + exp_x)
+    if(exp_x == Inf) {
+      log_a
+    } else if (exp_x == 0) {
+      log_b
     } else {
-      if(x > 0) {
-        log_b + x
-      } else {
-        log_b
-      }
+      log_b + log(1 + exp_x)
     }
     
   }, log_a, log_b)
