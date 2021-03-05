@@ -9,6 +9,10 @@ TestSparseNdimArrayReadWrite <- function(coords, values) {
     .Call('_dsmovetools_TestSparseNdimArrayReadWrite', PACKAGE = 'dsmovetools', coords, values)
 }
 
+TestZConstrainedRookNeighborhood <- function(dims, x, zfield, zvals) {
+    .Call('_dsmovetools_TestZConstrainedRookNeighborhood', PACKAGE = 'dsmovetools', dims, x, zfield, zvals)
+}
+
 TestFFRW <- function(a0coords, a0values, dims, steps) {
     .Call('_dsmovetools_TestFFRW', PACKAGE = 'dsmovetools', a0coords, a0values, dims, steps)
 }

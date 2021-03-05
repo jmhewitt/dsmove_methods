@@ -30,6 +30,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// TestZConstrainedRookNeighborhood
+NumericMatrix TestZConstrainedRookNeighborhood(std::vector<int> dims, std::vector<int> x, std::vector<double> zfield, std::vector<double> zvals);
+RcppExport SEXP _dsmovetools_TestZConstrainedRookNeighborhood(SEXP dimsSEXP, SEXP xSEXP, SEXP zfieldSEXP, SEXP zvalsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< std::vector<int> >::type x(xSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type zfield(zfieldSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type zvals(zvalsSEXP);
+    rcpp_result_gen = Rcpp::wrap(TestZConstrainedRookNeighborhood(dims, x, zfield, zvals));
+    return rcpp_result_gen;
+END_RCPP
+}
 // TestFFRW
 NumericMatrix TestFFRW(NumericMatrix a0coords, NumericVector a0values, std::vector<unsigned int> dims, int steps);
 RcppExport SEXP _dsmovetools_TestFFRW(SEXP a0coordsSEXP, SEXP a0valuesSEXP, SEXP dimsSEXP, SEXP stepsSEXP) {
@@ -76,6 +90,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_TestRookNeighborhood", (DL_FUNC) &_dsmovetools_TestRookNeighborhood, 2},
     {"_dsmovetools_TestSparseNdimArrayReadWrite", (DL_FUNC) &_dsmovetools_TestSparseNdimArrayReadWrite, 2},
+    {"_dsmovetools_TestZConstrainedRookNeighborhood", (DL_FUNC) &_dsmovetools_TestZConstrainedRookNeighborhood, 4},
     {"_dsmovetools_TestFFRW", (DL_FUNC) &_dsmovetools_TestFFRW, 4},
     {"_dsmovetools_TestFFRWLight", (DL_FUNC) &_dsmovetools_TestFFRWLight, 4},
     {"_dsmovetools_TestFFRWLightLog", (DL_FUNC) &_dsmovetools_TestFFRWLightLog, 4},
