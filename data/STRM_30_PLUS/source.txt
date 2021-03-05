@@ -1,0 +1,2 @@
+Project page: https://topex.ucsd.edu/WWW_html/srtm30_plus.html
+FTP to data: ftp://topex.ucsd.edu/pub/srtm30_plus/srtm30/grd
