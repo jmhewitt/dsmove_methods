@@ -62,7 +62,7 @@ domain.extent = extent(extent_vec)
 
 # load, crop, and merge bathymetry files
 bathy = do.call(merge, lapply(
-  dir(path = file.path('data', 'STRM_15_PLUS'), pattern = '.nc',
+  dir(path = file.path('data', 'STRM_30_PLUS'), pattern = '.nc',
       full.names = TRUE),
   function(f) crop(raster(f), domain.extent)
 ))
