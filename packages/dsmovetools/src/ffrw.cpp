@@ -9,19 +9,108 @@
 using namespace Rcpp;
 
 // let's use ints to index coordinates
-typedef int IndexType;
+typedef unsigned int IndexType;
 // for specifying integer coordinates with grid dimension assigned at runtime
 typedef std::vector<IndexType> VectorI;
 // sparse spatial storage implemented via trees
 typedef SparseNdimArray<VectorI, double, std::map<VectorI, double>> ArrayMap;
+typedef SparseNdimArrayLog<VectorI, double, std::map<VectorI, double>> LogArrayMap;
 // rook neighborhoods on integer grids
 typedef RookNeighborhood<IndexType, VectorI> RN;
 
-// iterator for neighborhood structure
+/**
+ * Forward filtering a random walk along a grid, without storing all
+ * intermediate distributions.  Probabilities are stored and manipulated on the
+ * log scale vs. the (natural) linear scale.
+ *
+ * @param dims specify the number of locations along each dimension in grid
+ * @param a0 initial probability mass vector
+ * @param steps number of forward-diffusion steps to take
+ * @return (sparse) diffused mass vectors
+ */
+template<typename size_type, typename Neighborhood>
+LogArrayMap ffrw_light_log(const VectorI &dims, const LogArrayMap &a0,
+                           const unsigned int steps) {
+
+    // initialize forward filtering vectors and initial mass
+    LogArrayMap cur, prev;
+    prev = a0;
+
+    // initialize object to iterate over neighborhoods
+    Neighborhood nbhd(dims);
+
+    // diffuse mass
+    for(unsigned int step_cur = 0; step_cur < steps; ++step_cur) {
+        // forward-filter all mass from the most recently diffused vector
+        auto prev_mass_end = prev.data.end();
+        for(auto prev_mass_entry = prev.data.begin();
+            prev_mass_entry != prev_mass_end;
+            ++prev_mass_entry) {
+            // find neighborhood for previous location
+            nbhd.setCenter(prev_mass_entry->first);
+            size_type nnbrs = nbhd.neighborhoodSize();
+            double log_nnbrs = nbhd.logNeighborhoodSize();
+            // diffuse mass, following a random walk along neighbors
+            double mass = prev_mass_entry->second - log_nnbrs;
+            for(size_type i = 0; i < nnbrs; ++i) {
+                cur.add(nbhd.nextNeighbor(), mass);
+            }
+        }
+        // swap state
+        prev.data.swap(cur.data);
+        cur.data.clear();
+    }
+
+    return prev;
+};
 
 /**
+ * Forward filtering a random walk along a grid, without storing all
+ * intermediate distributions.
  *
- * neighborhood structure?
+ * @param dims specify the number of locations along each dimension in grid
+ * @param a0 initial probability mass vector
+ * @param steps number of forward-diffusion steps to take
+ * @return (sparse) diffused mass vectors
+ */
+template<typename size_type, typename Neighborhood>
+ArrayMap ffrw_light(const VectorI &dims, const ArrayMap &a0,
+                    const unsigned int steps) {
+
+    // initialize forward filtering vectors and initial mass
+    ArrayMap cur, prev;
+    prev = a0;
+
+    // initialize object to iterate over neighborhoods
+    Neighborhood nbhd(dims);
+
+    // diffuse mass
+    for(unsigned int step_cur = 0; step_cur < steps; ++step_cur) {
+        // forward-filter all mass from the most recently diffused vector
+        auto prev_mass_end = prev.data.end();
+        for(auto prev_mass_entry = prev.data.begin();
+            prev_mass_entry != prev_mass_end;
+            ++prev_mass_entry) {
+            // find neighborhood for previous location
+            nbhd.setCenter(prev_mass_entry->first);
+            size_type nnbrs = nbhd.neighborhoodSize();
+            // diffuse mass, following a random walk along neighbors
+            double mass = prev_mass_entry->second / (double) nnbrs;
+            for(size_type i = 0; i < nnbrs; ++i) {
+                cur.add(nbhd.nextNeighbor(), mass);
+            }
+        }
+        // swap state
+        prev.data.swap(cur.data);
+        cur.data.clear();
+    }
+
+    return prev;
+};
+
+/**
+ * Forward filtering a random walk along a grid, while storing all intermediate
+ * distributions.
  *
  * @param dims specify the number of locations along each dimension in grid
  * @param a0 initial probability mass vector
@@ -69,7 +158,7 @@ std::vector<ArrayMap> ffrw(const VectorI &dims, const ArrayMap &a0,
 
 // [[Rcpp::export]]
 NumericMatrix TestFFRW(NumericMatrix a0coords, NumericVector a0values,
-                       std::vector<int> dims, int steps) {
+                       std::vector<unsigned int> dims, int steps) {
     // Parameters:
     //   dims - number of locations along each dimension
 
@@ -94,6 +183,85 @@ NumericMatrix TestFFRW(NumericMatrix a0coords, NumericVector a0values,
     NumericMatrix out = NumericMatrix(af.data.size(), a0coords.ncol() + 1);
     int i=0;
     for(auto iter = af.data.begin(); iter != af.data.end(); ++iter) {
+        // extract coordinate info from array's storage format
+        VectorI c = iter->first;
+        for(int j=0; j < a0coords.ncol(); ++j) {
+            out(i,j) = c[j];
+        }
+        // extract value information
+        out(i++, out.ncol() - 1) = iter->second;
+    }
+
+    // return lexicographically sorted coord/val pairs
+    return out;
+}
+
+// [[Rcpp::export]]
+NumericMatrix TestFFRWLight(NumericMatrix a0coords, NumericVector a0values,
+                            std::vector<unsigned int> dims, int steps) {
+    // Parameters:
+    //   dims - number of locations along each dimension
+
+    // initial probability container
+    ArrayMap a0;
+
+    // fill initial probability container
+    for(int i=0; i < a0coords.nrow(); i++) {
+        // munge R coordinate into array's storage format
+        VectorI c(a0coords.ncol());
+        for(int j=0; j< a0coords.ncol(); ++j)
+            c[j] = a0coords(i,j);
+        // insert coord/value pair into sparse array
+        a0.set(c, a0values(i));
+    }
+
+    // diffuse initial probability
+    ArrayMap af = ffrw_light<IndexType, RN>(dims, a0, steps);
+
+    // extract final, diffused probability
+    NumericMatrix out = NumericMatrix(af.data.size(), a0coords.ncol() + 1);
+    int i=0;
+    for(auto iter = af.data.begin(); iter != af.data.end(); ++iter) {
+        // extract coordinate info from array's storage format
+        VectorI c = iter->first;
+        for(int j=0; j < a0coords.ncol(); ++j) {
+            out(i,j) = c[j];
+        }
+        // extract value information
+        out(i++, out.ncol() - 1) = iter->second;
+    }
+
+    // return lexicographically sorted coord/val pairs
+    return out;
+}
+
+// [[Rcpp::export]]
+NumericMatrix TestFFRWLightLog(NumericMatrix a0coords,
+                               NumericVector log_a0values,
+                               std::vector<unsigned int> dims, int steps) {
+    // Parameters:
+    //   dims - number of locations along each dimension
+
+    // initial probability container
+    LogArrayMap log_a0;
+
+    // fill initial probability container
+    for(int i=0; i < a0coords.nrow(); i++) {
+        // munge R coordinate into array's storage format
+        VectorI c(a0coords.ncol());
+        for(int j=0; j< a0coords.ncol(); ++j)
+            c[j] = a0coords(i,j);
+        // insert coord/value pair into sparse array
+        log_a0.set(c, log_a0values(i));
+    }
+
+    // diffuse initial probability
+    LogArrayMap log_af = ffrw_light_log<IndexType, RN>(dims, log_a0, steps);
+
+    // extract final, diffused probability
+    NumericMatrix out = NumericMatrix(log_af.data.size(), a0coords.ncol() + 1);
+    int i=0;
+    for(auto iter = log_af.data.begin(); iter != log_af.data.end(); ++iter) {
         // extract coordinate info from array's storage format
         VectorI c = iter->first;
         for(int j=0; j < a0coords.ncol(); ++j) {
