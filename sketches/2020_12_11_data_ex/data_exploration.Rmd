@@ -43,8 +43,7 @@ animal_id = 166450
 
 # load all gps data
 daflocsAll <- readr::read_csv(
-  file.path('..', '..', 'data', 'NAVFAC-Harbor-Seals', 
-            '2018-06-20-navfacOutput.txt')
+  file.path('data', 'NAVFAC-Harbor-Seals', '2018-06-20-navfacOutput.txt')
 )
 
 # remove poor GPS fixes
@@ -63,7 +62,7 @@ domain.extent = extent(extent_vec)
 
 # load, crop, and merge bathymetry files
 bathy = do.call(merge, lapply(
-  dir(path = file.path('..', '..', 'data', 'STRM_15_PLUS'), pattern = '.nc',
+  dir(path = file.path('data', 'STRM_15_PLUS'), pattern = '.nc',
       full.names = TRUE),
   function(f) crop(raster(f), domain.extent)
 ))
