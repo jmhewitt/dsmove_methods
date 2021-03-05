@@ -32,6 +32,7 @@ Andrieu, Christophe, and Johannes Thoms. "A tutorial on adaptive
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-print"></a>}}
+\if{latex}{\out{\hypertarget{method-print}{}}}
 \subsection{Method \code{print()}}{
 Output the current values of the sampler's state, and adaptation
 \subsection{Usage}{
@@ -41,6 +42,7 @@ Output the current values of the sampler's state, and adaptation
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 Initialize a new Adaptive Random Walk Metropolis-Hastings sampler
 \subsection{Usage}{
@@ -90,6 +92,7 @@ alpha must be in the range (1/(1+lambda), 1]}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-sample"></a>}}
+\if{latex}{\out{\hypertarget{method-sample}{}}}
 \subsection{Method \code{sample()}}{
 Use RWMH to propose, then accept/reject, a new value from the target 
 distribution.  If the sampler was configured with \code{adaptive=TRUE}, 
@@ -109,6 +112,7 @@ the log-posterior}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{
