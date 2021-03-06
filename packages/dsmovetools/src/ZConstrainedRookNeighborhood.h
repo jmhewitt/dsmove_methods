@@ -20,7 +20,8 @@ class ZConstrainedRookNeighborhood : public RookNeighborhood<size_type, Index> {
     private:
 
         // column-major format specification of spatially-varying range for z;
-        // defines minimum z value for each (x,y) pair, max. value is Inf.
+        // defines minimum z value for each (x_1,...,x_{last_dim}) tuple,
+        // max. value is Inf.
         const double * zconstraint;
         // specifies z value for each z index.  i.e., z(0) = a, z(1) = b, etc...
         const double * zdef;
@@ -43,8 +44,13 @@ class ZConstrainedRookNeighborhood : public RookNeighborhood<size_type, Index> {
 
 template<typename size_type, typename Index>
 bool ZConstrainedRookNeighborhood<size_type, Index>::inDomain(const Index& coord) {
-    // column-major lookup index associated with coordinate's (x,y) pair
-    size_type ind = coord[0] + coord[1] * (*(this->dimvec))[0];
+    // column-major lookup index for coordinate's (x_1,...,x_{last_dim}) tuple
+    size_type ind = coord[0];
+    size_type offset =  (*(this->dimvec))[0];
+    for(size_type dim = 1; dim < this->ndim; dim++) {
+        ind += offset * coord[dim];
+        offset *= (*(this->dimvec))[dim];
+    }
     // verify the coordinate's z-value is larger than the field's minimum
     if(zdef[coord[last_dim]] < zconstraint[ind]) {
         return false;
