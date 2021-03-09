@@ -38,12 +38,13 @@ class ZConstrainedRookNeighborhood : public RookNeighborhood<size_type, Index> {
                                      zdef(zvals),
                                      last_dim(dims.size()-1) {};
 
-        bool inDomain(const Index&);
+        bool satisfiesDomainConstraints(const Index&);
 
 };
 
 template<typename size_type, typename Index>
-bool ZConstrainedRookNeighborhood<size_type, Index>::inDomain(const Index& coord) {
+bool ZConstrainedRookNeighborhood<size_type, Index>::satisfiesDomainConstraints(
+    const Index& coord) {
     // column-major lookup index for coordinate's (x_1,...,x_{last_dim}) tuple
     size_type ind = coord[0];
     size_type offset =  (*(this->dimvec))[0];
@@ -55,8 +56,7 @@ bool ZConstrainedRookNeighborhood<size_type, Index>::inDomain(const Index& coord
     if(zdef[coord[last_dim]] < zconstraint[ind]) {
         return false;
     }
-    // defer to default checks
-    return RookNeighborhood<size_type, Index>::inDomain(coord);
+    return true;
 }
 
 #endif //DSMOVETOOLS_ZCONSTRAINED3DROOK_NEIGHBORHOOD_H

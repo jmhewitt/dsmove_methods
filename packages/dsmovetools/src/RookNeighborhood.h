@@ -15,10 +15,8 @@
 template<typename size_type, typename Index>
 class RookNeighborhood {
 
-    protected:
+    private: 
 
-        const size_type ndim;               // number of dimensions for grid
-        const Index *dimvec;                // num. coords along each dimension
         Index center;                       // neighborhood center
         std::vector<bool> lwr_nbr, upr_nbr; // indicators for whether nbr exists
         size_type nnbrs;                    // number of neighbors
@@ -28,6 +26,13 @@ class RookNeighborhood {
         bool onLwr;                         // true when iterator is on lower
 
         Index translateCoord(const Index&, const size_type, const int);
+
+    protected:
+
+        const size_type ndim;               // number of dimensions for grid
+        const Index *dimvec;                // num. coords along each dimension
+
+        virtual bool satisfiesDomainConstraints(const Index&) { return true; };
 
     public:
 
@@ -41,7 +46,7 @@ class RookNeighborhood {
         double logNeighborhoodSize() { return log_nnbrs; }
         Index nextNeighbor();
 
-        virtual bool inDomain(const Index&);
+        bool inDomain(const Index&);
 
 };
 
@@ -49,14 +54,11 @@ template<typename size_type, typename Index>
 bool RookNeighborhood<size_type, Index>::inDomain(const Index& coord) {
     // verify coordinate is within bounds for each dimension
     for(size_type i=0; i < ndim; ++i) {
-        if(coord[i] < 0) {
-            return false;
-        }
-        if(coord[i] > (*dimvec)[i] - 1) {
-            return false;
-        }
+        if(coord[i] < 0) { return false; }
+        if(coord[i] > (*dimvec)[i] - 1) { return false; }
     }
-    return true;
+    // run additional checks
+    return satisfiesDomainConstraints(coord);
 }
 
 template<typename size_type, typename Index>
