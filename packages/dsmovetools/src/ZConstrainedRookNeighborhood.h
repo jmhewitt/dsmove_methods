@@ -47,7 +47,7 @@ bool ZConstrainedRookNeighborhood<size_type, Index>::inDomain(const Index& coord
     // column-major lookup index for coordinate's (x_1,...,x_{last_dim}) tuple
     size_type ind = coord[0];
     size_type offset =  (*(this->dimvec))[0];
-    for(size_type dim = 1; dim < this->ndim; dim++) {
+    for(size_type dim = 1; dim < last_dim; dim++) {
         ind += offset * coord[dim];
         offset *= (*(this->dimvec))[dim];
     }
