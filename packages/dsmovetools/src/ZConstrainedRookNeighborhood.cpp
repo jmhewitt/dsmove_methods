@@ -8,14 +8,14 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-NumericMatrix TestZConstrainedRookNeighborhood(std::vector<int> dims,
-                                               std::vector<int> x,
+NumericMatrix TestZConstrainedRookNeighborhood(std::vector<unsigned int> dims,
+                                               std::vector<unsigned int> x,
                                                std::vector<double> zfield,
                                                std::vector<double> zvals) {
     // Parameters:
     //   dims - number of locations along each dimension
 
-    ZConstrainedRookNeighborhood<int, std::vector<int>> rn(dims,
+    ZConstrainedRookNeighborhood<unsigned int, std::vector<unsigned int>> rn(dims,
                                                            zfield.data(),
                                                            zvals.data());
     rn.setCenter(x);
@@ -23,7 +23,7 @@ NumericMatrix TestZConstrainedRookNeighborhood(std::vector<int> dims,
     NumericMatrix out = NumericMatrix(rn.neighborhoodSize(), dims.size());
 
     for(int i=0; i < out.nrow(); ++i) {
-        std::vector<int> nbr = rn.nextNeighbor();
+        std::vector<unsigned int> nbr = rn.nextNeighbor();
         for(int j=0; j < dims.size(); ++j) {
             out(i,j) = nbr[j];
         }
