@@ -25,3 +25,7 @@ TestFFRWLightLog <- function(a0coords, log_a0values, dims, steps) {
     .Call('_dsmovetools_TestFFRWLightLog', PACKAGE = 'dsmovetools', a0coords, log_a0values, dims, steps)
 }
 
+FFRWLightLogConstrained <- function(a0coords, log_a0values, dims, steps, surface_heights, domain_heights) {
+    .Call('_dsmovetools_FFRWLightLogConstrained', PACKAGE = 'dsmovetools', a0coords, log_a0values, dims, steps, surface_heights, domain_heights)
+}
+
