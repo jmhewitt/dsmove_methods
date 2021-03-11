@@ -20,6 +20,53 @@ typedef SparseNdimArrayLog<VectorI, double, std::map<VectorI, double>> LogArrayM
 typedef RookNeighborhood<IndexType, VectorI> RN;
 typedef ZConstrainedRookNeighborhood<IndexType, VectorI> ZRN;
 
+
+/**
+ * Forward filtering a random walk along a grid, while storing all intermediate
+ * distributions.
+ *
+ * @param dims specify the number of locations along each dimension in grid
+ * @param a0 initial probability mass vector
+ * @param steps number of forward-diffusion steps to take
+ * @return (sparse) diffused mass vectors
+ */
+ template<typename size_type, typename Neighborhood>
+std::vector<LogArrayMap> ffrw_log(const VectorI &dims, const LogArrayMap &a0, 
+                                  const unsigned int steps, 
+                                  Neighborhood &nbhd) {
+
+    // initialize forward filtering vectors and initial mass
+    std::vector<LogArrayMap> ffprob(steps + 1);
+    ffprob[0] = a0;
+
+    // diffuse mass
+    auto step_cur = ffprob.begin();
+    auto step_prev = step_cur;
+    auto step_end = ffprob.end();
+    for(++step_cur; step_cur != step_end;) {
+        // forward-filter all mass from the most recently diffused vector
+        auto prev_mass_end = step_prev->data.end();
+        for(auto prev_mass_entry = step_prev->data.begin();
+            prev_mass_entry != prev_mass_end;
+            ++prev_mass_entry) {
+            // find neighborhood for previous location
+            nbhd.setCenter(prev_mass_entry->first);
+            size_type nnbrs = nbhd.neighborhoodSize();
+            double log_nnbrs = nbhd.logNeighborhoodSize();
+            // diffuse mass, following a random walk along neighbors
+            double mass = prev_mass_entry->second - log_nnbrs;
+            for(size_type i = 0; i < nnbrs; ++i) {
+                step_cur->add(nbhd.nextNeighbor(), mass);
+            }
+        }
+        // increment iterators
+        ++step_cur;
+        ++step_prev;
+    }
+
+    return ffprob;
+};
+
 /**
  * Forward filtering a random walk along a grid, without storing all
  * intermediate distributions.  Probabilities are stored and manipulated on the
@@ -143,7 +190,7 @@ std::vector<ArrayMap> ffrw(const VectorI &dims, const ArrayMap &a0,
             // diffuse mass, following a random walk along neighbors
             double mass = prev_mass_entry->second / (double) nnbrs;
             for(size_type i = 0; i < nnbrs; ++i) {
-                step_cur->add(nbhd.nextNeighbor(), mass);
+              step_cur->add(nbhd.nextNeighbor(), mass);
             }
         }
         // increment iterators
@@ -318,4 +365,52 @@ NumericMatrix FFRWLightLogConstrained(
 
     // return lexicographically sorted coord/val pairs
     return out;
+}
+
+// [[Rcpp::export]]
+std::vector<NumericMatrix> FFRWLogConstrained(
+    NumericMatrix a0coords, NumericVector log_a0values,
+    std::vector<unsigned int> dims, int steps,
+    std::vector<double> surface_heights,
+    std::vector<double> domain_heights) {
+    // Parameters:
+    //   dims - number of locations along each dimension
+
+    // initial probability container
+     LogArrayMap log_a0;
+
+    // fill initial probability container
+    for(IndexType i=0; i < a0coords.nrow(); i++) {
+        // munge R coordinate into array's storage format
+        VectorI c(a0coords.ncol());
+        for(IndexType j=0; j< a0coords.ncol(); ++j)
+            c[j] = a0coords(i,j);
+        // insert coord/value pair into sparse array
+        log_a0.set(c, log_a0values(i));
+    }
+
+    // diffuse initial probability
+    ZRN zrn(dims, surface_heights.data(), domain_heights.data());
+    std::vector<LogArrayMap> ffprobs = ffrw_log<IndexType, ZRN>(dims, log_a0, 
+                                                                steps, zrn);
+
+    // extract all diffused probability vectors
+    std::vector<NumericMatrix> res;
+    for(auto p = ffprobs.begin(); p != ffprobs.end(); ++p) {
+        NumericMatrix out = NumericMatrix(p->data.size(), a0coords.ncol() + 1);
+        IndexType i=0;
+        for(auto iter = p->data.begin(); iter != p->data.end(); ++iter) {
+            // extract coordinate info from array's storage format
+            VectorI c = iter->first;
+            for(IndexType j=0; j <a0coords.ncol(); ++j) {
+                out(i,j) = c[j];
+            }
+            // extract value information
+            out(i++, out.ncol() - 1) = iter->second;
+        }
+        res.push_back(out);
+    }
+
+    // return lexicographically sorted coord/val pairs
+    return res;
 }

@@ -102,6 +102,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FFRWLogConstrained
+std::vector<NumericMatrix> FFRWLogConstrained(NumericMatrix a0coords, NumericVector log_a0values, std::vector<unsigned int> dims, int steps, std::vector<double> surface_heights, std::vector<double> domain_heights);
+RcppExport SEXP _dsmovetools_FFRWLogConstrained(SEXP a0coordsSEXP, SEXP log_a0valuesSEXP, SEXP dimsSEXP, SEXP stepsSEXP, SEXP surface_heightsSEXP, SEXP domain_heightsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type a0coords(a0coordsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type log_a0values(log_a0valuesSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< int >::type steps(stepsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type surface_heights(surface_heightsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type domain_heights(domain_heightsSEXP);
+    rcpp_result_gen = Rcpp::wrap(FFRWLogConstrained(a0coords, log_a0values, dims, steps, surface_heights, domain_heights));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_TestRookNeighborhood", (DL_FUNC) &_dsmovetools_TestRookNeighborhood, 2},
@@ -111,6 +127,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_TestFFRWLight", (DL_FUNC) &_dsmovetools_TestFFRWLight, 4},
     {"_dsmovetools_TestFFRWLightLog", (DL_FUNC) &_dsmovetools_TestFFRWLightLog, 4},
     {"_dsmovetools_FFRWLightLogConstrained", (DL_FUNC) &_dsmovetools_FFRWLightLogConstrained, 6},
+    {"_dsmovetools_FFRWLogConstrained", (DL_FUNC) &_dsmovetools_FFRWLogConstrained, 6},
     {NULL, NULL, 0}
 };
 
