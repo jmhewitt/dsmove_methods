@@ -13,13 +13,17 @@ class SparseNdimArrayBase {
         Storage data;
 
         void set(const Index&, const ValueType&);
-        virtual void add(const Index&, const ValueType&) = 0;
         ValueType get(const Index&);
+        virtual void add(const Index&, const ValueType&) = 0;
+        virtual void addScaled(const Index&, const ValueType&, 
+                               const ValueType&) = 0;
+        virtual ValueType normalizeScale(const ValueType&) = 0;
 
 };
 
 template <typename Index, typename ValueType, typename Storage>
-void SparseNdimArrayBase<Index, ValueType, Storage>::set(const Index &i, const ValueType &v) {
+void SparseNdimArrayBase<Index, ValueType, Storage>::set(const Index &i, 
+                                                         const ValueType &v) {
     data[i] = v;
 }
 
@@ -38,6 +42,11 @@ public:
     void add(const Index &i, const ValueType &v) {
         SparseNdimArrayBase<Index, ValueType, Storage>::data[i] += v;
     }
+    void addScaled(const Index &i, const ValueType &v, const ValueType &sc) {
+        add(i, sc * v);
+    }
+    // invert values to be used as scaling factors
+    ValueType normalizeScale(const ValueType &v) { return 1.0/v; }
 };
 
 /*
@@ -78,6 +87,10 @@ public:
             }
         }
     }
+    void addScaled(const Index &i, const ValueType &v, const ValueType &sc) {
+        add(i, v + sc);
+    }
+    ValueType normalizeScale(const ValueType &v) { return - log(v); }
 };
 
 #endif //DSMOVETOOLS_SPARSENDIMARRAY_H

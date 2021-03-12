@@ -21,6 +21,29 @@ typedef RookNeighborhood<IndexType, VectorI> RN;
 typedef ZConstrainedRookNeighborhood<IndexType, VectorI> ZRN;
 
 
+// diffuse mass
+template <typename I, typename V, typename S, typename size_type, 
+          typename Neighborhood>
+void diffuseMass(SparseNdimArrayBase<I,V,S> *src,
+                 SparseNdimArrayBase<I,V,S> *dst,
+                 Neighborhood *nbhd) {
+    // forward-filter all mass from the src vector to the dst vector
+    auto src_mass_end = src->data.end();
+    for(auto src_mass_entry = src->data.begin(); 
+        src_mass_entry != src_mass_end;
+        ++src_mass_entry) {
+        // find neighborhood for previous location
+        nbhd->setCenter(src_mass_entry->first);
+        size_type nnbrs = nbhd->neighborhoodSize();
+        // diffuse mass, following a random walk along neighbors
+        double scaledNbrs = dst->normalizeScale(nnbrs);
+        for(size_type i = 0; i < nnbrs; ++i) {
+            dst->addScaled(nbhd->nextNeighbor(), src_mass_entry->second, 
+                           scaledNbrs);
+        }
+    }
+}
+
 /**
  * Forward filtering a random walk along a grid, while storing all intermediate
  * distributions.
@@ -45,20 +68,8 @@ std::vector<LogArrayMap> ffrw_log(const VectorI &dims, const LogArrayMap &a0,
     auto step_end = ffprob.end();
     for(++step_cur; step_cur != step_end;) {
         // forward-filter all mass from the most recently diffused vector
-        auto prev_mass_end = step_prev->data.end();
-        for(auto prev_mass_entry = step_prev->data.begin();
-            prev_mass_entry != prev_mass_end;
-            ++prev_mass_entry) {
-            // find neighborhood for previous location
-            nbhd.setCenter(prev_mass_entry->first);
-            size_type nnbrs = nbhd.neighborhoodSize();
-            double log_nnbrs = log(nnbrs);
-            // diffuse mass, following a random walk along neighbors
-            double mass = prev_mass_entry->second - log_nnbrs;
-            for(size_type i = 0; i < nnbrs; ++i) {
-                step_cur->add(nbhd.nextNeighbor(), mass);
-            }
-        }
+        diffuseMass<VectorI, double, std::map<VectorI, double>, size_type, 
+            Neighborhood>(&(*step_prev), &(*step_cur), &nbhd);
         // increment iterators
         ++step_cur;
         ++step_prev;
@@ -88,20 +99,8 @@ LogArrayMap ffrw_light_log(const VectorI &dims, const LogArrayMap &a0,
    // diffuse mass
    for(unsigned int step_cur = 0; step_cur < steps; ++step_cur) {
        // forward-filter all mass from the most recently diffused vector
-       auto prev_mass_end = prev.data.end();
-       for(auto prev_mass_entry = prev.data.begin();
-           prev_mass_entry != prev_mass_end;
-           ++prev_mass_entry) {
-           // find neighborhood for previous location
-           nbhd.setCenter(prev_mass_entry->first);
-           size_type nnbrs = nbhd.neighborhoodSize();
-           double log_nnbrs = log(nnbrs);
-           // diffuse mass, following a random walk along neighbors
-           double mass = prev_mass_entry->second - log_nnbrs;
-           for(size_type i = 0; i < nnbrs; ++i) {
-               cur.add(nbhd.nextNeighbor(), mass);
-           }
-       }
+       diffuseMass<VectorI, double, std::map<VectorI, double>, size_type, 
+                   Neighborhood>(&prev, &cur, &nbhd);
        // swap state
        prev.data.swap(cur.data);
        cur.data.clear();
@@ -133,19 +132,8 @@ ArrayMap ffrw_light(const VectorI &dims, const ArrayMap &a0,
     // diffuse mass
     for(unsigned int step_cur = 0; step_cur < steps; ++step_cur) {
         // forward-filter all mass from the most recently diffused vector
-        auto prev_mass_end = prev.data.end();
-        for(auto prev_mass_entry = prev.data.begin();
-            prev_mass_entry != prev_mass_end;
-            ++prev_mass_entry) {
-            // find neighborhood for previous location
-            nbhd.setCenter(prev_mass_entry->first);
-            size_type nnbrs = nbhd.neighborhoodSize();
-            // diffuse mass, following a random walk along neighbors
-            double mass = prev_mass_entry->second / (double) nnbrs;
-            for(size_type i = 0; i < nnbrs; ++i) {
-                cur.add(nbhd.nextNeighbor(), mass);
-            }
-        }
+        diffuseMass<VectorI, double, std::map<VectorI, double>, size_type, 
+                   Neighborhood>(&prev, &cur, &nbhd);
         // swap state
         prev.data.swap(cur.data);
         cur.data.clear();
@@ -180,21 +168,8 @@ std::vector<ArrayMap> ffrw(const VectorI &dims, const ArrayMap &a0,
     auto step_end = ffprob.end();
     for(++step_cur; step_cur != step_end;) {
         // forward-filter all mass from the most recently diffused vector
-        auto prev_mass_end = step_prev->data.end();
-        for(auto prev_mass_entry = step_prev->data.begin();
-            prev_mass_entry != prev_mass_end;
-            ++prev_mass_entry) {
-            // find neighborhood for previous location
-            nbhd.setCenter(prev_mass_entry->first);
-            size_type nnbrs = nbhd.neighborhoodSize();
-            double scaledNbrs = step_cur->normalizeScale(nnbrs);
-            // diffuse mass, following a random walk along neighbors
-            for(size_type i = 0; i < nnbrs; ++i) {
-              step_cur->addScaled(nbhd.nextNeighbor(), 
-                                  prev_mass_entry->second,
-                                  scaledNbrs);
-            }
-        }
+        diffuseMass<VectorI, double, std::map<VectorI, double>, size_type, 
+                   Neighborhood>(&(*step_prev), &(*step_cur), &nbhd);
         // increment iterators
         ++step_cur;
         ++step_prev;
