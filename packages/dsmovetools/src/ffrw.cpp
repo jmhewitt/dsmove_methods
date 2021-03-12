@@ -52,7 +52,7 @@ std::vector<LogArrayMap> ffrw_log(const VectorI &dims, const LogArrayMap &a0,
             // find neighborhood for previous location
             nbhd.setCenter(prev_mass_entry->first);
             size_type nnbrs = nbhd.neighborhoodSize();
-            double log_nnbrs = nbhd.logNeighborhoodSize();
+            double log_nnbrs = log(nnbrs);
             // diffuse mass, following a random walk along neighbors
             double mass = prev_mass_entry->second - log_nnbrs;
             for(size_type i = 0; i < nnbrs; ++i) {
@@ -95,7 +95,7 @@ LogArrayMap ffrw_light_log(const VectorI &dims, const LogArrayMap &a0,
            // find neighborhood for previous location
            nbhd.setCenter(prev_mass_entry->first);
            size_type nnbrs = nbhd.neighborhoodSize();
-           double log_nnbrs = nbhd.logNeighborhoodSize();
+           double log_nnbrs = log(nnbrs);
            // diffuse mass, following a random walk along neighbors
            double mass = prev_mass_entry->second - log_nnbrs;
            for(size_type i = 0; i < nnbrs; ++i) {
