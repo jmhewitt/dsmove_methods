@@ -187,10 +187,12 @@ std::vector<ArrayMap> ffrw(const VectorI &dims, const ArrayMap &a0,
             // find neighborhood for previous location
             nbhd.setCenter(prev_mass_entry->first);
             size_type nnbrs = nbhd.neighborhoodSize();
+            double scaledNbrs = step_cur->normalizeScale(nnbrs);
             // diffuse mass, following a random walk along neighbors
-            double mass = prev_mass_entry->second / (double) nnbrs;
             for(size_type i = 0; i < nnbrs; ++i) {
-              step_cur->add(nbhd.nextNeighbor(), mass);
+              step_cur->addScaled(nbhd.nextNeighbor(), 
+                                  prev_mass_entry->second,
+                                  scaledNbrs);
             }
         }
         // increment iterators
