@@ -33,3 +33,7 @@ FFRWLogConstrained <- function(a0coords, log_a0values, dims, steps, surface_heig
     .Call('_dsmovetools_FFRWLogConstrained', PACKAGE = 'dsmovetools', a0coords, log_a0values, dims, steps, surface_heights, domain_heights)
 }
 
+FFRWLogConstrainedDst <- function(a0coords, dstcoords, log_a0values, dims, steps, max_steps, surface_heights, domain_heights) {
+    .Call('_dsmovetools_FFRWLogConstrainedDst', PACKAGE = 'dsmovetools', a0coords, dstcoords, log_a0values, dims, steps, max_steps, surface_heights, domain_heights)
+}
+

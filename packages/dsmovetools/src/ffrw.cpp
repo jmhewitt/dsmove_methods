@@ -54,14 +54,14 @@ void diffuseMass(SparseNdimArrayBase<I,V,S> *src,
  */
 template<typename size_type, typename Neighborhood, typename StorageArray>
 StorageArray ffrw_light(const VectorI &dims, const StorageArray &a0,
-                        const unsigned int steps, Neighborhood &nbhd) {
+                        const IndexType steps, Neighborhood &nbhd) {
 
     // initialize forward filtering vectors and initial mass
     StorageArray cur, prev;
     prev = a0;
 
     // diffuse mass
-    for(unsigned int step_cur = 0; step_cur < steps; ++step_cur) {
+    for(IndexType step_cur = 0; step_cur < steps; ++step_cur) {
         // forward-filter all mass from the most recently diffused vector
         diffuseMass<VectorI, double, std::map<VectorI, double>, size_type, 
                    Neighborhood>(&prev, &cur, &nbhd);
@@ -84,7 +84,7 @@ StorageArray ffrw_light(const VectorI &dims, const StorageArray &a0,
  */
  template<typename size_type, typename Neighborhood, typename StorageArray>
 std::vector<StorageArray> ffrw(const VectorI &dims, const StorageArray &a0,
-                               const unsigned int steps, Neighborhood &nbhd) {
+                               const IndexType steps, Neighborhood &nbhd) {
 
     // initialize forward filtering vectors and initial mass
     std::vector<StorageArray> ffprob(steps + 1);
@@ -101,6 +101,55 @@ std::vector<StorageArray> ffrw(const VectorI &dims, const StorageArray &a0,
         // increment iterators
         ++step_cur;
         ++step_prev;
+    }
+
+    return ffprob;
+};
+
+/**
+ * Forward filtering a random walk along a grid, while storing all intermediate
+ * distributions.  Forward filtering continues until a destination location is 
+ * reached and at least "steps" numbers of diffusions are conducted.
+ *
+ * @param dims specify the number of locations along each dimension in grid
+ * @param a0 initial probability mass vector
+ * @param steps minimum number of forward-diffusion steps to take
+ * @param max_steps maximum number of steps to try before aborting diffusion
+ * @param dst location to reach via forward filtering
+ * @return (sparse) diffused mass vectors
+ */
+ template<typename size_type, typename Neighborhood, typename StorageArray>
+std::vector<StorageArray> ffrw_dst(const VectorI &dims, const StorageArray &a0,
+                                   const IndexType steps, Neighborhood &nbhd,
+                                   const VectorI &dst, 
+                                   const IndexType max_steps) {
+
+    // initialize forward filtering vectors and initial mass
+    std::vector<StorageArray> ffprob;
+    ffprob.reserve(steps + 1);
+    ffprob.emplace_back(a0);
+
+    // diffuse mass until number of steps and mass at dst is attained 
+    bool dst_reached = false;
+    for(IndexType i = 1; i < max_steps; ++i) {
+        // initialize next diffused probability vector
+        ffprob.emplace_back();
+        StorageArray *cur = &ffprob.back();
+        // last diffused mass vector
+        //   NOTE: Can't get pointer sooner since emplacement may move all data
+        //         if vector size needs to be expanded.
+        StorageArray *prev = cur - 1;
+        // forward-filter all mass from the most recently diffused vector
+        diffuseMass<VectorI, double, std::map<VectorI, double>, size_type, 
+                   Neighborhood>(prev, cur, &nbhd);
+        // check to see if destination is ever reachable
+        if(!dst_reached) {
+            dst_reached = cur->notNull(dst);
+        }
+        // check termination conditions
+        if((i >= steps) && dst_reached) {
+            break;
+        }
     }
 
     return ffprob;
@@ -323,4 +372,58 @@ std::vector<NumericMatrix> FFRWLogConstrained(
 
     // return lexicographically sorted coord/val pairs
     return res;
+}
+
+// [[Rcpp::export]]
+
+std::vector<NumericMatrix> FFRWLogConstrainedDst(
+    NumericMatrix a0coords, NumericMatrix dstcoords, NumericVector log_a0values,
+    std::vector<unsigned int> dims, unsigned int steps, unsigned int max_steps,
+    std::vector<double> surface_heights, std::vector<double> domain_heights
+) {
+   
+    // initial probability container
+     LogArrayMap log_a0;
+
+    // fill initial probability container
+    for(IndexType i=0; i < a0coords.nrow(); i++) {
+        // munge R coordinate into array's storage format
+        VectorI c(a0coords.ncol());
+        for(IndexType j=0; j< a0coords.ncol(); ++j)
+            c[j] = a0coords(i,j);
+        // insert coord/value pair into sparse array
+        log_a0.set(c, log_a0values(i));
+    }
+
+    // munge destination coordinates into array's storage format
+    VectorI dst_index(dstcoords.ncol());
+    for(IndexType j=0; j < dstcoords.ncol(); ++j) {
+        dst_index[j] = dstcoords(0,j);
+    }
+
+    // diffuse initial probability
+    ZRN zrn(dims, surface_heights.data(), domain_heights.data());
+    std::vector<LogArrayMap> ffprobs = ffrw_dst<IndexType, ZRN, LogArrayMap>(
+        dims, log_a0, steps, zrn, dst_index, max_steps);
+
+    // extract all diffused probability vectors
+    std::vector<NumericMatrix> res;
+    res.reserve(ffprobs.size());
+    for(auto p = ffprobs.begin(); p != ffprobs.end(); ++p) {
+        NumericMatrix out = NumericMatrix(p->data.size(), a0coords.ncol() + 1);
+        IndexType i=0;
+        for(auto iter = p->data.begin(); iter != p->data.end(); ++iter) {
+            // extract coordinate info from array's storage format
+            VectorI c = iter->first;
+            for(IndexType j=0; j <a0coords.ncol(); ++j) {
+                out(i,j) = c[j];
+            }
+            // extract value information
+            out(i++, out.ncol() - 1) = iter->second;
+        }
+        res.emplace_back(out);
+    }
+
+    // return lexicographically sorted coord/val pairs
+    return res; 
 }

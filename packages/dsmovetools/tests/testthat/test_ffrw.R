@@ -334,3 +334,85 @@ test_that('Validating lightweight implementation of forward filtering', {
   )
   
 })
+
+test_that('Validating forward filtering to destination is successful', {
+  
+  # number of dimensions
+  ndim = 3
+  # numer of coordinates in each dimension
+  dims = c(100,100,1)
+  
+  # initial and final locations
+  x0 = matrix(c(5,5,0), nrow = 1)
+  xf = matrix(c(7,7,0), nrow = 1)
+  xf_far = matrix(c(25,25,0), nrow = 1)
+  xf_close = matrix(c(6,5,0), nrow = 1)
+  
+  # minimum number of steps required for diffusion
+  nsteps  = 10
+  
+  # initial probability mass 
+  p0_log = 0
+  
+  # height of vertical layer
+  zval = 1
+  
+  # height of domain surface
+  zsurf = matrix(0, nrow = dims[1], ncol = dims[2])
+  
+  # diffuse from source to near destination
+  af = FFRWLogConstrainedDst(
+    a0coords = x0, dstcoords = xf, log_a0values = p0_log, dims = dims, 
+    steps = nsteps, max_steps = 1e2, surface_heights = zsurf, 
+    domain_heights = zval
+  )
+  
+  # diffuse from source to far destination
+  af_far = FFRWLogConstrainedDst(
+    a0coords = x0, dstcoords = xf_far, log_a0values = p0_log, dims = dims, 
+    steps = nsteps, max_steps = 1e2, surface_heights = zsurf, 
+    domain_heights = zval
+  )
+  
+  # diffuse from source to near destination
+  af_close = FFRWLogConstrainedDst(
+    a0coords = x0, dstcoords = xf_close, log_a0values = p0_log, dims = dims, 
+    steps = nsteps, max_steps = 1e2, surface_heights = zsurf, 
+    domain_heights = zval
+  )
+  
+  
+  dst_attainable = function(pvecs, dst) {
+    # TRUE when dst location has nonzero mass at a diffusion
+    sapply(pvecs, function(p) {
+      # see if any of the locations in diffusion match dst
+      any(apply(p, 1, function(r) {
+        all(r[1:length(dims)] == dst)
+      }))
+    })
+  }
+  
+  # all diffusions have non-zero probability of reaching dst location
+  expect_true(
+    all(
+      any(dst_attainable(af, xf)),
+      any(dst_attainable(af_close, xf_close)),
+      any(dst_attainable(af_far, xf_far))
+    )
+  )
+  
+  # all diffusions have required minimum length
+  expect_true(
+    all(
+      length(af) > nsteps,
+      length(af_close) > nsteps,
+      length(af_far) > nsteps
+    )
+  )
+  
+  # close diffusion does not exceed minimum length
+  expect_true(
+    length(af_close) == (nsteps + 1)
+  )
+  
+})

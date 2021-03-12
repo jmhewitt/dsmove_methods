@@ -13,7 +13,7 @@ class SparseNdimArrayBase {
         Storage data;
 
         void set(const Index&, const ValueType&);
-        ValueType get(const Index&);
+        bool notNull(const Index&);
         virtual void add(const Index&, const ValueType&) = 0;
         virtual void addScaled(const Index&, const ValueType&, 
                                const ValueType&) = 0;
@@ -28,8 +28,9 @@ void SparseNdimArrayBase<Index, ValueType, Storage>::set(const Index &i,
 }
 
 template <typename Index, typename ValueType, typename Storage>
-ValueType SparseNdimArrayBase<Index, ValueType, Storage>::get(const Index &i) {
-    return data[i];
+bool SparseNdimArrayBase<Index, ValueType, Storage>::notNull(const Index &i) {
+    // value is defined for index if its location is not the end
+    return data.find(i) != data.end();
 }
 
 /*
