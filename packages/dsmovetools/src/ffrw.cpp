@@ -21,17 +21,15 @@ typedef RookNeighborhood<IndexType, VectorI> RN;
 typedef ZConstrainedRookNeighborhood<IndexType, VectorI> ZRN;
 
 
-// diffuse mass
 template <typename I, typename V, typename S, typename size_type, 
           typename Neighborhood>
 void diffuseMass(SparseNdimArrayBase<I,V,S> *src,
                  SparseNdimArrayBase<I,V,S> *dst,
                  Neighborhood *nbhd) {
     // forward-filter all mass from the src vector to the dst vector
+    auto src_mass_entry = src->data.begin();
     auto src_mass_end = src->data.end();
-    for(auto src_mass_entry = src->data.begin(); 
-        src_mass_entry != src_mass_end;
-        ++src_mass_entry) {
+    for(src_mass_entry; src_mass_entry != src_mass_end; ++src_mass_entry) {
         // find neighborhood for previous location
         nbhd->setCenter(src_mass_entry->first);
         size_type nnbrs = nbhd->neighborhoodSize();
@@ -45,89 +43,22 @@ void diffuseMass(SparseNdimArrayBase<I,V,S> *src,
 }
 
 /**
- * Forward filtering a random walk along a grid, while storing all intermediate
- * distributions.
- *
- * @param dims specify the number of locations along each dimension in grid
- * @param a0 initial probability mass vector
- * @param steps number of forward-diffusion steps to take
- * @return (sparse) diffused mass vectors
- */
- template<typename size_type, typename Neighborhood>
-std::vector<LogArrayMap> ffrw_log(const VectorI &dims, const LogArrayMap &a0, 
-                                  const unsigned int steps, 
-                                  Neighborhood &nbhd) {
-
-    // initialize forward filtering vectors and initial mass
-    std::vector<LogArrayMap> ffprob(steps + 1);
-    ffprob[0] = a0;
-
-    // diffuse mass
-    auto step_cur = ffprob.begin();
-    auto step_prev = step_cur;
-    auto step_end = ffprob.end();
-    for(++step_cur; step_cur != step_end;) {
-        // forward-filter all mass from the most recently diffused vector
-        diffuseMass<VectorI, double, std::map<VectorI, double>, size_type, 
-            Neighborhood>(&(*step_prev), &(*step_cur), &nbhd);
-        // increment iterators
-        ++step_cur;
-        ++step_prev;
-    }
-
-    return ffprob;
-};
-
-/**
- * Forward filtering a random walk along a grid, without storing all
- * intermediate distributions.  Probabilities are stored and manipulated on the
- * log scale vs. the (natural) linear scale.
- *
- * @param dims specify the number of locations along each dimension in grid
- * @param a0 initial probability mass vector
- * @param steps number of forward-diffusion steps to take
- * @return (sparse) diffused mass vectors
- */
-template<typename size_type, typename Neighborhood>
-LogArrayMap ffrw_light_log(const VectorI &dims, const LogArrayMap &a0,
-                           const unsigned int steps, Neighborhood &nbhd) {
-
-    // initialize forward filtering vectors and initial mass
-    LogArrayMap cur, prev;
-    prev = a0;
-
-   // diffuse mass
-   for(unsigned int step_cur = 0; step_cur < steps; ++step_cur) {
-       // forward-filter all mass from the most recently diffused vector
-       diffuseMass<VectorI, double, std::map<VectorI, double>, size_type, 
-                   Neighborhood>(&prev, &cur, &nbhd);
-       // swap state
-       prev.data.swap(cur.data);
-       cur.data.clear();
-   }
-
-    return prev;
-};
-
-/**
  * Forward filtering a random walk along a grid, without storing all
  * intermediate distributions.
  *
  * @param dims specify the number of locations along each dimension in grid
  * @param a0 initial probability mass vector
  * @param steps number of forward-diffusion steps to take
+ * @param nbhd Class that defines the neighborhood for arbitrary locations
  * @return (sparse) diffused mass vectors
  */
-template<typename size_type, typename Neighborhood>
-ArrayMap ffrw_light(const VectorI &dims, const ArrayMap &a0,
-                    const unsigned int steps) {
+template<typename size_type, typename Neighborhood, typename StorageArray>
+StorageArray ffrw_light(const VectorI &dims, const StorageArray &a0,
+                        const unsigned int steps, Neighborhood &nbhd) {
 
     // initialize forward filtering vectors and initial mass
-    ArrayMap cur, prev;
+    StorageArray cur, prev;
     prev = a0;
-
-    // initialize object to iterate over neighborhoods
-    Neighborhood nbhd(dims);
 
     // diffuse mass
     for(unsigned int step_cur = 0; step_cur < steps; ++step_cur) {
@@ -151,16 +82,13 @@ ArrayMap ffrw_light(const VectorI &dims, const ArrayMap &a0,
  * @param steps number of forward-diffusion steps to take
  * @return (sparse) diffused mass vectors
  */
- template<typename size_type, typename Neighborhood>
-std::vector<ArrayMap> ffrw(const VectorI &dims, const ArrayMap &a0,
-                           const unsigned int steps) {
+ template<typename size_type, typename Neighborhood, typename StorageArray>
+std::vector<StorageArray> ffrw(const VectorI &dims, const StorageArray &a0,
+                               const unsigned int steps, Neighborhood &nbhd) {
 
     // initialize forward filtering vectors and initial mass
-    std::vector<ArrayMap> ffprob(steps + 1);
+    std::vector<StorageArray> ffprob(steps + 1);
     ffprob[0] = a0;
-
-    // initialize object to iterate over neighborhoods
-    Neighborhood nbhd(dims);
 
     // diffuse mass
     auto step_cur = ffprob.begin();
@@ -199,7 +127,9 @@ NumericMatrix TestFFRW(NumericMatrix a0coords, NumericVector a0values,
     }
 
     // diffuse initial probability
-    std::vector<ArrayMap> ffprobs = ffrw<IndexType, RN>(dims, a0, steps);
+    RN rn(dims);
+    std::vector<ArrayMap> ffprobs = ffrw<IndexType, RN, ArrayMap>(dims, a0, 
+                                                                  steps, rn);
 
     // extract final, diffused probability
     ArrayMap af = ffprobs.back();
@@ -239,7 +169,8 @@ NumericMatrix TestFFRWLight(NumericMatrix a0coords, NumericVector a0values,
     }
 
     // diffuse initial probability
-    ArrayMap af = ffrw_light<IndexType, RN>(dims, a0, steps);
+    RN rn(dims);
+    ArrayMap af = ffrw_light<IndexType, RN, ArrayMap>(dims, a0, steps, rn);
 
     // extract final, diffused probability
     NumericMatrix out = NumericMatrix(af.data.size(), a0coords.ncol() + 1);
@@ -280,7 +211,8 @@ NumericMatrix TestFFRWLightLog(NumericMatrix a0coords,
 
     // diffuse initial probability
     RN rn(dims);
-    LogArrayMap log_af = ffrw_light_log<IndexType, RN>(dims, log_a0, steps, rn);
+    LogArrayMap log_af = ffrw_light<IndexType, RN, 
+                                    LogArrayMap>(dims, log_a0, steps, rn);
 
     // extract final, diffused probability
     NumericMatrix out = NumericMatrix(log_af.data.size(), a0coords.ncol() + 1);
@@ -324,8 +256,8 @@ NumericMatrix FFRWLightLogConstrained(
 
     // diffuse initial probability
     ZRN zrn(dims, surface_heights.data(), domain_heights.data());
-    LogArrayMap log_af = ffrw_light_log<IndexType, ZRN>(dims, log_a0, steps,
-                                                        zrn);
+    LogArrayMap log_af = ffrw_light<IndexType, ZRN, LogArrayMap>(dims, log_a0, 
+                                                                 steps, zrn);
 
     // extract final, diffused probability
     NumericMatrix out = NumericMatrix(log_af.data.size(), a0coords.ncol() + 1);
@@ -368,8 +300,8 @@ std::vector<NumericMatrix> FFRWLogConstrained(
 
     // diffuse initial probability
     ZRN zrn(dims, surface_heights.data(), domain_heights.data());
-    std::vector<LogArrayMap> ffprobs = ffrw_log<IndexType, ZRN>(dims, log_a0, 
-                                                                steps, zrn);
+    std::vector<LogArrayMap> ffprobs = ffrw<IndexType, ZRN, LogArrayMap>(
+        dims, log_a0, steps, zrn);
 
     // extract all diffused probability vectors
     std::vector<NumericMatrix> res;
