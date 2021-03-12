@@ -305,6 +305,7 @@ std::vector<NumericMatrix> FFRWLogConstrained(
 
     // extract all diffused probability vectors
     std::vector<NumericMatrix> res;
+    res.reserve(steps + 1);
     for(auto p = ffprobs.begin(); p != ffprobs.end(); ++p) {
         NumericMatrix out = NumericMatrix(p->data.size(), a0coords.ncol() + 1);
         IndexType i=0;
@@ -317,7 +318,7 @@ std::vector<NumericMatrix> FFRWLogConstrained(
             // extract value information
             out(i++, out.ncol() - 1) = iter->second;
         }
-        res.push_back(out);
+        res.emplace_back(out);
     }
 
     // return lexicographically sorted coord/val pairs
