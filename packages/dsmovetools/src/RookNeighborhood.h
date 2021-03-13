@@ -2,6 +2,8 @@
 // Created by Joshua Hewitt on 12/14/20.
 //
 
+#include "RookHeading.h"
+
 #ifndef DSMOVETOOLS_ROOK_NEIGHBORHOOD_H
 #define DSMOVETOOLS_ROOK_NEIGHBORHOOD_H
 
@@ -46,7 +48,14 @@ class RookNeighborhood {
 
         bool inDomain(const Index&);
 
+        RookHeading<size_type> neighborHeading();
+
 };
+
+template<typename size_type, typename Index>
+RookHeading<size_type> RookNeighborhood<size_type, Index>::neighborHeading() {
+    return RookHeading<size_type>(dim_cur, onLwr);
+}
 
 template<typename size_type, typename Index>
 bool RookNeighborhood<size_type, Index>::inDomain(const Index& coord) {

@@ -6,6 +6,31 @@
 
 using namespace Rcpp;
 
+// TestRookOrientation
+std::vector<unsigned int> TestRookOrientation(std::vector<unsigned int> head, std::vector<unsigned int> tail);
+RcppExport SEXP _dsmovetools_TestRookOrientation(SEXP headSEXP, SEXP tailSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type head(headSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type tail(tailSEXP);
+    rcpp_result_gen = Rcpp::wrap(TestRookOrientation(head, tail));
+    return rcpp_result_gen;
+END_RCPP
+}
+// TestRookDot
+double TestRookDot(std::vector<unsigned int> head, std::vector<unsigned int> tail, std::vector<unsigned int> nextHead);
+RcppExport SEXP _dsmovetools_TestRookDot(SEXP headSEXP, SEXP tailSEXP, SEXP nextHeadSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type head(headSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type tail(tailSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type nextHead(nextHeadSEXP);
+    rcpp_result_gen = Rcpp::wrap(TestRookDot(head, tail, nextHead));
+    return rcpp_result_gen;
+END_RCPP
+}
 // TestRookNeighborhood
 NumericMatrix TestRookNeighborhood(std::vector<int> dims, std::vector<int> x);
 RcppExport SEXP _dsmovetools_TestRookNeighborhood(SEXP dimsSEXP, SEXP xSEXP) {
@@ -138,6 +163,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_dsmovetools_TestRookOrientation", (DL_FUNC) &_dsmovetools_TestRookOrientation, 2},
+    {"_dsmovetools_TestRookDot", (DL_FUNC) &_dsmovetools_TestRookDot, 3},
     {"_dsmovetools_TestRookNeighborhood", (DL_FUNC) &_dsmovetools_TestRookNeighborhood, 2},
     {"_dsmovetools_TestSparseNdimArrayReadWrite", (DL_FUNC) &_dsmovetools_TestSparseNdimArrayReadWrite, 2},
     {"_dsmovetools_TestZConstrainedRookNeighborhood", (DL_FUNC) &_dsmovetools_TestZConstrainedRookNeighborhood, 4},
