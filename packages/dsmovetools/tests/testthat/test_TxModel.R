@@ -47,7 +47,6 @@ test_that('Validating directional persistence gives expected results', {
   
 })
 
-
 test_that('Validating cell transition sampler', {
   
   cur_loc = c(50, 50)
@@ -97,6 +96,41 @@ test_that('Validating cell transition sampler', {
       p.empirical.equal[as.character(r[1]), as.character(r[2])]
     }), 
     tolerance = 1e-2
+  )
+  
+})
+
+test_that('Validating cell transition density function', {
+  
+  cur_loc = c(50, 50)
+  prev_loc = c(49, 50)
+  dims = c(100, 100)
+  
+  betaAR = 1
+  betaAR.equal = 0
+  
+  # exact transition parameters
+  p = TxModelParams(cur_loc = cur_loc, prev_loc = prev_loc, dims = dims, 
+                    betaAR = betaAR)
+  p.equal = TxModelParams(cur_loc = cur_loc, prev_loc = prev_loc, dims = dims, 
+                          betaAR = betaAR.equal)
+  
+  # recover log densities by the output location
+  
+  expect_identical(
+    apply(p[(nrow(p):1),], 1, function(r) { 
+      TxModelLd(cur_loc = cur_loc, prev_loc = prev_loc, dims = dims, 
+                betaAR = betaAR, dst_loc = r[1:length(dims)])
+    }),
+    rev(p[,3])
+  )
+  
+  expect_identical(
+    apply(p.equal, 1, function(r) { 
+      TxModelLd(cur_loc = cur_loc, prev_loc = prev_loc, dims = dims, 
+                betaAR = betaAR.equal, dst_loc = r[1:length(dims)])
+    }),
+    p.equal[,3]
   )
   
 })

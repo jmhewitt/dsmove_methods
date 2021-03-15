@@ -39,6 +39,9 @@ class TxModel {
 
         Index sampleNeighbor();
 
+        // log density for a neighboring index
+        double ld(const Index&);
+
 };
 
 template<typename N, typename D, typename I, typename size_type>
@@ -105,6 +108,23 @@ Index TxModel<N,D,Index,size_type>::sampleNeighbor() {
     }
 
     return res;
+}
+
+template<typename N, typename D, typename Index, typename size_type>
+double TxModel<N,D,Index,size_type>::ld(const Index &dst) {
+
+    // re-align neighborhood iterator with probability vector
+    nbhd->resetNeighborIterator();
+
+    auto end = log_probs.end();
+    for(auto lp = log_probs.begin(); lp != end; ++lp) {
+        if(dst == nbhd->nextNeighbor()) {
+            return *lp;
+        }
+    }
+
+    // return -Inf if index not found in neighborhood
+    return -std::numeric_limits<double>::infinity();
 }
 
 #endif //DSMOVETOOLS_TXMODEL_H

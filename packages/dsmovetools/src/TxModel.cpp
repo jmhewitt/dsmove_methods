@@ -58,3 +58,22 @@ std::vector<unsigned int> TxModelSample(
 
     return txm.sampleNeighbor();
 }
+
+// [[Rcpp::export]]
+double TxModelLd(
+        std::vector<unsigned int> cur_loc, std::vector<unsigned int> prev_loc,
+        std::vector<unsigned int> dims, double betaAR,
+        std::vector<unsigned int> dst_loc
+) {
+
+    RN rn(dims);
+    RD rd(cur_loc.size());
+
+    TxModel<RN, RD, std::vector<unsigned int>, unsigned int> txm(rn, rd);
+
+    txm.setBetaAR(betaAR);
+
+    txm.constructProbs(cur_loc, prev_loc);
+
+    return txm.ld(dst_loc);
+}
