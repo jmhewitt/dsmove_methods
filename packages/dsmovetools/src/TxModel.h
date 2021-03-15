@@ -65,18 +65,16 @@ void TxModel<N,D,I,size_type>::constructProbs(const I &cur_loc,
         log_probs.emplace_back(lp);
         log_mass = log_add(log_mass, lp);
     }
+
+    // standardize probabilities
+    auto end = log_probs.end();
+    for (auto it = log_probs.begin(); it != end; ++it)
+        *it -= log_mass;
 }
 
 template<typename N, typename D, typename I, typename size_type>
 std::vector<double> TxModel<N,D,I,size_type>::logProbs() {
-    // initialize return
-    std::vector<double> out(log_probs);
-    // shift log probs by normalizing constant
-    auto end = out.end();
-    for (auto it = out.begin(); it != end; ++it)
-        *it -= log_mass;
-    // return normalized probabilities on log scale
-    return out;
+    return log_probs;
 }
 
 #endif //DSMOVETOOLS_TXMODEL_H
