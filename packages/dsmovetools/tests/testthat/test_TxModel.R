@@ -46,3 +46,57 @@ test_that('Validating directional persistence gives expected results', {
   )
   
 })
+
+
+test_that('Validating cell transition sampler', {
+  
+  cur_loc = c(50, 50)
+  prev_loc = c(49, 50)
+  dims = c(100, 100)
+  
+  betaAR = 1
+  betaAR.equal = 0
+  
+  # exact transition parameters
+  p = TxModelParams(cur_loc = cur_loc, prev_loc = prev_loc, dims = dims, 
+                    betaAR = betaAR)
+  p.equal = TxModelParams(cur_loc = cur_loc, prev_loc = prev_loc, dims = dims, 
+                          betaAR = betaAR.equal)
+  
+  
+  # crude/quick monte carlo test sampler implementation
+  nrep = 1e4
+  
+  p.samples = replicate(n = nrep,
+    TxModelSample(cur_loc = cur_loc, prev_loc = prev_loc,dims = dims, 
+                  betaAR = betaAR)
+  )
+  p.samples.equal = replicate(n = nrep,
+    TxModelSample(cur_loc = cur_loc, prev_loc = prev_loc,dims = dims, 
+                  betaAR = betaAR.equal)
+  )
+  
+  # monte carlo probabilities
+  p.empirical = table(p.samples[1,], p.samples[2,]) / nrep
+  p.empirical.equal = table(p.samples.equal[1,], p.samples.equal[2,]) / nrep
+  
+
+  # quick-estimate probabilities are accurate to two decimal places
+  expect_equal(
+    exp(p[,3]),
+    apply(p, 1, function(r) {
+      p.empirical[as.character(r[1]), as.character(r[2])]
+    }), 
+    tolerance = 1e-2
+  )
+  
+  # ...on different distributions
+  expect_equal(
+    exp(p.equal[,3]),
+    apply(p.equal, 1, function(r) {
+      p.empirical.equal[as.character(r[1]), as.character(r[2])]
+    }), 
+    tolerance = 1e-2
+  )
+  
+})

@@ -2,7 +2,7 @@
 // Created by Joshua Hewitt on 3/15/21.
 //
 
-#include "Rcpp.h"
+#include <Rcpp.h>
 #include "log_add.h"
 #include "RookHeading.h"
 
@@ -37,6 +37,7 @@ class TxModel {
 
         std::vector<double> logProbs();
 
+        Index sampleNeighbor();
 
 };
 
@@ -75,6 +76,35 @@ void TxModel<N,D,I,size_type>::constructProbs(const I &cur_loc,
 template<typename N, typename D, typename I, typename size_type>
 std::vector<double> TxModel<N,D,I,size_type>::logProbs() {
     return log_probs;
+}
+
+template<typename N, typename D, typename Index, typename size_type>
+Index TxModel<N,D,Index,size_type>::sampleNeighbor() {
+
+    // re-align neighborhood iterator with probability vector
+    nbhd->resetNeighborIterator();
+
+    size_type nnbrs = nbhd->neighborhoodSize();
+
+    //
+    // sample via cumulative CDF
+    //
+
+    double u = R::runif(0,1);
+    auto prob_it = log_probs.begin();
+
+    // first neighbor and cumulative probability
+    Index res = nbhd->nextNeighbor();
+    double p = std::exp(*prob_it);
+
+    // aggregate mass of other neighbors
+    for(size_type i = 1; i < nnbrs; ++i) {
+        if(p >= u) break;
+        res = nbhd->nextNeighbor();
+        p += std::exp(*(++prob_it));
+    }
+
+    return res;
 }
 
 #endif //DSMOVETOOLS_TXMODEL_H

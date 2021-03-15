@@ -22,7 +22,6 @@ class RookNeighborhood {
         Index center;                       // neighborhood center
         std::vector<bool> lwr_nbr, upr_nbr; // indicators for whether nbr exists
         size_type nnbrs;                    // number of neighbors
-        size_type nbrs_visited;             // number of neighbors iterated over
         size_type dim_iter;                 // current dimension iterator is on
         bool onLwr;                         // true when iterator is on lower
         size_type dim_cur;                  // dimension of current neighbor
@@ -45,7 +44,9 @@ class RookNeighborhood {
 
         void setCenter(const Index&);
         size_type neighborhoodSize() { return nnbrs; }
+
         Index nextNeighbor();
+        void resetNeighborIterator();
 
         bool inDomain(const Index&);
 
@@ -107,10 +108,7 @@ void RookNeighborhood<size_type, Index>::setCenter(const Index& coord) {
     }
 
     // initialize neighborhood counters
-    onLwr = true;
-    dim_cur = 0;
-    dim_iter = 0;
-    nbrs_visited = 0;
+    resetNeighborIterator();
 }
 
 template<typename size_type, typename Index>
@@ -142,6 +140,13 @@ Index RookNeighborhood<size_type, Index>::nextNeighbor() {
         dim_iter = 0;
         return nextNeighbor();
     }
+}
+
+template<typename size_type, typename Index>
+void RookNeighborhood<size_type, Index>::resetNeighborIterator() {
+    onLwr = true;
+    dim_cur = 0;
+    dim_iter = 0;
 }
 
 #endif //DSMOVETOOLS_ROOK_NEIGHBORHOOD_H

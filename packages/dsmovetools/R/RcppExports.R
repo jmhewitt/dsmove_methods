@@ -21,6 +21,10 @@ TxModelParams <- function(cur_loc, prev_loc, dims, betaAR) {
     .Call('_dsmovetools_TxModelParams', PACKAGE = 'dsmovetools', cur_loc, prev_loc, dims, betaAR)
 }
 
+TxModelSample <- function(cur_loc, prev_loc, dims, betaAR) {
+    .Call('_dsmovetools_TxModelSample', PACKAGE = 'dsmovetools', cur_loc, prev_loc, dims, betaAR)
+}
+
 TestZConstrainedRookNeighborhood <- function(dims, x, zfield, zvals) {
     .Call('_dsmovetools_TestZConstrainedRookNeighborhood', PACKAGE = 'dsmovetools', dims, x, zfield, zvals)
 }
