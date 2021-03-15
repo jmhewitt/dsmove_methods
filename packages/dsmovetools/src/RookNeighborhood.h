@@ -23,8 +23,9 @@ class RookNeighborhood {
         std::vector<bool> lwr_nbr, upr_nbr; // indicators for whether nbr exists
         size_type nnbrs;                    // number of neighbors
         size_type nbrs_visited;             // number of neighbors iterated over
-        size_type dim_cur;                  // current dimension iterator is on
+        size_type dim_iter;                 // current dimension iterator is on
         bool onLwr;                         // true when iterator is on lower
+        size_type dim_cur;                  // dimension of current neighbor
 
         Index translateCoord(const Index&, const size_type, const int);
 
@@ -56,6 +57,7 @@ template<typename size_type, typename Index>
 RookHeading<size_type> RookNeighborhood<size_type, Index>::neighborHeading() {
     return RookHeading<size_type>(dim_cur, onLwr);
 }
+
 
 template<typename size_type, typename Index>
 bool RookNeighborhood<size_type, Index>::inDomain(const Index& coord) {
@@ -107,6 +109,7 @@ void RookNeighborhood<size_type, Index>::setCenter(const Index& coord) {
     // initialize neighborhood counters
     onLwr = true;
     dim_cur = 0;
+    dim_iter = 0;
     nbrs_visited = 0;
 }
 
@@ -115,26 +118,28 @@ Index RookNeighborhood<size_type, Index>::nextNeighbor() {
     if(nnbrs == 0) {
         // avoid infinite recursive if there is no neighborhood
         return center;
-    } else if(dim_cur < ndim) {
+    } else if(dim_iter < ndim) {
         if(onLwr) {
-            if(lwr_nbr[dim_cur]) {
-                return translateCoord(center, dim_cur++, -1);
+            if(lwr_nbr[dim_iter]) {
+                dim_cur = dim_iter;
+                return translateCoord(center, dim_iter++, -1);
             } else {
-                dim_cur++;
+                dim_iter++;
                 return nextNeighbor();
             }
         } else {
-            if(upr_nbr[dim_cur]) {
-                return translateCoord(center, dim_cur++, 1);
+            if(upr_nbr[dim_iter]) {
+                dim_cur = dim_iter;
+                return translateCoord(center, dim_iter++, 1);
             } else {
-                dim_cur++;
+                dim_iter++;
                 return nextNeighbor();
             }
         }
     } else {
         // finished this half-neighborhood; move to other half-neighborhood
         onLwr = !onLwr;
-        dim_cur = 0;
+        dim_iter = 0;
         return nextNeighbor();
     }
 }

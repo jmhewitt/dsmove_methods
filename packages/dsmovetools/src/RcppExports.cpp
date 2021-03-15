@@ -55,6 +55,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// TxModelParams
+NumericMatrix TxModelParams(std::vector<unsigned int> cur_loc, std::vector<unsigned int> prev_loc, std::vector<unsigned int> dims, double betaAR);
+RcppExport SEXP _dsmovetools_TxModelParams(SEXP cur_locSEXP, SEXP prev_locSEXP, SEXP dimsSEXP, SEXP betaARSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type cur_loc(cur_locSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type prev_loc(prev_locSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< double >::type betaAR(betaARSEXP);
+    rcpp_result_gen = Rcpp::wrap(TxModelParams(cur_loc, prev_loc, dims, betaAR));
+    return rcpp_result_gen;
+END_RCPP
+}
 // TestZConstrainedRookNeighborhood
 NumericMatrix TestZConstrainedRookNeighborhood(std::vector<unsigned int> dims, std::vector<unsigned int> x, std::vector<double> zfield, std::vector<double> zvals);
 RcppExport SEXP _dsmovetools_TestZConstrainedRookNeighborhood(SEXP dimsSEXP, SEXP xSEXP, SEXP zfieldSEXP, SEXP zvalsSEXP) {
@@ -167,6 +181,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_TestRookDot", (DL_FUNC) &_dsmovetools_TestRookDot, 3},
     {"_dsmovetools_TestRookNeighborhood", (DL_FUNC) &_dsmovetools_TestRookNeighborhood, 2},
     {"_dsmovetools_TestSparseNdimArrayReadWrite", (DL_FUNC) &_dsmovetools_TestSparseNdimArrayReadWrite, 2},
+    {"_dsmovetools_TxModelParams", (DL_FUNC) &_dsmovetools_TxModelParams, 4},
     {"_dsmovetools_TestZConstrainedRookNeighborhood", (DL_FUNC) &_dsmovetools_TestZConstrainedRookNeighborhood, 4},
     {"_dsmovetools_TestFFRW", (DL_FUNC) &_dsmovetools_TestFFRW, 4},
     {"_dsmovetools_TestFFRWLight", (DL_FUNC) &_dsmovetools_TestFFRWLight, 4},

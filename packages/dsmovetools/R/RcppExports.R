@@ -17,6 +17,10 @@ TestSparseNdimArrayReadWrite <- function(coords, values) {
     .Call('_dsmovetools_TestSparseNdimArrayReadWrite', PACKAGE = 'dsmovetools', coords, values)
 }
 
+TxModelParams <- function(cur_loc, prev_loc, dims, betaAR) {
+    .Call('_dsmovetools_TxModelParams', PACKAGE = 'dsmovetools', cur_loc, prev_loc, dims, betaAR)
+}
+
 TestZConstrainedRookNeighborhood <- function(dims, x, zfield, zvals) {
     .Call('_dsmovetools_TestZConstrainedRookNeighborhood', PACKAGE = 'dsmovetools', dims, x, zfield, zvals)
 }
