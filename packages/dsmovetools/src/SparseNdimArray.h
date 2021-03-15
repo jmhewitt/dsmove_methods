@@ -2,6 +2,8 @@
 // Created by Joshua Hewitt on 12/14/20.
 //
 
+#include "log_add.h"
+
 #ifndef DSMOVETOOLS_SPARSENDIMARRAY_H
 #define DSMOVETOOLS_SPARSENDIMARRAY_H
 
@@ -76,16 +78,7 @@ public:
             // target has probability zero, so create and store new value
             SparseNdimArrayBase<Index, ValueType, Storage>::data[i] = v;
         } else {
-            // log(a) - log(b), and a/b
-            double x = v - tgt->second;
-            double exp_x = exp(x);
-            // evaluate log(c)
-            if(exp_x == HUGE_VAL) { // exp_x == "Inf"
-                tgt->second = v;
-            } else if(exp_x == 0) { // a has negligible size relative to b
-            } else {
-                tgt->second += log(1 + exp_x);
-            }
+            tgt->second = log_add(v, tgt->second);
         }
     }
     void addScaled(const Index &i, const ValueType &v, const ValueType &sc) {
