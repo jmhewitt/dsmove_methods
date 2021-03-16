@@ -106,6 +106,38 @@ simulation_plan = drake_plan(
     hpc = FALSE
   ),
   
+  sim_obs_empirical_durations = target(
+    command = {
+      # load observations
+      obs = readRDS(sim_obs)
+      # identify times at which transitions were observed
+      tx_inds = c(1, diff(obs$obs$states)) != 0
+      tx_times = obs$obs$times[tx_inds]
+      # observed holding times (i.e., observed state durations)
+      obs_durations = diff(tx_times)
+      # estimated transition rate (and expected num. transitions per unit time)
+      mle_rate = 1/mean(obs_durations)
+      # observed number of reversals 
+      state_seq = obs$obs$states[tx_inds]
+      num_reversals = sum(
+        state_seq[1:(length(state_seq)-2)] == state_seq[-(1:2)]
+      )
+      # probability of reversal
+      prob_reversal = mean(
+        state_seq[1:(length(state_seq)-2)] == state_seq[-(1:2)]
+      )
+      # number of reversals per unit time
+      num_reversals / (tx_times[length(state_seq)-2] - obs$obs$times[1])
+      s = sim_obs
+      
+      message(s)
+      print(c(mle_rate = mle_rate, prob_reversal = prob_reversal))
+      0
+    },
+    transform = map(sim_obs),
+    hpc = TRUE
+  ),
+  
   # plot observations alongside true trajectory
   plot_sim_obs = target(
     command = {
@@ -179,11 +211,12 @@ simulation_plan = drake_plan(
   useq = target({
     set.seed(2020)
     npaths = 10
-    unique(pmin(c(0,
-                  seq(from = 0, to = 1, length.out = npaths) +
-                    runif(n = npaths, min = 0, max = 1/npaths),
-                  1), 1
-    ))
+    # unique(pmin(c(0,
+    #               seq(from = 0, to = 1, length.out = npaths) +
+    #                 runif(n = npaths, min = 0, max = 1/npaths),
+    #               1), 1
+    # ))
+    c(0, .1)
   }, hpc = FALSE),
   
   # use path seeds to sample initial paths and optimize associated model params.
