@@ -137,7 +137,8 @@ expected_reversals = function(beta_ar, beta_loc) {
 }
 
 # set penalty strength (i.e., 1/expected # flips per time we want to tolerate)
-penalty_rate = 1/.5
+# penalty_rate = 1/.5
+penalty_rate = 1/.125
 
 # evaluate likelihood across grid
 df = expand.grid(beta_loc = xseq, beta_ar = yseq)
@@ -213,6 +214,7 @@ ggplot(df, aes(x = beta_loc, y = beta_ar, fill = exp(ll), z = exp(ll))) +
   geom_text_contour(col = contour_text_col) + 
   # "undesired" points
   geom_point(x = 2, y = -2, col = 'white', pch = 4) + 
+  geom_point(x = 1.5, y = -2.6, col = 'white', pch = 4) + 
   # axes
   geom_hline(yintercept = 0, col = 'white', lty = 3) + 
   geom_vline(xintercept = 0, col = 'white', lty = 3) + 
