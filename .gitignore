@@ -10,3 +10,4 @@ scrape_dates.txt
 *.pdf
 *.csv
 **/*cache
+_targets/
