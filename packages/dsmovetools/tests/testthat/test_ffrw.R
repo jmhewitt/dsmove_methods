@@ -367,6 +367,13 @@ test_that('Validating forward filtering to destination is successful', {
     domain_heights = zval
   )
   
+  # diffuse from source to near destination, maintaining reachability info. 
+  af_reachable = FFRWLogConstrainedDstReachable(
+    a0coords = x0, dstcoords = xf, log_a0values = p0_log, dims = dims, 
+    steps = nsteps, max_steps = 1e2, surface_heights = zsurf, 
+    domain_heights = zval
+  )
+  
   # diffuse from source to far destination
   af_far = FFRWLogConstrainedDst(
     a0coords = x0, dstcoords = xf_far, log_a0values = p0_log, dims = dims, 
@@ -399,6 +406,12 @@ test_that('Validating forward filtering to destination is successful', {
       any(dst_attainable(af_close, xf_close)),
       any(dst_attainable(af_far, xf_far))
     )
+  )
+  
+  # the diffusions that reach destination are properly recorded
+  expect_identical(
+    which(dst_attainable(af_reachable[[1]], xf)) - 1,
+    af_reachable[[2]]
   )
   
   # all diffusions have required minimum length

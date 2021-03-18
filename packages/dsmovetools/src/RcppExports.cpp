@@ -204,6 +204,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FFRWLogConstrainedDstReachable
+List FFRWLogConstrainedDstReachable(NumericMatrix a0coords, NumericMatrix dstcoords, NumericVector log_a0values, std::vector<unsigned int> dims, unsigned int steps, unsigned int max_steps, std::vector<double> surface_heights, std::vector<double> domain_heights);
+RcppExport SEXP _dsmovetools_FFRWLogConstrainedDstReachable(SEXP a0coordsSEXP, SEXP dstcoordsSEXP, SEXP log_a0valuesSEXP, SEXP dimsSEXP, SEXP stepsSEXP, SEXP max_stepsSEXP, SEXP surface_heightsSEXP, SEXP domain_heightsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type a0coords(a0coordsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type dstcoords(dstcoordsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type log_a0values(log_a0valuesSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type steps(stepsSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type max_steps(max_stepsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type surface_heights(surface_heightsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type domain_heights(domain_heightsSEXP);
+    rcpp_result_gen = Rcpp::wrap(FFRWLogConstrainedDstReachable(a0coords, dstcoords, log_a0values, dims, steps, max_steps, surface_heights, domain_heights));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_TestRookOrientation", (DL_FUNC) &_dsmovetools_TestRookOrientation, 2},
@@ -220,6 +238,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_FFRWLightLogConstrained", (DL_FUNC) &_dsmovetools_FFRWLightLogConstrained, 6},
     {"_dsmovetools_FFRWLogConstrained", (DL_FUNC) &_dsmovetools_FFRWLogConstrained, 6},
     {"_dsmovetools_FFRWLogConstrainedDst", (DL_FUNC) &_dsmovetools_FFRWLogConstrainedDst, 8},
+    {"_dsmovetools_FFRWLogConstrainedDstReachable", (DL_FUNC) &_dsmovetools_FFRWLogConstrainedDstReachable, 8},
     {NULL, NULL, 0}
 };
 

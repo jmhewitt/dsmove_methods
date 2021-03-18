@@ -57,3 +57,7 @@ FFRWLogConstrainedDst <- function(a0coords, dstcoords, log_a0values, dims, steps
     .Call('_dsmovetools_FFRWLogConstrainedDst', PACKAGE = 'dsmovetools', a0coords, dstcoords, log_a0values, dims, steps, max_steps, surface_heights, domain_heights)
 }
 
+FFRWLogConstrainedDstReachable <- function(a0coords, dstcoords, log_a0values, dims, steps, max_steps, surface_heights, domain_heights) {
+    .Call('_dsmovetools_FFRWLogConstrainedDstReachable', PACKAGE = 'dsmovetools', a0coords, dstcoords, log_a0values, dims, steps, max_steps, surface_heights, domain_heights)
+}
+
