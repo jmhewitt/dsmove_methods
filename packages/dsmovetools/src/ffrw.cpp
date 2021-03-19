@@ -7,6 +7,8 @@
 #include "RookNeighborhood.h"
 #include "ZConstrainedRookNeighborhood.h"
 
+#include "ffrw.h"
+
 using namespace Rcpp;
 
 // let's use ints to index coordinates
@@ -106,11 +108,6 @@ std::vector<StorageArray> ffrw(const VectorI &dims, const StorageArray &a0,
     return ffprob;
 };
 
- template<typename size_type, typename StorageArray>
- struct ReachableProbs {
-     std::vector<StorageArray> probs;
-     std::vector<size_type> reachable;
- };
 
 /**
 * Forward filtering a random walk along a grid, while storing all intermediate
@@ -124,14 +121,14 @@ std::vector<StorageArray> ffrw(const VectorI &dims, const StorageArray &a0,
 * @param dst location to reach via forward filtering
 * @return (sparse) diffused mass vectors
 */
-template<typename size_type, typename Neighborhood, typename StorageArray>
-ReachableProbs<IndexType, StorageArray> ffrw_dst_reachable(
-    const VectorI &dims, const StorageArray &a0, const IndexType steps,
-    Neighborhood &nbhd, const VectorI &dst, const IndexType max_steps
+template<typename size_type, typename Index, typename Neighborhood, typename StorageArray>
+ReachableProbs<size_type, StorageArray> ffrw_dst_reachable(
+    const Index &dims, const StorageArray &a0, const size_type steps,
+    Neighborhood &nbhd, const Index &dst, const size_type max_steps
 ) {
 
     // initialize forward filtering vectors and initial mass
-    ReachableProbs<IndexType, StorageArray> ffprob;
+    ReachableProbs<size_type, StorageArray> ffprob;
     ffprob.probs.reserve(steps + 1);
     ffprob.probs.emplace_back(a0);
 
@@ -140,7 +137,7 @@ ReachableProbs<IndexType, StorageArray> ffrw_dst_reachable(
 
     // diffuse mass until number of steps and mass at dst is attained
     bool dst_reached = false;
-    for(IndexType i = 1; i < max_steps; ++i) {
+    for(size_type i = 1; i < max_steps; ++i) {
         // initialize next diffused probability vector
         ffprob.probs.emplace_back();
         StorageArray *cur = &ffprob.probs.back();
@@ -149,7 +146,7 @@ ReachableProbs<IndexType, StorageArray> ffrw_dst_reachable(
         //         if vector size needs to be expanded.
         StorageArray *prev = cur - 1;
         // forward-filter all mass from the most recently diffused vector
-        diffuseMass<VectorI, double, std::map<VectorI, double>, size_type,
+        diffuseMass<Index, double, std::map<Index, double>, size_type,
                 Neighborhood>(prev, cur, &nbhd);
         // updates if destination is reachable
         if(cur->notNull(dst)) {
@@ -186,7 +183,7 @@ std::vector<StorageArray> ffrw_dst(const VectorI &dims, const StorageArray &a0,
                                    const IndexType max_steps) {
 
     ReachableProbs<IndexType, StorageArray> res =
-            ffrw_dst_reachable<size_type, Neighborhood, StorageArray>(
+            ffrw_dst_reachable<size_type, VectorI, Neighborhood, StorageArray>(
                 dims, a0, steps, nbhd, dst, max_steps
             );
 
@@ -494,7 +491,7 @@ List FFRWLogConstrainedDstReachable(
     // diffuse initial probability
     ZRN zrn(dims, surface_heights.data(), domain_heights.data());
     ReachableProbs<IndexType, LogArrayMap> ffprobs =
-            ffrw_dst_reachable<IndexType, ZRN, LogArrayMap>(
+            ffrw_dst_reachable<IndexType, VectorI, ZRN, LogArrayMap>(
                     dims, log_a0, steps, zrn, dst_index, max_steps
             );
 
