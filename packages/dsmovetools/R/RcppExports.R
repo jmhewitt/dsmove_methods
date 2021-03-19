@@ -33,6 +33,10 @@ TestZConstrainedRookNeighborhood <- function(dims, x, zfield, zvals) {
     .Call('_dsmovetools_TestZConstrainedRookNeighborhood', PACKAGE = 'dsmovetools', dims, x, zfield, zvals)
 }
 
+SampleConstrainedBridgedRWPath <- function(a0coords, dstcoords, dims, steps, max_steps, surface_heights, domain_heights) {
+    .Call('_dsmovetools_SampleConstrainedBridgedRWPath', PACKAGE = 'dsmovetools', a0coords, dstcoords, dims, steps, max_steps, surface_heights, domain_heights)
+}
+
 TestFFRW <- function(a0coords, a0values, dims, steps) {
     .Call('_dsmovetools_TestFFRW', PACKAGE = 'dsmovetools', a0coords, a0values, dims, steps)
 }
