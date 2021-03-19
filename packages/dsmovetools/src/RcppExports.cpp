@@ -129,6 +129,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// SampleConstrainedBridgedRWPathFamily
+List SampleConstrainedBridgedRWPathFamily(std::vector<unsigned int> a0coords, std::vector<unsigned int> dstcoords, std::vector<unsigned int> dims, unsigned int steps, unsigned int max_steps, std::vector<double> surface_heights, std::vector<double> domain_heights, unsigned int n);
+RcppExport SEXP _dsmovetools_SampleConstrainedBridgedRWPathFamily(SEXP a0coordsSEXP, SEXP dstcoordsSEXP, SEXP dimsSEXP, SEXP stepsSEXP, SEXP max_stepsSEXP, SEXP surface_heightsSEXP, SEXP domain_heightsSEXP, SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type a0coords(a0coordsSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type dstcoords(dstcoordsSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type steps(stepsSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type max_steps(max_stepsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type surface_heights(surface_heightsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type domain_heights(domain_heightsSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(SampleConstrainedBridgedRWPathFamily(a0coords, dstcoords, dims, steps, max_steps, surface_heights, domain_heights, n));
+    return rcpp_result_gen;
+END_RCPP
+}
 // TestFFRW
 NumericMatrix TestFFRW(NumericMatrix a0coords, NumericVector a0values, std::vector<unsigned int> dims, int steps);
 RcppExport SEXP _dsmovetools_TestFFRW(SEXP a0coordsSEXP, SEXP a0valuesSEXP, SEXP dimsSEXP, SEXP stepsSEXP) {
@@ -250,6 +268,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_TxModelLd", (DL_FUNC) &_dsmovetools_TxModelLd, 5},
     {"_dsmovetools_TestZConstrainedRookNeighborhood", (DL_FUNC) &_dsmovetools_TestZConstrainedRookNeighborhood, 4},
     {"_dsmovetools_SampleConstrainedBridgedRWPath", (DL_FUNC) &_dsmovetools_SampleConstrainedBridgedRWPath, 7},
+    {"_dsmovetools_SampleConstrainedBridgedRWPathFamily", (DL_FUNC) &_dsmovetools_SampleConstrainedBridgedRWPathFamily, 8},
     {"_dsmovetools_TestFFRW", (DL_FUNC) &_dsmovetools_TestFFRW, 4},
     {"_dsmovetools_TestFFRWLight", (DL_FUNC) &_dsmovetools_TestFFRWLight, 4},
     {"_dsmovetools_TestFFRWLightLog", (DL_FUNC) &_dsmovetools_TestFFRWLightLog, 4},

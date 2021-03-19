@@ -37,6 +37,10 @@ SampleConstrainedBridgedRWPath <- function(a0coords, dstcoords, dims, steps, max
     .Call('_dsmovetools_SampleConstrainedBridgedRWPath', PACKAGE = 'dsmovetools', a0coords, dstcoords, dims, steps, max_steps, surface_heights, domain_heights)
 }
 
+SampleConstrainedBridgedRWPathFamily <- function(a0coords, dstcoords, dims, steps, max_steps, surface_heights, domain_heights, n) {
+    .Call('_dsmovetools_SampleConstrainedBridgedRWPathFamily', PACKAGE = 'dsmovetools', a0coords, dstcoords, dims, steps, max_steps, surface_heights, domain_heights, n)
+}
+
 TestFFRW <- function(a0coords, a0values, dims, steps) {
     .Call('_dsmovetools_TestFFRW', PACKAGE = 'dsmovetools', a0coords, a0values, dims, steps)
 }
