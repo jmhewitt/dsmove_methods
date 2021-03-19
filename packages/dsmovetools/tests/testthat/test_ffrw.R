@@ -399,12 +399,12 @@ test_that('Validating forward filtering to destination is successful', {
     })
   }
   
-  # all diffusions have non-zero probability of reaching dst location
+  # all diffusions have non-zero probability of ending at dst location
   expect_true(
     all(
-      any(dst_attainable(af, xf)),
-      any(dst_attainable(af_close, xf_close)),
-      any(dst_attainable(af_far, xf_far))
+      tail(dst_attainable(af, xf), 1),
+      tail(dst_attainable(af_close, xf_close), 1),
+      tail(dst_attainable(af_far, xf_far), 1)
     )
   )
   
@@ -423,9 +423,10 @@ test_that('Validating forward filtering to destination is successful', {
     )
   )
   
-  # close diffusion does not exceed minimum length
-  expect_true(
-    length(af_close) == (nsteps + 1)
+  # initial conditions are the first entry in diffusion output
+  expect_identical(
+    c(x0, p0_log),
+    as.numeric(af[[1]])
   )
   
 })
