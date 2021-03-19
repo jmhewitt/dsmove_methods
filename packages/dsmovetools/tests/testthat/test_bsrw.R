@@ -19,33 +19,33 @@ test_that('Validate bridged random walk sampling behaves as expected', {
   zfield = matrix(0, nrow = dims[1], ncol = dims[2])
   
   # sample path
-  path = SampleConstrainedBridgedRWPath(
+  sampled_path = SampleConstrainedBridgedRWPath(
     a0coords = x0, dstcoords = xf, dims = dims, steps = steps, max_steps = 1e3, 
     surface_heights = as.numeric(zfield), domain_heights = zvals
   )
   
   # path satisfies length constraint
   expect_gte(
-    nrow(path),
+    nrow(sampled_path),
     steps
   )
   
   # path follows rook neighborhood geometry, with exactly one change per step
   expect_identical(
-    rep(1, nrow(path) - 1),
-    rowSums(abs(apply(path, 2, diff)))
+    rep(1, nrow(sampled_path) - 1),
+    rowSums(abs(apply(sampled_path, 2, diff)))
   )
   
   # path starts at x0
   expect_identical(
     x0,
-    path[1,]
+    sampled_path[1,]
   )
   
   # path ends at xf
   expect_identical(
     xf,
-    path[nrow(path),]
+    sampled_path[nrow(sampled_path),]
   )
   
 })
