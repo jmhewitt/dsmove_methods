@@ -20,9 +20,13 @@
 #'   exponential distribution
 #'   
 #' 
+#' @import Rcpp
+#' 
 #' @importFrom stats rexp
 #' 
 #' @example examples/ctds.quicksim.R
+#' 
+#' @useDynLib dsmovetools
 #' 
 #' @export
 #' 
