@@ -66,7 +66,7 @@ BSRWFamily<Index> bsrw_dst_family(
     path_fam.path.reserve(n);
     path_fam.log_weight.reserve(n);
 
-    double base_weight = std::log(a_diffused.reachable.size());
+    double base_weight = - std::log(a_diffused.reachable.size());
 
     for(size_type path_id = 0; path_id < n; ++path_id) {
 
