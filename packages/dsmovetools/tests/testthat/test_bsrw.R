@@ -80,14 +80,14 @@ test_that('Validate sampling families of bridged random walks', {
   
   # sampled paths should have different lengths
   expect_gt(
-    length(unique(sapply(path_fam, function(sampled_path) {
+    length(unique(sapply(path_fam$path, function(sampled_path) {
       nrow(sampled_path)
     }))),
     1
   )
   
   # validate each path
-  invisible(lapply(path_fam, function(sampled_path) {
+  invisible(lapply(path_fam$path, function(sampled_path) {
     # path follows rook neighborhood geometry, with exactly one change per step
     expect_identical(
       rep(1, nrow(sampled_path) - 1),
@@ -106,5 +106,39 @@ test_that('Validate sampling families of bridged random walks', {
       sampled_path[nrow(sampled_path),]
     )
   }))
+  
+  
+  #
+  # validate that paths of equal length are uniformly sampled
+  #
+  
+  # number of times each path length appears
+  path_lengths = sapply(path_fam$path, nrow)
+  path_length_counts = table(path_lengths)
+  
+  # test requires that some path lengths are seen multiple times 
+  expect_true(
+    any(path_length_counts > 1)
+  )
+  
+  # extract duplicate path lengths
+  duplicate_lengths = as.numeric(
+    names(path_length_counts)[which(path_length_counts > 1)]
+  )
+  
+  # ensure paths of equal length have same sampling weight
+  for(len in duplicate_lengths) {
+    # ensure paths of equal length are not all the same
+    expect_false(
+      identical(
+        path_fam$path[which(path_lengths == len)][[1]],
+        path_fam$path[which(path_lengths == len)][[2]]
+      )
+    )
+    # sampling weights for equal-length paths
+    len_wts = path_fam$log_weights[which(path_lengths == len)]
+    # crudely sampling weights are identical
+    expect_equal(0, sd(len_wts))
+  }
   
 })

@@ -20,6 +20,12 @@ typedef SparseNdimArrayLog<VectorI, double, std::map<VectorI, double>> LogArrayM
 typedef ZConstrainedRookNeighborhood<IndexType, VectorI> ZRN;
 
 
+template<typename Index>
+struct BSRWFamily {
+    std::vector<std::vector<Index>> path;
+    std::vector<double> log_weight;
+};
+
 /**
  * Forward-filter backwards-sample a family of n paths from src to dst.  Path
  * lengths are uniformly sampled from among the collection of viable path
@@ -39,7 +45,7 @@ typedef ZConstrainedRookNeighborhood<IndexType, VectorI> ZRN;
  * @return
  */
 template<typename size_type, typename Index, typename Neighborhood>
-std::vector<std::vector<Index>> bsrw_dst_family(
+BSRWFamily<Index> bsrw_dst_family(
         const Index &src, const Index &dst, const Index &dims,
         Neighborhood &nbhd, Neighborhood &nbhd_cpy, const size_type steps,
         const size_type max_steps, const size_type n
@@ -56,8 +62,11 @@ std::vector<std::vector<Index>> bsrw_dst_family(
             );
 
     // initialize container for sampled paths
-    std::vector<std::vector<Index>> path_fam;
-    path_fam.reserve(n);
+    BSRWFamily<Index> path_fam;
+    path_fam.path.reserve(n);
+    path_fam.log_weight.reserve(n);
+
+    double base_weight = std::log(a_diffused.reachable.size());
 
     for(size_type path_id = 0; path_id < n; ++path_id) {
 
@@ -66,13 +75,17 @@ std::vector<std::vector<Index>> bsrw_dst_family(
             std::floor(R::runif(0,a_diffused.reachable.size()))
         ];
 
+        // initialize path likelihood with likelihood for path length
+        double log_weight = base_weight;
+
         // initialize bridged random path
         std::vector<Index> path;
         path.reserve(path_len);
         path.emplace_back(dst);
 
         // backward sample
-        auto diffusion = a_diffused.probs.rbegin() + (a_diffused.probs.size() - path_len);
+        auto diffusion = a_diffused.probs.rbegin() +
+            (a_diffused.probs.size() - path_len);
         auto diffusion_end = a_diffused.probs.rend();
         for(diffusion; diffusion != diffusion_end; ++diffusion) {
 
@@ -129,11 +142,15 @@ std::vector<std::vector<Index>> bsrw_dst_family(
             // save sampled neighbor
             path.emplace_back(prob_it->first);
 
+            // aggregate sampling weight
+            log_weight += prob_it->second;
+
         }
 
         // correct path order, then export the sample
         std::reverse(path.begin(), path.end());
-        path_fam.emplace_back(path);
+        path_fam.path.emplace_back(path);
+        path_fam.log_weight.emplace_back(log_weight);
     }
 
     return path_fam;
@@ -306,7 +323,7 @@ List SampleConstrainedBridgedRWPathFamily(
     ZRN zrn2(dims, surface_heights.data(), domain_heights.data());
 
     // sample family of paths
-    std::vector<std::vector<VectorI>> path =
+    BSRWFamily<VectorI> path_fam_raw =
         bsrw_dst_family<IndexType , VectorI, ZRN>(
             src_index, dst_index, dims, zrn, zrn2, steps, max_steps, n
     );
@@ -314,6 +331,7 @@ List SampleConstrainedBridgedRWPathFamily(
     // initialize container to store family of sampled paths
     Rcpp:List path_fam(n);
 
+    std::vector<std::vector<VectorI>> path = path_fam_raw.path;
     for(unsigned int path_ind = 0; path_ind < n; ++path_ind) {
         // initialize container to store extracted sampled path
         NumericMatrix out = NumericMatrix(path[path_ind].size(), dims.size());
@@ -328,5 +346,6 @@ List SampleConstrainedBridgedRWPathFamily(
         path_fam[path_ind] = out;
     }
 
-    return path_fam;
+    return List::create(Named("path") = path_fam,
+                        Named("log_weights") = path_fam_raw.log_weight);
 }
