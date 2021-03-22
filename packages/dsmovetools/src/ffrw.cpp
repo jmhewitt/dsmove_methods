@@ -137,6 +137,15 @@ ReachableProbs<size_type, StorageArray> ffrw_dst_reachable(
 
     // diffuse mass until number of steps and mass at dst is attained
     for(size_type i = 1; i < max_steps; ++i) {
+        // actions to perform when destination is reachable
+        if(ffprob.probs.back().notNull(dst)) {
+            // log the diffusion number
+            ffprob.reachable.emplace_back(i-1);
+            // check termination conditions
+            if(i > steps) {
+                break;
+            }
+        }
         // initialize next diffused probability vector
         ffprob.probs.emplace_back();
         StorageArray *cur = &ffprob.probs.back();
@@ -147,15 +156,6 @@ ReachableProbs<size_type, StorageArray> ffrw_dst_reachable(
         // forward-filter all mass from the most recently diffused vector
         diffuseMass<Index, double, std::map<Index, double>, size_type,
                 Neighborhood>(prev, cur, &nbhd);
-        // actions to perform when destination is reachable
-        if(cur->notNull(dst)) {
-            // log the diffusion number
-            ffprob.reachable.emplace_back(i);
-            // check termination conditions
-            if(i >= steps) {
-                break;
-            }
-        }
     }
 
     ffprob.reachable.shrink_to_fit();

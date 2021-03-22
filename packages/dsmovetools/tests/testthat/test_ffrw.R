@@ -433,3 +433,41 @@ test_that('Validating forward filtering to destination is successful', {
   )
   
 })
+
+test_that('Validating null-forward filtering to destination', {
+  
+  # number of dimensions
+  ndim = 3
+  # numer of coordinates in each dimension
+  dims = c(100,100,1)
+  
+  # initial and final locations
+  x0 = matrix(c(5,5,0), nrow = 1)
+  xf = x0
+  
+  # minimum number of steps required for diffusion
+  nsteps  = 0
+  
+  # initial probability mass 
+  p0_log = 0
+  
+  # height of vertical layer
+  zval = 1
+  
+  # height of domain surface
+  zsurf = matrix(0, nrow = dims[1], ncol = dims[2])
+  
+  # diffuse from source to near destination
+  af = FFRWLogConstrainedDst(
+    a0coords = x0, dstcoords = xf, log_a0values = p0_log, dims = dims, 
+    steps = nsteps, max_steps = 1e2, surface_heights = zsurf, 
+    domain_heights = zval
+  )
+  
+  # forward filteringcan be done in 0 steps
+  expect_identical(
+    matrix(c(x0, p0_log), nrow = 1),
+    af[[1]]
+  )
+  
+})
