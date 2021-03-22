@@ -190,7 +190,8 @@ test_that('Validating random walk forward filtering on a grid: 2D multiple', {
   )
   
   # 700-step diffusion
-  nsteps = 700
+  # nsteps = 700
+  nsteps = 10
   expect_equivalent(
     TestFFRW(a0coords = x0, a0values = p0, dims = dims, steps = nsteps),
     as.matrix(pstep(steps = nsteps, loc = x0, p0 = p0))
@@ -284,7 +285,8 @@ test_that('Validating feasibility on a large, 3D grid', {
   p0 = runif(2)
   p0 = p0 / sum(p0)
   
-  nsteps = 100
+  # nsteps = 100
+  nsteps = 20
   xf = TestFFRW(a0coords = x0, a0values = p0, dims = dims, steps = nsteps)
   
   expect_equal(sum(xf[,4]), 1)
@@ -307,7 +309,8 @@ test_that('Validating feasibility on a large, 3D grid with alternate methods', {
 
   # use smaller number of steps for faster package testing
   # nsteps = 200
-  nsteps = 100
+  # nsteps = 100
+  nsteps = 20
   xf = TestFFRWLightLog(a0coords = x0, log_a0values = log(p0), dims = dims, 
                         steps = nsteps)
 
