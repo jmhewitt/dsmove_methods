@@ -1,6 +1,8 @@
 sample_path_segments = function(x0, xf, t0, tf, max_tx_rate, high_quantile, 
                                 dims, tgt_max_steps, computational_max_steps, 
                                 surface_heights, domain_heights, nsegments) {
+  # Sample bridged random walks on discrete spaces when given initial and final
+  # conditions, and information to restrict the maximum number of transitions.
   
   # get maximum number of steps to take subject to reachability constraints
   tgt_max_steps = qpois(p = high_quantile, lambda = (tf - t0) * max_tx_rate)
