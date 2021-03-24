@@ -40,10 +40,12 @@ fit_init = function(init_prev_loc, params, niter, priors, path_fam, dims,
     sum(dexp(x = diff(unlist(path$seg_times)), rate = exp(theta[-1]), 
              log = TRUE)) + 
     # prior
-    dnorm(x = theta[1], mean = priors$beta_ar$mean, sd = priors$beta_ar$sd, 
-          log = TRUE) + 
-    sum(dnorm(x = theta[-1], mean = priors$beta$mean, sd = priors$beta$sd, 
-              log = TRUE))
+    # dnorm(x = theta[1], mean = priors$beta_ar$mean, sd = priors$beta_ar$sd, 
+    #       log = TRUE) + 
+    # sum(dnorm(x = theta[-1], mean = priors$beta$mean, sd = priors$beta$sd, 
+    #           log = TRUE))
+    joint_prior(beta_loc = theta[-1], beta_ar = theta[1], dims = dims, 
+                penalty_rate = priors$penalty_rate, log = TRUE)
   }
 
   # optimize inital path and parameters  
