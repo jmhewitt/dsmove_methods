@@ -69,8 +69,6 @@ update_path = function(init_prev_loc, path_fam, path_inds, seg_start_times,
              rate = exp(beta), log = TRUE)
       )
     
-    # TODO: add prior for path properties, such as penalty on num. reversals
-    
     # MH ratio
     logR = llprop - ll0 + seg_wts[seg_ind] - prop_wt
     
