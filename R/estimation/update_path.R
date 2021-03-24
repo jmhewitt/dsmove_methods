@@ -86,7 +86,7 @@ update_path = function(init_prev_loc, path_fam, path_inds, seg_start_times,
     if(seg_len > 1) {
       seg = path_fam[[seg_ind]][[1]]$path[[path_inds[seg_ind]]]
       row_nums = 1:seg_len
-      prev_loc = subset(seg, row_nums == (seg_len - 1), drop = FALSE)
+      prev_loc = seg[seg_len - 1, , drop = FALSE]
     }
     
   }

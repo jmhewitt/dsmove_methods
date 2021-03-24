@@ -33,7 +33,7 @@ ld_path = function(path_fam, path_inds, init_prev_loc, dims, betaAR) {
     # update prev_loc if segment changed locations
     if(seg_len > 1) {
       row_nums = 1:seg_len
-      prev_loc = subset(seg, row_nums == (seg_len - 1), drop = FALSE)
+      prev_loc = seg[seg_len - 1, , drop = FALSE]
     }
   }
   
