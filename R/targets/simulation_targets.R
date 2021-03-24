@@ -8,13 +8,13 @@ simulation_targets = list(
   tar_target(
     name = sim_params, 
     command = list(
-      t0 = 0,             # start time for simulation
-      tf = 100,           # end time for simulation
-      betaAR = 1,         # directional persistence parameter
-      beta = 0,           # log of transition rate
-      dims = rep(100, 2), # support for spatial domain
-      x0 = rep(50, 2),    # location from which simulated trajectory begins
-      x0.last = c(49, 50) # auto regressive loc. to set direction for trajectory
+      t0 = 0,               # start time for simulation
+      tf = 500,             # end time for simulation
+      betaAR = 1,           # directional persistence parameter
+      beta = 0,             # log of transition rate
+      dims = rep(1e3, 2),   # support for spatial domain
+      x0 = rep(500, 2),     # location from which simulated trajectory begins
+      x0.last = c(499, 500) # auto regressive loc. to set trajectory direction
   )),
   
   # realization of basic CTDS trajectory
@@ -47,7 +47,32 @@ simulation_targets = list(
     pattern = map(obs_interval)
   ),
   
-  tar_target(obs_interval, c(1, .5, .25))
+  tar_target(obs_interval, c(1, .5, .25)),
   
+  tar_target(
+    name = sim_path_segments, 
+    command = {
+      # remove outer layer of wrapping
+      sim_obs = sim_obs[[1]]
+      # sample path segments
+      list(lapply(1:(nrow(sim_obs$states) - 1), function(obs_ind) {
+        list(sample_path_segments(
+          x0 = c(sim_obs$states[obs_ind,], 1), 
+          xf = c(sim_obs$states[obs_ind + 1,], 1), 
+          t0 = sim_obs$times[obs_ind],
+          tf = sim_obs$times[obs_ind + 1],
+          dims = c(sim_params$dims, 1), 
+          max_tx_rate = 2,
+          high_quantile = .99,
+          computational_max_steps = 1e3, 
+          surface_heights = rep(0, prod(sim_params$dims)),
+          domain_heights = 1,
+          nsegments = 100
+        ))
+      }))
+    }, 
+    pattern = map(sim_obs)
+  )
+
   
 )
