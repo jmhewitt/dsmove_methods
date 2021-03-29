@@ -2,6 +2,7 @@
 
 S3method(plot,ctds_observations)
 S3method(plot,ctds_realization)
+export(Mhrw1DAdaptive)
 export(MhrwAdaptive)
 export(build_ctds)
 export(ctds.bsrw)
