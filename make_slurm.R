@@ -1,3 +1,3 @@
 library(targets)
 
-tar_make_future(workers = 100)
+tar_make_future(workers = 350)

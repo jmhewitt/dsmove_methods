@@ -7,7 +7,10 @@
 #SBATCH --mail-user joshua.hewitt@duke.edu
 #SBATCH --ntasks 1
 #SBATCH --time 96:00:00
-#SBATCH --mem 6GB
+#SBATCH --mem 3GB
+
+module unload R
+module load R/3.5.2
 
 date
 START=`date +%s`
