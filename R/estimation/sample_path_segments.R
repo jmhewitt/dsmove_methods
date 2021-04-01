@@ -5,7 +5,8 @@ sample_path_segments = function(x0, xf, t0, tf, max_tx_rate, high_quantile,
   # conditions, and information to restrict the maximum number of transitions.
   
   # get maximum number of steps to take subject to reachability constraints
-  tgt_max_steps = qpois(p = high_quantile, lambda = (tf - t0) * max_tx_rate)
+  pp_lambda = (tf - t0) * max_tx_rate
+  tgt_max_steps = qpois(p = high_quantile, lambda = pp_lambda)
   
   # sample paths
   paths = dsmovetools:::SampleConstrainedBridgedRWPathFamily(
@@ -18,6 +19,15 @@ sample_path_segments = function(x0, xf, t0, tf, max_tx_rate, high_quantile,
   
   # unwrap 0-based indexing from c++
   paths$path = lapply(paths$path, function(path) { path + 1 })
+  
+  # log-probability of generating path
+  paths$lp = paths$log_weights
+  path_len = sapply(paths$path, function(path) nrow(path) - 1)
+  paths$lp_length = dpois(x = path_len, lambda = pp_lambda, log = TRUE)
+  
+  # initialize path sampling weight for paths; sampling weight will be inversely
+  # proportional to number of times path appears in set
+  paths$log_weights = rep(0, length(paths$log_weights))
   
   #
   # aggregate duplicate paths to reduce storage overhead
@@ -39,6 +49,8 @@ sample_path_segments = function(x0, xf, t0, tf, max_tx_rate, high_quantile,
         # remove duplicate path
         paths$path = paths$path[-path_ind2]
         paths$log_weights = paths$log_weights[-path_ind2]
+        paths$lp = paths$lp[-path_ind2]
+        paths$lp_length = paths$lp_length[-path_ind2]
         # realign path_ind2 counter with shift
         path_ind2 = path_ind2 - 1
       }
@@ -48,6 +60,9 @@ sample_path_segments = function(x0, xf, t0, tf, max_tx_rate, high_quantile,
     # increment primary loop counter
     path_ind = path_ind + 1
   }
+  
+  # standardize log weights
+  paths$log_weights = paths$log_weights - log_sum(paths$log_weights)
   
   paths
 }
