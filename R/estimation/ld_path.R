@@ -14,7 +14,7 @@ ld_path = function(path_fam, path_inds, init_prev_loc, dims, betaAR) {
   #  betaAR - directional persistence parameter
   
   # number of segments in path
-  n_segs = length(path_inds)
+  n_segs = sum(is.finite(path_inds))
   
   # must always be aware of last location transitioned from
   prev_loc = init_prev_loc
