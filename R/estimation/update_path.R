@@ -1,5 +1,6 @@
 update_path = function(init_prev_loc, path_fam, path_inds, seg_start_times,
-                          seg_times, seg_wts, dims, betaAR, beta) {
+                       seg_times, seg_ind_wts, seg_time_wts, dims, betaAR, 
+                       beta) {
   # Metropolis-Hastings update of a segment of the latent trajectory
   #
   # Parameters:
@@ -30,54 +31,20 @@ update_path = function(init_prev_loc, path_fam, path_inds, seg_start_times,
     t0 = seg_start_times[seg_ind]
     tf = seg_start_times[seg_ind + 1]
     
-    # propose new path segment via independence proposal
-    prop_seg = sample.gumbeltrick(log.p = pf$log_weights)
+    # extract path segment
+    prop_seg = path_inds[seg_ind]
     
     # number of timepoints to sample for proposal
     n_sampled_times = nrow(pf$path[[prop_seg]]) - 1
     # random times
     prop_times = c(t0, sort(runif(n = n_sampled_times, min = t0, max = tf)))
-    # sampling weight for proposed segment
-    prop_wt =
-      # sampling weight for path segment
-      pf$log_weights[prop_seg] + 
-      # sampling likelihood for times
-      lfactorial(n_sampled_times) - n_sampled_times * log(tf - t0)
     
-    # likelihood of proposed path
-    llprop = 
-      # likelihood of trajectory
-      ld_path_segment(
-        path_segment = pf$path[[prop_seg]], prev_loc = prev_loc, dims = dims, 
-        betaAR = betaAR
-      ) + 
-      # likelihood of timing
-      sum(
-        dexp(x = diff(c(prop_times, tf)), rate = exp(beta), log = TRUE)
-      )
+    # sampling likelihood for times
+    prop_time_wts = lfactorial(n_sampled_times) - n_sampled_times * log(tf - t0)
     
-    # likelihood of current path
-    ll0 = 
-      # likelihood of trajectory
-      ld_path_segment(
-        path_segment = pf$path[[path_inds[seg_ind]]], prev_loc = prev_loc, 
-        dims = dims, betaAR = betaAR
-      ) + 
-      # likelihood of timing
-      sum(
-        dexp(x = diff(c(seg_times[[seg_ind]], tf)), 
-             rate = exp(beta), log = TRUE)
-      )
-    
-    # MH ratio
-    logR = llprop - ll0 + seg_wts[seg_ind] - prop_wt
-    
-    if(log(runif(1)) < logR) {
-      # accept proposal
-      path_inds[seg_ind] = prop_seg
-      seg_times[[seg_ind]] = prop_times
-      seg_wts[seg_ind] = prop_wt
-    }
+    # update path (no accept/reject needed since proposal is full-conditional)
+    seg_times[[seg_ind]] = prop_times
+    seg_time_wts[seg_ind] = prop_time_wts
     
     # update prev_loc if segment changed locations
     seg_len = nrow(pf$path[[path_inds[seg_ind]]])
@@ -92,6 +59,8 @@ update_path = function(init_prev_loc, path_fam, path_inds, seg_start_times,
   list(
     path_inds = path_inds,
     seg_times = seg_times, 
-    seg_wts = seg_wts
+    seg_ind_wts = seg_ind_wts,
+    seg_time_wts = seg_time_wts,
+    init_prev_loc = init_prev_loc
   )
 }
