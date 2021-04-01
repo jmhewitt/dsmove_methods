@@ -8,9 +8,9 @@ sample_path_segments = function(x0, xf, t0, tf, max_tx_rate, high_quantile,
   pp_lambda = (tf - t0) * max_tx_rate
   tgt_max_steps = qpois(p = high_quantile, lambda = pp_lambda)
   
-  # sample paths
+  # sample from shortest paths
   paths = dsmovetools:::SampleConstrainedBridgedRWPathFamily(
-    a0coords = x0 - 1, dstcoords = xf - 1, dims = dims, steps = tgt_max_steps, 
+    a0coords = x0 - 1, dstcoords = xf - 1, dims = dims, steps = 0, 
     max_steps = computational_max_steps, 
     surface_heights = as.numeric(surface_heights), 
     domain_heights = domain_heights,
