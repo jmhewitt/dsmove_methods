@@ -47,10 +47,11 @@ simulation_targets = list(
     pattern = map(obs_interval)
   ),
   
-  tar_target(obs_interval, c(1, .5, .25)),
+  tar_target(obs_interval, c(5, 1, .5, .25)),
   
   tar_target(
-    name = sim_path_segments, 
+    name = sim_path_segments,  
+    # cue = tar_cue(mode = 'always'),
     command = {
       # remove outer layer of wrapping
       sim_obs = sim_obs[[1]]
@@ -72,7 +73,33 @@ simulation_targets = list(
       }))
     }, 
     pattern = map(sim_obs)
-  )
+  ),
+  
+  tar_target(
+    name = sim_fits, 
+    command = {
+
+      priors = list(
+        beta_ar = list(mean = 0, sd = 1e2),
+        beta = list(mean = 0, sd = 1e2)
+      )
+      
+      post_samples = fit_single(
+        niter = 1e4, priors = priors, 
+        path_fam = sim_path_segments[[1]], dims = sim_params$dims, 
+        seg_start_times = sim_obs[[1]]$times, 
+        params = list(beta_ar = 0, beta_loc = 0),
+        init_sd = rep(.05, 2)
+      )
+      
+      list(list(samples = post_samples, rep = reps, sim_obs = sim_obs,
+                obs_interval = obs_interval))
+    }, 
+    pattern = cross(map(sim_path_segments, sim_obs, obs_interval), reps), 
+    deployment = 'worker'
+  ),
+  
+  tar_target(reps, 1:100)
 
   
 )
