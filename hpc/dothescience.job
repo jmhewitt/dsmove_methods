@@ -1,6 +1,6 @@
 #!/bin/sh
 
-#SBATCH --job-name dmove_methods
+#SBATCH --job-name dsmove_methods
 #SBATCH --partition common
 #SBATCH --account gelfandlab
 #SBATCH --mail-type ALL
