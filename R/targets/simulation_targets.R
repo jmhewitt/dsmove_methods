@@ -99,7 +99,33 @@ simulation_targets = list(
     deployment = 'worker'
   ),
   
-  tar_target(reps, 1:100)
+  tar_target(reps, 1:100),
+  
+  tar_target(
+    name = sim_fits_hanks, 
+    command = {
+      
+      priors = list(
+        beta_ar = list(mean = 0, sd = 1e2),
+        beta = list(mean = 0, sd = 1e2)
+      )
+      
+      post_samples = fit_hanks(
+        params = list(beta_ar = 0, beta_loc = 0),
+        niter = 1e4, priors = priors, 
+        states = sim_obs[[1]]$states,
+        times = sim_obs[[1]]$times,
+        dims = sim_params$dims,
+        reps = 10
+      )
+      
+      list(list(samples = post_samples, rep = rep_batch, sim_obs = sim_obs,
+                obs_interval = obs_interval))
+    }, 
+    pattern = cross(map(sim_path_segments, sim_obs, obs_interval), rep_batch), 
+    deployment = 'worker'
+  ),
 
+  tar_target(rep_batch, 1:10)
   
 )
