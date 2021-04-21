@@ -96,7 +96,9 @@ simulation_targets = list(
                 obs_interval = obs_interval))
     }, 
     pattern = cross(map(sim_path_segments, sim_obs, obs_interval), reps), 
-    deployment = 'worker'
+    deployment = 'worker',
+    storage = 'worker',
+    memory = 'transient'
   ),
   
   tar_target(reps, 1:100),
@@ -123,7 +125,9 @@ simulation_targets = list(
                 obs_interval = obs_interval))
     }, 
     pattern = cross(map(sim_path_segments, sim_obs, obs_interval), rep_batch), 
-    deployment = 'worker'
+    deployment = 'worker',
+    storage = 'worker',
+    memory = 'transient'
   ),
 
   tar_target(rep_batch, 1:10)
