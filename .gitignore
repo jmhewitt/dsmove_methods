@@ -11,3 +11,7 @@ scrape_dates.txt
 *.csv
 **/*cache
 _targets/
+R_bak/
+*.bbl
+*.rds
+sketches/
