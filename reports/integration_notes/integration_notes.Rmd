@@ -1,0 +1,82 @@
+---
+title: "Notes on approximate inference for CTDS processes"
+author: Josh
+date: 31 March 2021
+output: 
+  pdf_document: 
+    toc: yes
+header-includes:
+  - \usepackage{booktabs}
+params:
+    tgt_dir: nim_fit
+    tgt_dir_val: nim_fit_val
+---
+
+# Overview
+
+\begin{align*}
+ [\boldsymbol\theta \vert \boldsymbol s] \propto 
+ \int [\boldsymbol s \vert \boldsymbol g, \boldsymbol\tau]
+      []
+\end{align*}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, cache = TRUE, 
+                      dev = 'png', dpi = 300)
+```
+
+```{r load_example_data}
+targets::tar_load(sim_path_segments)
+targets::tar_load(sim_obs)
+targets::tar_load(sim_params)
+
+library(dsmovetools)
+
+dataset_id = 1
+```
+
+```{r observations, fig.cap='Observations of simulated trajectory.'}
+par(mfrow = c(2,1))
+
+plot(sim_obs[[dataset_id]]$times, sim_obs[[dataset_id]]$states[,1], 
+     xlab = '', ylab = 'x')
+
+plot(sim_obs[[dataset_id]]$times, sim_obs[[dataset_id]]$states[,2], 
+     xlab = 'Time', ylab = 'y')
+```
+
+```{r sample_imputations, fig.cap='Example of two potential paths that connect observations.  The longer path makes 6 transitions, and the shorter path makes 2 transitions.  The time of the transitions is for illustration purposes only---they will be estimated during sampling.  The observations are plotted as solid dots'}
+obs_ind = 10
+paths = sim_path_segments[[dataset_id]][[obs_ind]][[1]]$path
+
+path_lens = sapply(paths, nrow) - 1
+
+trange = sim_obs[[dataset_id]]$times[obs_ind + 0:1]
+
+par(mfrow = c(2,1))
+
+for(coord in 1:2) {
+  
+  plot(trange, sim_obs[[dataset_id]]$states[obs_ind + 0:1, coord],
+     xlab = ifelse(coord == 1, '', 'Time'), 
+     ylab = ifelse(coord == 1, 'x', 'y'), pch = 16, 
+     ylim = sim_obs[[dataset_id]]$states[obs_ind, 1] + c(-3,3))
+
+  for(plen in c(2,6)) {
+    i = which(path_lens == plen)[1]
+    lines(seq(from = trange[1], to = trange[2], length.out = nrow(paths[[i]])),
+         paths[[i]][,coord], col = i)
+    points(seq(from = trange[1], to = trange[2], length.out = nrow(paths[[i]])),
+         paths[[i]][,coord])
+  }
+
+}
+```
+
+```{r path_length_tables}
+df = data.frame(table(path_lens))
+colnames(df) = c('Imputed path length', 'Unique paths sampled')
+rownames(df) = NULL
+
+knitr::kable(df, caption = 'Number of imputed path segments of different lengths.  Naturally, there are more ways to connect two observations with longer paths than with shorter paths.  Also note that rook neighborhood structures induce periodicity in the path lengths.  Here we see that these two observations can only be connected with even-length paths.')
+```
