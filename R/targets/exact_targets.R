@@ -200,7 +200,7 @@ exact_targets = list(
           states = obs$states, times = obs$times, reps = 50, 
           samples_per_rep = 1e3, priors = rw_priors,
           hanks.priors = list(
-            a = .01, b = .01, r = .01, q = .01
+            a = .001, b = .001, r = .001, q = .001
           )
         ),
         priors = rw_priors,
