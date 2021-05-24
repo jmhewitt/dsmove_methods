@@ -1,11 +1,19 @@
-hanks_imputation = function(states, times, reps, samples_per_rep, priors) {
+hanks_imputation = function(states, times, reps, samples_per_rep, priors,
+                            hanks.priors = NULL) {
   # Parameters:
   #  states - matrix of observation states/coordinates
   #  times - times at which observations are made
   #  reps - number of imputed samples to draw
   #  samples_per_rep - number of MC samples to draw for \theta per imputation
+  #  hanks.priors - prior parameters used to fit continuous space movement model
 
   # following package use from help('ctmcmove')
+  
+  if(is.null(hanks.priors)) {
+    hanks.priors = list(
+      a = 1, b = 1, r = 1, q = 1
+    )
+  }
 
   # extract coordinate/time triples
   xyt = cbind(states, times)
@@ -30,7 +38,11 @@ hanks_imputation = function(states, times, reps, samples_per_rep, priors) {
   tpred=seq(min(t),max(t),by=.01)
 
   ## Fit latent Gaussian model using MCMC
-  out=mcmc.fmove(xy,t,b,tpred,QQ="CAR",n.mcmc=1000,a=1,r=1,num.paths.save=reps)
+  out=mcmc.fmove(
+    xy = xy, t = t, fdabasis = b, tpred = tpred, QQ="CAR", n.mcmc=1000, 
+    num.paths.save=reps, a = hanks.priors$a, b = hanks.priors$b, 
+    r = hanks.priors$r, q = hanks.priors$q
+  )
   
   #
   # analyze each of the imputed trajectories

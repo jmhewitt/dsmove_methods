@@ -62,7 +62,7 @@ exact_targets = list(
     pattern = map(sim_rw_obs_interval)
   ),
   
-  tar_target(sim_rw_obs_interval, c(5, 1, .5, .25, .125)),
+  tar_target(sim_rw_obs_interval, c(5, 1, .5, .25)),
   
   # priors used for sensitivity study
   tar_target(rw_priors, data.frame(
@@ -189,16 +189,19 @@ exact_targets = list(
   
   # MC samples for exact posterior approximations
   tar_target(
-    name = rw_post_brownian, 
+    name = rw_post_hanks_uninformative, 
     command = {
       # extract observations
       obs = sim_rw_obs[[1]]$obs
       m = nrow(obs$states) - 1
       # generate and package results
       list(list(
-        post_samples = brownian_imputation(
+        post_samples = hanks_imputation(
           states = obs$states, times = obs$times, reps = 50, 
-          samples_per_rep = 1e3, priors = rw_priors
+          samples_per_rep = 1e3, priors = rw_priors,
+          hanks.priors = list(
+            a = .01, b = .01, r = .01, q = .01
+          )
         ),
         priors = rw_priors,
         obs_interval = sim_rw_obs[[1]]$obs_interval
@@ -307,6 +310,30 @@ exact_targets = list(
   ),
   
   tar_target(
+    name = rw_post_summaries_hanks_uninformative, 
+    command = {
+      # extract posterior summaries from MC samples
+      df = do.call(rbind, lapply(rw_post_hanks_uninformative, function(res) {
+        hpd = HPDinterval(mcmc(res$post_samples$samples))
+        data.frame(post.mean = mean(res$post_samples$samples), 
+                   hpd.lwr = hpd[,'lower'],
+                   hpd.upr = hpd[,'upper'],
+                   prior = res$priors$name, 
+                   obs.interval = res$obs_interval)
+      }))
+      
+      ggplot(df, aes(x = jitter(obs.interval), y = post.mean, ymin = hpd.lwr, 
+                     ymax = hpd.upr)) +
+        geom_hline(yintercept = sim_rw_params$theta, lty = 3) + 
+        geom_pointrange() +
+        facet_wrap(~prior, scales = 'free') + 
+        theme_few() + 
+        theme(panel.border = element_blank())
+      
+    }
+  ),
+  
+  tar_target(
     name = rw_post_summaries_combined, 
     command = {
       
@@ -360,6 +387,15 @@ exact_targets = list(
                    obs.interval = res$obs_interval, 
                    method = 'Hanks')
         })),
+        do.call(rbind, lapply(rw_post_hanks_uninformative, function(res) {
+          hpd = HPDinterval(mcmc(res$post_samples$samples))
+          data.frame(post.mean = mean(res$post_samples$samples), 
+                     hpd.lwr = hpd[,'lower'],
+                     hpd.upr = hpd[,'upper'],
+                     prior = res$priors$name, 
+                     obs.interval = res$obs_interval, 
+                     method = 'Hanks-Uninformative')
+        })),
         do.call(rbind, lapply(rw_post_samples, function(res) {
           hpd = HPDinterval(mcmc(res$post_samples))
           data.frame(post.mean = mean(res$post_samples), 
@@ -370,7 +406,6 @@ exact_targets = list(
                      method = 'Model-based imputation')
         }))
       )
-      browser()
       
       pl = ggplot(df %>% dplyr::filter(obs.interval < 3,
                                   method != 'Model-based imputation'), 
@@ -424,14 +459,5 @@ exact_targets = list(
       
     }
   )
-  
-  # tar_targets(
-  #   name = rw_post_summaries_known, 
-  #   command = {
-  #     
-  #     curve(dgamma(x = x, shape = rw_post_exact))#rw_post_exact
-  #   }
-  # )
-  
   
 )
