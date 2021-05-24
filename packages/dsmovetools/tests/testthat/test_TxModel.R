@@ -65,6 +65,7 @@ test_that('Validating cell transition sampler', {
   
   # crude/quick monte carlo test sampler implementation
   nrep = 1e4
+  set.seed(2021)
   
   p.samples = replicate(n = nrep,
     TxModelSample(cur_loc = cur_loc, prev_loc = prev_loc,dims = dims, 
