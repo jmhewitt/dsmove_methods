@@ -1,7 +1,7 @@
 ---
-title: "NAVFAC Harbor Seals Exploration"
+title: "CTDS Scalability pulse check: NAVFAC Harbor Seals Exploration"
 author: "Josh"
-date: "12/16/2020"
+date: "3/16/2021"
 output: 
   pdf_document:
     number_sections: true
@@ -9,11 +9,11 @@ output:
 
 # Overview
 
-Living document with some basic explorations of SATTAG data to better understand the (computational) complexity of the analysis.  Specifically, ultimate goals are to try to investigate:
+This is a living document with some basic explorations of SATTAG data to better understand the computational complexity of the analysis.  Specifically, ultimate goals are to try to investigate:
 
 1. Size of discrete spatial domain.
 3. Prior information about an animal's maximum speed, and how this influences the lengths of longest paths between observations.
-2. Lengths of shortest paths between observations.
+2. Lengths of longest and shortest paths between observations, which is a function of animal speed and time between observations.
 4. (Throughout) Points that should be excluded from analysis.  For example, this includes observations with redundant timestamps and observations with nearly-redundant timestamps but large disagreement in location, potentially due to ARGOS measurement error.  If large disagreements are within measurement error, then the analysis could include the points as long as measurement error is incdlued in analysis.
 
 ```{r setup, include=FALSE}
@@ -834,6 +834,30 @@ ggplot(mapping = aes(x = x, y = y), data = df) +
   theme(panel.border = element_blank(), 
         axis.title = element_blank(), 
         axis.ticks = element_blank())
+```
+
+```{r automatic_diffusions}
+
+# prior information on maximum speed (m/s)
+max_speed = 5 
+
+time_n_max = do.call(rbind, lapply(1:nrow(animalobs), function(obs_ind) {
+  # x0 = gridInd(coord = animalobs[obs_ind, c('long','lat')], obj = bathy)
+  # xf = gridInd(coord = animalobs[obs_ind + 1, c('long','lat')], obj = bathy)
+  
+  # time between observations (sec)
+  dt = diff(as.numeric(animalobs$timestamp[obs_ind + 0:1]))
+  
+  # approximation: upper bound for number of poisson transitions in time window
+  data.frame(dt = dt,
+    nmax = qpois(p = .999, lambda = max_speed / grid_spacing * dt)
+  )
+}))
+
+time_n_max
+
+plot((time_n_max$dt/3600), time_n_max$nmax)
+
 ```
 
 We will need to incorporate the depth data as well at some point.  This will 
