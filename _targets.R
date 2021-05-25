@@ -15,7 +15,8 @@ tar_option_set(
   # packages = c('dplyr', 'lubridate', 'ggplot2', 'ggthemes', 'stringr', 
   #              'nimble', 'expm', 'pryr', 'suncalc', 'tarchetypes', 'coda',
   #              'tidyr', 'future', 'future.batchtools', 'viridis'),
-  packages = c('dsmovetools', 'ctmcmove'),
+  packages = c('dsmovetools', 'ctmcmove', 'coda', 'ggplot2', 'ggthemes', 
+               'dplyr'),
   imports = 'dsmovetools',
   deployment = 'main'
 )
@@ -26,5 +27,6 @@ lapply(list.files("R", full.names = TRUE, recursive = TRUE), source)
 # assemble workflow
 c(
   dir_targets,
-  simulation_targets
+  simulation_targets,
+  exact_targets
 )
