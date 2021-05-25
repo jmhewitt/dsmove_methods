@@ -189,6 +189,29 @@ exact_targets = list(
   
   # MC samples for exact posterior approximations
   tar_target(
+    name = rw_post_dtmc, 
+    command = {
+      # extract observations
+      obs = sim_rw_obs[[1]]$obs
+      m = nrow(obs$states) - 1
+      # generate and package results
+      list(list(
+        posterior = dtmc_approximation(
+          states = obs$states, times = obs$times, delta = .125, 
+          priors = rw_priors, niter = mc_rw_params$niter
+        ),
+        priors = rw_priors,
+        obs_interval = sim_rw_obs[[1]]$obs_interval
+      ))
+    },
+    pattern = cross(map(rw_priors), sim_rw_obs),
+    deployment = 'worker',
+    storage = 'worker',
+    memory = 'transient'
+  ),
+  
+  # MC samples for exact posterior approximations
+  tar_target(
     name = rw_post_hanks_uninformative, 
     command = {
       # extract observations
