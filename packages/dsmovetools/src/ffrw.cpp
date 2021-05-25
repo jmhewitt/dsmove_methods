@@ -9,6 +9,8 @@
 
 #include "ffrw.h"
 
+#include "log_complement.h"
+
 using namespace Rcpp;
 
 // let's use ints to index coordinates
@@ -22,6 +24,36 @@ typedef SparseNdimArrayLog<VectorI, double, std::map<VectorI, double>> LogArrayM
 typedef RookNeighborhood<IndexType, VectorI> RN;
 typedef ZConstrainedRookNeighborhood<IndexType, VectorI> ZRN;
 
+
+template <typename size_type, typename Neighborhood>
+void diffuseMassSelfTx(LogArrayMap *src,
+                       LogArrayMap *dst,
+                       Neighborhood *nbhd,
+                       double log_self_tx) {
+    // Parameters
+    //  log_self_tx - log of self-transition probability
+
+    // compute probability of making a transition
+    double log_tx = log_complement(log_self_tx);
+
+    // forward-filter all mass from the src vector to the dst vector
+    auto src_mass_entry = src->data.begin();
+    auto src_mass_end = src->data.end();
+    for(src_mass_entry; src_mass_entry != src_mass_end; ++src_mass_entry) {
+        // find neighborhood for previous location
+        nbhd->setCenter(src_mass_entry->first);
+        size_type nnbrs = nbhd->neighborhoodSize();
+        // add mass for self-transition
+        dst->addScaled(src_mass_entry->first, src_mass_entry->second,
+                       log_self_tx);
+        // diffuse mass, following a random walk along neighbors
+        double scaledNbrs = dst->normalizeScale(nnbrs) + log_tx;
+        for(size_type i = 0; i < nnbrs; ++i) {
+            dst->addScaled(nbhd->nextNeighbor(), src_mass_entry->second,
+                           scaledNbrs);
+        }
+    }
+}
 
 template <typename I, typename V, typename S, typename size_type, 
           typename Neighborhood>
@@ -65,8 +97,41 @@ StorageArray ffrw_light(const VectorI &dims, const StorageArray &a0,
     // diffuse mass
     for(IndexType step_cur = 0; step_cur < steps; ++step_cur) {
         // forward-filter all mass from the most recently diffused vector
-        diffuseMass<VectorI, double, std::map<VectorI, double>, size_type, 
+        diffuseMass<VectorI, double, std::map<VectorI, double>, size_type,
                    Neighborhood>(&prev, &cur, &nbhd);
+        // swap state
+        prev.data.swap(cur.data);
+        cur.data.clear();
+    }
+
+    return prev;
+};
+
+/**
+ * Forward filtering a random walk along a grid, without storing all
+ * intermediate distributions.  Forward filtering allows self-transitions.
+ *
+ * @param dims specify the number of locations along each dimension in grid
+ * @param a0 initial probability mass vector
+ * @param steps number of forward-diffusion steps to take
+ * @param nbhd Class that defines the neighborhood for arbitrary locations
+ * @return (sparse) diffused mass vectors
+ */
+template<typename size_type, typename Neighborhood>
+LogArrayMap ffrw_light_selftx(const VectorI &dims,
+                                     const LogArrayMap &a0,
+                                     const IndexType steps, Neighborhood &nbhd,
+                                     double log_self_tx) {
+
+    // initialize forward filtering vectors and initial mass
+    LogArrayMap cur, prev;
+    prev = a0;
+
+    // diffuse mass
+    for(IndexType step_cur = 0; step_cur < steps; ++step_cur) {
+        // forward-filter all mass from the most recently diffused vector
+        diffuseMassSelfTx<size_type, Neighborhood>(&prev, &cur, &nbhd,
+                                                   log_self_tx);
         // swap state
         prev.data.swap(cur.data);
         cur.data.clear();
@@ -341,6 +406,52 @@ NumericMatrix FFRWLightLogConstrained(
     ZRN zrn(dims, surface_heights.data(), domain_heights.data());
     LogArrayMap log_af = ffrw_light<IndexType, ZRN, LogArrayMap>(dims, log_a0, 
                                                                  steps, zrn);
+
+    // extract final, diffused probability
+    NumericMatrix out = NumericMatrix(log_af.data.size(), a0coords.ncol() + 1);
+    int i=0;
+    for(auto iter = log_af.data.begin(); iter != log_af.data.end(); ++iter) {
+        // extract coordinate info from array's storage format
+        VectorI c = iter->first;
+        for(int j=0; j < a0coords.ncol(); ++j) {
+            out(i,j) = c[j];
+        }
+        // extract value information
+        out(i++, out.ncol() - 1) = iter->second;
+    }
+
+    // return lexicographically sorted coord/val pairs
+    return out;
+}
+
+// [[Rcpp::export]]
+NumericMatrix FFRWLightLogConstrainedSelfTx(
+        NumericMatrix a0coords, NumericVector log_a0values,
+        std::vector<unsigned int> dims, int steps,
+        std::vector<double> surface_heights,
+        std::vector<double> domain_heights, double log_self_tx) {
+
+    // Parameters:
+    //   dims - number of locations along each dimension
+
+    // initial probability container
+    LogArrayMap log_a0;
+
+    // fill initial probability container
+    for(int i=0; i < a0coords.nrow(); i++) {
+        // munge R coordinate into array's storage format
+        VectorI c(a0coords.ncol());
+        for(int j=0; j< a0coords.ncol(); ++j)
+            c[j] = a0coords(i,j);
+        // insert coord/value pair into sparse array
+        log_a0.set(c, log_a0values(i));
+    }
+
+    // diffuse initial probability
+    ZRN zrn(dims, surface_heights.data(), domain_heights.data());
+    LogArrayMap log_af = ffrw_light_selftx<IndexType, ZRN>(
+            dims, log_a0, steps, zrn, log_self_tx
+    );
 
     // extract final, diffused probability
     NumericMatrix out = NumericMatrix(log_af.data.size(), a0coords.ncol() + 1);

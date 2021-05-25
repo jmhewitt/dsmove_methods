@@ -471,3 +471,117 @@ test_that('Validating null-forward filtering to destination', {
   )
   
 })
+
+
+test_that('Validating random walk self-transition filtering on a grid', {
+  
+  # number of dimensions
+  ndim = 3
+  # number of coordinates in each dimension
+  dims = c(10,10,1)
+  # coordinates
+  coords = expand.grid(x = 0:(dims[1]-1), y = 0:(dims[2]-1), z = 0)
+  # self-transition probability
+  self_tx_prob = .7
+  
+  # height of vertical layer
+  zval = 1
+  
+  # height of domain surface
+  zsurf = matrix(0, nrow = dims[1], ncol = dims[2])
+  
+  # template for neighbors
+  nbr.template = matrix(c(-1,0, 1,0, 0,-1, 0,1), ncol = 2, byrow = TRUE)
+  
+  # 1-step transition matrix
+  P = matrix(0, nrow = nrow(coords), ncol = nrow(coords))
+  for(i in 1:nrow(coords)) {
+    for(j in 1:nrow(nbr.template)) {
+      nbr = coords[i,] + nbr.template[j,]
+      nbr.col = which(
+        (unlist(nbr[1]) == coords[,1]) & (unlist(nbr[2]) == coords[,2])
+      )
+      P[i,nbr.col] = 1
+    }
+  }
+  P = sweep(x = P, MARGIN = 1, STATS = rowSums(P), FUN = '/')
+  
+  # add constant self-transition probability, and renormalize matrix
+  P = (1-self_tx_prob) * P
+  diag(P) = self_tx_prob
+  
+  # lexicographic ordering fn. from statnet.common package
+  # author: Pavel N. Krivitsky
+  order.matrix<-function(..., na.last = TRUE, decreasing=FALSE){
+    x <- list(...)[[1L]]
+    do.call(base::order,c(lapply(seq_len(ncol(x)), function(i) x[,i]), 
+                          na.last=na.last, 
+                          decreasing=decreasing)
+    )
+  }
+  
+  # extract probabilities
+  pstep = function(steps, loc) {
+    # diffused transition matrix
+    Pm = expm::`%^%`(P, steps)
+    # row in which to find output
+    loc.row = which(
+      (unlist(loc[1]) == coords[,1]) & (unlist(loc[2]) == coords[,2])
+    )
+    # output coordinates
+    nnz = which(Pm[loc.row,] > 0)
+    res = cbind(coords[nnz,], Pm[loc.row, nnz])
+    o = order.matrix(res)
+    res[o,]
+  }
+  
+  # initial probability mass
+  x0 = matrix(c(4,8,0), ncol = ndim)
+  p0 = 1
+  
+  #
+  # 1-step diffusion
+  #
+  
+  nsteps = 1
+  
+  # forward-filter
+  af = FFRWLightLogConstrainedSelfTx(
+    a0coords = x0, log_a0values = log(p0), dims = dims, steps = nsteps, 
+    surface_heights = zsurf, domain_heights = zval, 
+    log_self_tx = log(self_tx_prob)
+  )
+  
+  # back-transform probabilities
+  af[,4] = exp(af[,4])
+  
+  # check 1-step diffusion
+  expect_equivalent(
+    af,
+    as.matrix(pstep(steps = nsteps, loc = x0))
+  )
+  
+  #
+  # 7-step diffusion
+  #
+  
+  x0 = matrix(c(4,1,0), nrow = 1)
+  nsteps = 7
+  
+  # forward-filter
+  af = FFRWLightLogConstrainedSelfTx(
+    a0coords = x0, log_a0values = log(p0), dims = dims, steps = nsteps,
+    surface_heights = zsurf, domain_heights = zval, 
+    log_self_tx = log(self_tx_prob)
+  )
+  
+  # back-transform probabilities
+  af[,4] = exp(af[,4])  
+  
+  # check 7-step diffusion
+  expect_equivalent(
+    af,
+    as.matrix(pstep(steps = nsteps, loc = x0))
+  )
+  
+})

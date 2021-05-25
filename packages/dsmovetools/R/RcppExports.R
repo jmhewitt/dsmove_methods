@@ -57,6 +57,10 @@ FFRWLightLogConstrained <- function(a0coords, log_a0values, dims, steps, surface
     .Call('_dsmovetools_FFRWLightLogConstrained', PACKAGE = 'dsmovetools', a0coords, log_a0values, dims, steps, surface_heights, domain_heights)
 }
 
+FFRWLightLogConstrainedSelfTx <- function(a0coords, log_a0values, dims, steps, surface_heights, domain_heights, log_self_tx) {
+    .Call('_dsmovetools_FFRWLightLogConstrainedSelfTx', PACKAGE = 'dsmovetools', a0coords, log_a0values, dims, steps, surface_heights, domain_heights, log_self_tx)
+}
+
 FFRWLogConstrained <- function(a0coords, log_a0values, dims, steps, surface_heights, domain_heights) {
     .Call('_dsmovetools_FFRWLogConstrained', PACKAGE = 'dsmovetools', a0coords, log_a0values, dims, steps, surface_heights, domain_heights)
 }
