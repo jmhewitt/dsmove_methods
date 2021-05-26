@@ -233,8 +233,10 @@ exact_targets = list(
         batch_id = importance_sample_batch
       ))
     },
-    pattern = map(cross(map(rw_priors), sim_rw_obs), rw_post_dtmc,
-                  importance_sample_batch),
+    pattern = cross(
+      map(cross(map(rw_priors), sim_rw_obs), rw_post_dtmc),
+      importance_sample_batch
+    ),
     deployment = 'worker',
     storage = 'worker',
     memory = 'transient'
