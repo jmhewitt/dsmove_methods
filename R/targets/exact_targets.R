@@ -211,7 +211,7 @@ exact_targets = list(
   ),
   
   # batch execution plan for importance sampling
-  tar_target(n_is_batches, 5),
+  tar_target(n_is_batches, 12),
   tar_target(importance_sample_batch, 1:n_is_batches),
   
   # MC samples for exact posterior approximations
