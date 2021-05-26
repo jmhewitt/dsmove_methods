@@ -239,7 +239,9 @@ exact_targets = list(
     ),
     deployment = 'worker',
     storage = 'worker',
-    memory = 'transient'
+    memory = 'transient',
+    # Test setting to see if jobs are submitted faster and more reliably
+    retrieval = 'worker'
   ),
   
   # MC samples for exact posterior approximations
