@@ -91,7 +91,7 @@ dtmc_approximation_is = function(states, times, delta, priors, niter,
   
   # return results
   list(
-    samples = prop,
+    samples = samples,
     weights = weights,
     ll = samples_ll
   )
