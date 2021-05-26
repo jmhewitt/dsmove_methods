@@ -226,7 +226,7 @@ exact_targets = list(
         samples = dtmc_approximation_is(
           states = obs$states, times = obs$times, delta = .125, 
           priors = rw_priors, niter = mc_rw_params$niter / n_is_batches, 
-          gapprox = rw_post_dtmc$posterior
+          gapprox = rw_post_dtmc[[1]]$posterior
         ),
         priors = rw_priors,
         obs_interval = sim_rw_obs[[1]]$obs_interval,
