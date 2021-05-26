@@ -360,6 +360,8 @@ exact_targets = list(
     name = rw_post_summaries_combined, 
     command = {
       
+      # load DTMC approximation results
+      rw_post_dtmc_raw = rw_post_dtmc
       # extract parameters from model fits
       df = rbind(
         do.call(rbind, lapply(rw_post_mostlikely, function(res) {
@@ -427,8 +429,24 @@ exact_targets = list(
                      prior = res$priors$name, 
                      obs.interval = res$obs_interval,
                      method = 'Model-based imputation')
+        })),
+        do.call(rbind, lapply(rw_post_dtmc_raw, function(res) {
+          data.frame(
+            prior = res$priors$name,
+            obs.interval = res$obs_interval,
+            method = 'DTMC approximation', 
+            post.mean = res$posterior$post_mean,
+            hpd.lwr = res$posterior$lower,
+            hpd.upr = res$posterior$upper
+          )
         }))
       )
+      
+      df = df %>% filter(
+        method %in% c('DTMC approximation', 'Hanks', 'Model-based imputation',
+                      'Truth known')
+      )
+      
       
       pl = ggplot(df %>% dplyr::filter(obs.interval < 3,
                                   method != 'Model-based imputation'), 
