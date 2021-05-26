@@ -187,7 +187,7 @@ exact_targets = list(
     memory = 'transient'
   ),
   
-  # MC samples for exact posterior approximations
+  # gaussian approximation to posterior for exact posterior approximations
   tar_target(
     name = rw_post_dtmc, 
     command = {
@@ -205,6 +205,36 @@ exact_targets = list(
       ))
     },
     pattern = cross(map(rw_priors), sim_rw_obs),
+    deployment = 'worker',
+    storage = 'worker',
+    memory = 'transient'
+  ),
+  
+  # batch execution plan for importance sampling
+  tar_target(n_is_batches, 5),
+  tar_target(importance_sample_batch, 1:n_is_batches),
+  
+  # MC samples for exact posterior approximations
+  tar_target(
+    name = rw_post_dtmc_samples, 
+    command = {
+      # extract observations
+      obs = sim_rw_obs[[1]]$obs
+      m = nrow(obs$states) - 1
+      # generate and package results
+      list(list(
+        samples = dtmc_approximation_is(
+          states = obs$states, times = obs$times, delta = .125, 
+          priors = rw_priors, niter = mc_rw_params$niter / n_is_batches, 
+          gapprox = rw_post_dtmc$posterior
+        ),
+        priors = rw_priors,
+        obs_interval = sim_rw_obs[[1]]$obs_interval,
+        batch_id = importance_sample_batch
+      ))
+    },
+    pattern = map(cross(map(rw_priors), sim_rw_obs), rw_post_dtmc,
+                  importance_sample_batch),
     deployment = 'worker',
     storage = 'worker',
     memory = 'transient'
@@ -362,6 +392,8 @@ exact_targets = list(
       
       # load DTMC approximation results
       rw_post_dtmc_raw = rw_post_dtmc
+      # rw_post_dtmc_raw = readRDS('rw_post_dtmc.rds')
+      
       # extract parameters from model fits
       df = rbind(
         do.call(rbind, lapply(rw_post_mostlikely, function(res) {
