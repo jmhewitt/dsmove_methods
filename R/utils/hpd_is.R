@@ -7,7 +7,10 @@ hpd_is = function(x, w, prob = 0.95) {
   #  prob - probability level
 
   if(sum(w) != 1) {
-    stop('Importance weights are not standardized.')
+    warning(
+      paste('Importance weights are not standardized. Difference is',
+            1 - sum(w), '.', sep = ' ')
+    )
   }  
   
   # sort samples and weights
