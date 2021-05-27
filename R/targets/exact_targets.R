@@ -214,7 +214,7 @@ exact_targets = list(
   tar_target(n_is_batches, 12),
   tar_target(importance_sample_batch, 1:n_is_batches),
   
-  # MC samples for exact posterior approximations
+  # IS samples for exact posterior approximations
   tar_target(
     name = rw_post_dtmc_samples, 
     command = {
@@ -242,6 +242,68 @@ exact_targets = list(
     memory = 'transient',
     # Test setting to see if jobs are submitted faster and more reliably
     retrieval = 'worker'
+  ),
+  
+  # post-process IS samples for DTMC posterior
+  tar_target(
+    name = rw_post_dtmc_samples_summary,
+    command = {
+      
+      # load raw results
+      # rw_post_dtmc_samples = readRDS(file = 'rw_post_dtmc_samples.rds')
+      
+      # extract aggregation information from each block of samples
+      sample_groupings = do.call(
+        rbind, lapply(rw_post_dtmc_samples, function(res) {
+          data.frame(obs_interval = res$obs_interval, prior = res$priors$name)
+      }))
+      rownames(sample_groupings) = NULL
+      
+      # get unique groups
+      groups = unique(sample_groupings)
+      
+      # associate raw sample blocks with groups
+      group_inds = lapply(1:nrow(groups), function(g_ind) {
+        g = unlist(groups[g_ind,])
+        which(sapply(1:nrow(sample_groupings), function(i) {
+          identical(g, unlist(sample_groupings[i,]))
+        }))
+      })
+      
+      # aggregate and summarize posteriors
+      df = do.call(rbind, mapply(function(gind, block_inds) {
+        
+        # aggregate all samples from blocked output
+        samples = do.call(
+          rbind, lapply(rw_post_dtmc_samples[block_inds], function(res) {
+            data.frame(
+              theta = res$samples$samples, 
+              weights = res$samples$weights
+            )
+        }))
+        
+        # standardize sampling weights
+        std_wts = exp(std_is_wts(w = samples$weights, log = TRUE))
+        std_wts = std_wts / sum(std_wts)
+        
+        # hpd interval
+        hpd = hpd_is(
+          x = samples$theta, 
+          w = std_wts, 
+          prob = 0.95
+        )
+        
+        # package results
+        data.frame(
+          groups[gind,],
+          ess = ess_is(std_wts),
+          post_mean = sum(samples$theta * std_wts),
+          hpd.lwr = hpd['lower'],
+          hpd.upr = hpd['upper']
+        )
+        
+      }, gind = 1:nrow(groups), block_inds = group_inds, SIMPLIFY = FALSE))
+    }
   ),
   
   # MC samples for exact posterior approximations
@@ -475,12 +537,22 @@ exact_targets = list(
             hpd.lwr = res$posterior$lower,
             hpd.upr = res$posterior$upper
           )
-        }))
+        })),
+        rw_post_dtmc_samples_summary %>% 
+          mutate( method = 'DTMC IS approximation') %>% 
+          select(
+            prior,
+            obs.interval = obs_interval,
+            method,
+            post.mean = post_mean,
+            hpd.lwr,
+            hpd.upr
+          )
       )
       
       df = df %>% filter(
-        method %in% c('DTMC approximation', 'Hanks', 'Model-based imputation',
-                      'Truth known')
+        method %in% c('DTMC approximation', 'DTMC IS approximation', 'Hanks', 
+                      'Model-based imputation', 'Truth known')
       )
       
       
