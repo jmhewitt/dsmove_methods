@@ -55,6 +55,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// TestBivariateSparseNdimArrayReadWrite
+NumericMatrix TestBivariateSparseNdimArrayReadWrite(NumericMatrix coords1, NumericMatrix coords2, NumericVector values);
+RcppExport SEXP _dsmovetools_TestBivariateSparseNdimArrayReadWrite(SEXP coords1SEXP, SEXP coords2SEXP, SEXP valuesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type coords1(coords1SEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type coords2(coords2SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type values(valuesSEXP);
+    rcpp_result_gen = Rcpp::wrap(TestBivariateSparseNdimArrayReadWrite(coords1, coords2, values));
+    return rcpp_result_gen;
+END_RCPP
+}
 // TxModelParams
 NumericMatrix TxModelParams(std::vector<unsigned int> cur_loc, std::vector<unsigned int> prev_loc, std::vector<unsigned int> dims, double betaAR);
 RcppExport SEXP _dsmovetools_TxModelParams(SEXP cur_locSEXP, SEXP prev_locSEXP, SEXP dimsSEXP, SEXP betaARSEXP) {
@@ -280,6 +293,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_TestRookDot", (DL_FUNC) &_dsmovetools_TestRookDot, 3},
     {"_dsmovetools_TestRookNeighborhood", (DL_FUNC) &_dsmovetools_TestRookNeighborhood, 2},
     {"_dsmovetools_TestSparseNdimArrayReadWrite", (DL_FUNC) &_dsmovetools_TestSparseNdimArrayReadWrite, 2},
+    {"_dsmovetools_TestBivariateSparseNdimArrayReadWrite", (DL_FUNC) &_dsmovetools_TestBivariateSparseNdimArrayReadWrite, 3},
     {"_dsmovetools_TxModelParams", (DL_FUNC) &_dsmovetools_TxModelParams, 4},
     {"_dsmovetools_TxModelSample", (DL_FUNC) &_dsmovetools_TxModelSample, 4},
     {"_dsmovetools_TxModelLd", (DL_FUNC) &_dsmovetools_TxModelLd, 5},
