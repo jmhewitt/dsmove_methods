@@ -17,10 +17,13 @@ NumericMatrix TxModelParams(
         std::vector<unsigned int> dims, double betaAR
 ) {
 
+    typedef unsigned int CoordVal;
+    typedef std::vector<CoordVal> CoordVec;
+
     RN rn(dims);
     RD rd(cur_loc.size());
 
-    TxModel<RN, RD, std::vector<unsigned int>, unsigned int> txm(rn, rd);
+    TxModel<RN, RD, CoordVec, CoordVal> txm(rn, rd);
 
     txm.setBetaAR(betaAR);
 
@@ -30,8 +33,10 @@ NumericMatrix TxModelParams(
 
     std::vector<double> lp = txm.logProbs();
 
+    std::vector<CoordVec> nbrs = txm.neighbors();
+
     for(int i=0; i < out.nrow(); ++i) {
-        std::vector<unsigned int> nbr = rn.nextNeighbor();
+        CoordVec nbr = nbrs[i];
         for(int j=0; j < dims.size(); ++j) {
             out(i,j) = nbr[j];
         }

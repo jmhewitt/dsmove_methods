@@ -23,6 +23,9 @@ class TxModel {
         // log of normalizing constant
         double log_mass;
 
+        // labels for neighbors
+        std::vector<Index> nbrs;
+
         // auto-regressive model component
         double beta_ar;
         bool beta_ar_nonzero;
@@ -36,6 +39,8 @@ class TxModel {
         void setBetaAR(double v) { beta_ar = v; };
 
         std::vector<double> logProbs();
+
+        std::vector<Index> neighbors();
 
         Index sampleNeighbor();
 
@@ -55,7 +60,13 @@ void TxModel<N,D,I,size_type>::constructProbs(const I &cur_loc,
     // initialize probability vector
     log_probs.clear();
     log_probs.reserve(nnbrs);
-    nbhd->nextNeighbor();
+
+    // initialize storage for neighbor labels
+    nbrs.clear();
+    nbrs.reserve(nnbrs);
+
+    // begin iterations
+    nbrs.emplace_back(nbhd->nextNeighbor());
 
     // determine unnormalized probability of initial neighbor
     double lp = beta_ar * dirs->dotOrientation(nbhd->neighborHeading());
@@ -64,7 +75,7 @@ void TxModel<N,D,I,size_type>::constructProbs(const I &cur_loc,
 
     // determine unnormalized probability of additional neighbors
     for(size_type i = 1; i < nnbrs; ++i) {
-        nbhd->nextNeighbor();
+        nbrs.emplace_back(nbhd->nextNeighbor());
         double lp = beta_ar * dirs->dotOrientation(nbhd->neighborHeading());
         log_probs.emplace_back(lp);
         log_mass = log_add(log_mass, lp);
@@ -79,6 +90,11 @@ void TxModel<N,D,I,size_type>::constructProbs(const I &cur_loc,
 template<typename N, typename D, typename I, typename size_type>
 std::vector<double> TxModel<N,D,I,size_type>::logProbs() {
     return log_probs;
+}
+
+template<typename N, typename D, typename I, typename size_type>
+std::vector<I> TxModel<N,D,I,size_type>::neighbors() {
+    return nbrs;
 }
 
 template<typename N, typename D, typename Index, typename size_type>
