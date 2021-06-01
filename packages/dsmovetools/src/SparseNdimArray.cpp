@@ -5,9 +5,6 @@
 #include <Rcpp.h>
 #include "SparseNdimArray.h"
 
-typedef std::vector<double> CoordVec;
-typedef std::pair<CoordVec, CoordVec> CoordVecPair;
-
 using namespace Rcpp;
 
 // [[Rcpp::export]]
@@ -49,6 +46,9 @@ NumericMatrix TestSparseNdimArrayReadWrite(
 // [[Rcpp::export]]
 NumericMatrix TestBivariateSparseNdimArrayReadWrite(
         NumericMatrix coords1, NumericMatrix coords2, NumericVector values) {
+
+    typedef std::vector<double> CoordVec;
+    typedef std::pair<CoordVec, CoordVec> CoordVecPair;
 
     // initialize container w/lexicographically sorted iterator via STL defaults
     SparseNdimArray<CoordVecPair, double, std::map<CoordVecPair, double>> array;
