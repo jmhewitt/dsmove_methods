@@ -45,6 +45,10 @@ SampleConstrainedBridgedRWPathFamily <- function(a0coords, dstcoords, dims, step
     .Call('_dsmovetools_SampleConstrainedBridgedRWPathFamily', PACKAGE = 'dsmovetools', a0coords, dstcoords, dims, steps, max_steps, surface_heights, domain_heights, n)
 }
 
+FFRWLightLogConstrainedSelfTxAR <- function(a0, a0_prev_coords, log_a0val, dims, steps, surface_heights, domain_heights, log_self_tx, betaAR) {
+    .Call('_dsmovetools_FFRWLightLogConstrainedSelfTxAR', PACKAGE = 'dsmovetools', a0, a0_prev_coords, log_a0val, dims, steps, surface_heights, domain_heights, log_self_tx, betaAR)
+}
+
 TestFFRW <- function(a0coords, a0values, dims, steps) {
     .Call('_dsmovetools_TestFFRW', PACKAGE = 'dsmovetools', a0coords, a0values, dims, steps)
 }
