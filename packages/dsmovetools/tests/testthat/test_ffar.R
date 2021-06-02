@@ -59,9 +59,10 @@ test_that('Validating random walk self-transition filtering on a grid', {
       }
       # aggregate transition probabilities
       res = data.frame(tmp) %>% 
-        group_by(V1, V2, V3, V4, V5, V6) %>% 
-        summarise(lp = log(sum(exp(lp)))) %>% 
-        ungroup() %>% as.matrix()
+        dplyr::group_by(V1, V2, V3, V4, V5, V6) %>% 
+        dplyr::summarise(lp = log(sum(exp(lp)))) %>% 
+        dplyr::ungroup() %>% 
+        as.matrix()
     }
     
     # package results
