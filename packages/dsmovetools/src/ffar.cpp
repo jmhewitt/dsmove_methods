@@ -191,3 +191,115 @@ NumericMatrix FFRWLightLogConstrainedSelfTxAR(
     // return lexicographically sorted coord/val pairs
     return out;
 }
+
+class ObsIndicatorLik {
+private:
+    VectorI obsloc;
+    VectorI oob;
+public:
+    ObsIndicatorLik(const VectorI &dims) {
+        oob = dims;
+        for(auto it = oob.begin(); it != oob.end(); ++it) {
+            *(it) = *(it) + 1;
+        }
+    }
+    void setObsLoc(const VectorI &coord) {
+        obsloc = coord;
+    }
+    double ll(const VectorIPair &coordPair) {
+        // do not match observations with nan; these are unconstrained data
+        if(obsloc == oob) {
+            return 0;
+        }
+        // return -Inf if coordinates do not match
+        if(coordPair.first == obsloc) {
+            return 0;
+        } else {
+            return -std::numeric_limits<double>::infinity();
+        }
+    }
+};
+
+// [[Rcpp::export]]
+double ARFilteredLL(
+        NumericMatrix a0, NumericMatrix a0_prev_coords,
+        NumericMatrix obs_coords, NumericVector log_a0val,
+        std::vector<unsigned int> dims, std::vector<double> surface_heights,
+        std::vector<double> domain_heights, double log_self_tx, double betaAR) {
+
+    // number of steps to integrate over in likelihood
+    unsigned int nsteps = obs_coords.nrow();
+
+    // initialize log-likelihood
+    double ll = 0;
+
+    // initial probability container
+    LogARMap log_a0;
+
+    // fill initial probability container
+    for (int i = 0; i < a0.nrow(); i++) {
+        // munge R coordinate into array's storage format
+        VectorI c(a0.ncol());
+        VectorI c0(a0_prev_coords.ncol());
+        for (int j = 0; j < a0.ncol(); ++j) {
+            c[j] = a0(i, j);
+            c0[j] = a0_prev_coords(i, j);
+        }
+        // insert coord/value pair into sparse array
+        log_a0.set(VectorIPair(c, c0), log_a0val(i));
+    }
+
+    // initialize neighborhood and transition structures
+    ZRN zrn(dims, surface_heights.data(), domain_heights.data());
+    RD rd(a0.ncol());
+    TXM txm(zrn, rd);
+    txm.setBetaAR(betaAR);
+
+    // initialize likelihood
+    ObsIndicatorLik lik(dims);
+
+
+    /*
+     * diffuse initial probability while aggregating likelihood
+     */
+
+    LogARMap cur, prev;
+    prev = log_a0;
+
+    // diffuse mass across likelihood steps
+    for(IndexType step_cur = 0; step_cur < nsteps; ++step_cur) {
+
+        // set observation likelihood, for diffusion
+        VectorI coord(a0.ncol());
+        for(int j = 0; j < a0.ncol(); ++j) {
+            if(std::isnan(obs_coords(step_cur,j))) {
+                coord[j] = dims[j] + 1;
+            } else {
+                coord[j] = obs_coords(step_cur,j);
+            }
+        }
+        lik.setObsLoc(coord);
+
+        // aggregate marginal likelihood over last diffused probability state
+        double ll_step = -std::numeric_limits<double>::infinity();
+        for (auto iter = prev.data.begin(); iter != prev.data.end(); ++iter) {
+            // get log-likelihood for diffused location
+            double ll_state = lik.ll(iter->first);
+            if(isfinite(ll_state)) {
+                ll_step = log_add(ll_step, iter->second + ll_state);
+            }
+        }
+        ll += ll_step;
+
+        // diffuse mass (i.e., update prediction distribution)
+        diffuseMassSelfTxAR<IndexType, ZRN, TXM>(
+                &prev, &cur, &zrn, &txm, log_self_tx, &lik
+        );
+
+        // swap state, to prepare for next diffusion
+        prev.data.swap(cur.data);
+        cur.data.clear();
+    }
+
+    return ll;
+}
