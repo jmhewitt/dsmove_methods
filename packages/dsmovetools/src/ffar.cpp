@@ -30,9 +30,10 @@ typedef RookDirections<IndexType , VectorI> RD;
 typedef TxModel<ZRN, RD, VectorI, double> TXM;
 
 
-template <typename size_type, typename Neighborhood, typename TxMod>
+template <typename size_type, typename Neighborhood, typename TxMod,
+        typename SrcLik>
 void diffuseMassSelfTxAR(LogARMap *src, LogARMap *dst, Neighborhood *nbhd,
-                         TxMod *txmod, double log_self_tx) {
+                         TxMod *txmod, double log_self_tx, SrcLik *srclik) {
     // Parameters
     //  log_self_tx - log of self-transition probability
 
@@ -43,25 +44,30 @@ void diffuseMassSelfTxAR(LogARMap *src, LogARMap *dst, Neighborhood *nbhd,
     auto src_mass_entry = src->data.begin();
     auto src_mass_end = src->data.end();
     for(src_mass_entry; src_mass_entry != src_mass_end; ++src_mass_entry) {
-        // find reachable nodes for current location
-        nbhd->setCenter(src_mass_entry->first.first);
-        size_type nnbrs = nbhd->neighborhoodSize();
-        // add mass for self-transition to dst vector
-        dst->addScaled(src_mass_entry->first, src_mass_entry->second,
-                       log_self_tx);
-        // compute and extract stepwise transition probabilities
-        txmod->constructProbs(src_mass_entry->first.first,
-                              src_mass_entry->first.second);
-        std::vector<VectorI> nbrs = txmod->neighbors();
-        std::vector<double> lp = txmod->logProbs();
-        // weight stepwise tx. probs. by non self-tx prob and mass of atom
-        for(size_type i = 0; i < nnbrs; ++i) {
-            dst->addScaled(
-                std::pair<VectorI, VectorI>(nbrs[i],
-                                            src_mass_entry->first.first),
-                src_mass_entry->second,
-                lp[i] + log_tx
-            );
+        // get log-likelihood for current location
+        double ll = srclik->ll(src_mass_entry->first);
+        // forward-diffuse from location if observation likelihood is finite
+        if(isfinite(ll)) {
+            // find reachable nodes for current location
+            nbhd->setCenter(src_mass_entry->first.first);
+            size_type nnbrs = nbhd->neighborhoodSize();
+            // add mass for self-transition to dst vector
+            dst->addScaled(src_mass_entry->first, src_mass_entry->second,
+            log_self_tx);
+            // compute and extract stepwise transition probabilities
+            txmod->constructProbs(src_mass_entry->first.first,
+            src_mass_entry->first.second);
+            std::vector<VectorI> nbrs = txmod->neighbors();
+            std::vector<double> lp = txmod->logProbs();
+            // weight stepwise tx. probs. by non self-tx prob and mass of atom
+            for(size_type i = 0; i < nnbrs; ++i) {
+                dst->addScaled(
+                    std::pair<VectorI, VectorI>(nbrs[i],
+                                                src_mass_entry->first.first),
+                    src_mass_entry->second,
+                    lp[i] + log_tx
+                );
+            }
         }
     }
 }
@@ -76,11 +82,13 @@ void diffuseMassSelfTxAR(LogARMap *src, LogARMap *dst, Neighborhood *nbhd,
  * @param nbhd Class that defines the neighborhood for arbitrary locations
  * @return (sparse) diffused mass vectors
  */
-template<typename size_type, typename Neighborhood, typename TxMod>
+template<typename size_type, typename Neighborhood, typename TxMod,
+        typename SrcLik>
 LogARMap ffrw_light_selftx_ar(const VectorI &dims,
                               const LogARMap &a0,
                               const IndexType steps, Neighborhood &nbhd,
-                              TxMod &txmod, double log_self_tx) {
+                              TxMod &txmod, double log_self_tx,
+                              SrcLik &srclik) {
 
     // initialize forward filtering vectors and initial mass
     LogARMap cur, prev;
@@ -90,7 +98,7 @@ LogARMap ffrw_light_selftx_ar(const VectorI &dims,
     for(IndexType step_cur = 0; step_cur < steps; ++step_cur) {
         // forward-filter all mass from the most recently diffused vector
         diffuseMassSelfTxAR<size_type, Neighborhood, TxMod>(
-                &prev, &cur, &nbhd, &txmod, log_self_tx
+                &prev, &cur, &nbhd, &txmod, log_self_tx, &srclik
         );
         // swap state
         prev.data.swap(cur.data);
@@ -100,6 +108,14 @@ LogARMap ffrw_light_selftx_ar(const VectorI &dims,
     return prev;
 };
 
+template<typename Index>
+class UniformLik {
+    public:
+        double ll(const Index &coord) {
+            return 0;
+        }
+};
+
 // [[Rcpp::export]]
 NumericMatrix FFRWLightLogConstrainedSelfTxAR(
         NumericMatrix a0, NumericMatrix a0_prev_coords,
@@ -107,7 +123,6 @@ NumericMatrix FFRWLightLogConstrainedSelfTxAR(
         std::vector<unsigned int> dims, int steps,
         std::vector<double> surface_heights,
         std::vector<double> domain_heights, double log_self_tx, double betaAR) {
-
 
     // initial probability container
     LogARMap log_a0;
@@ -131,9 +146,12 @@ NumericMatrix FFRWLightLogConstrainedSelfTxAR(
     TXM txm(zrn, rd);
     txm.setBetaAR(betaAR);
 
+    UniformLik<VectorIPair> ulik;
+
     // diffuse initial probability
-    LogARMap log_af = ffrw_light_selftx_ar<IndexType, ZRN, TXM>(
-            dims, log_a0, steps, zrn, txm, log_self_tx
+    LogARMap log_af = ffrw_light_selftx_ar<IndexType, ZRN, TXM,
+        UniformLik<VectorIPair>>(
+            dims, log_a0, steps, zrn, txm, log_self_tx, ulik
     );
 
     // extract final, diffused probability
