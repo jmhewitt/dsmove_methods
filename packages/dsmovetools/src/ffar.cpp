@@ -40,6 +40,9 @@ void diffuseMassSelfTxAR(LogARMap *src, LogARMap *dst, Neighborhood *nbhd,
     // compute probability of making a transition
     double log_tx = log_complement(log_self_tx);
 
+    // log-mass of dst vector
+    double dst_mass = -std::numeric_limits<double>::infinity();
+
     // forward-filter all mass from the src vector to the dst vector
     auto src_mass_entry = src->data.begin();
     auto src_mass_end = src->data.end();
@@ -52,22 +55,36 @@ void diffuseMassSelfTxAR(LogARMap *src, LogARMap *dst, Neighborhood *nbhd,
             nbhd->setCenter(src_mass_entry->first.first);
             size_type nnbrs = nbhd->neighborhoodSize();
             // add mass for self-transition to dst vector
-            dst->addScaled(src_mass_entry->first, src_mass_entry->second,
-            log_self_tx);
+            double m = src_mass_entry->second + log_self_tx;
+            dst->add(src_mass_entry->first, m);
+            // aggregate total output mass
+            dst_mass = log_add(dst_mass, m);
             // compute and extract stepwise transition probabilities
             txmod->constructProbs(src_mass_entry->first.first,
-            src_mass_entry->first.second);
+                                  src_mass_entry->first.second);
             std::vector<VectorI> nbrs = txmod->neighbors();
             std::vector<double> lp = txmod->logProbs();
             // weight stepwise tx. probs. by non self-tx prob and mass of atom
             for(size_type i = 0; i < nnbrs; ++i) {
-                dst->addScaled(
-                    std::pair<VectorI, VectorI>(nbrs[i],
-                                                src_mass_entry->first.first),
-                    src_mass_entry->second,
-                    lp[i] + log_tx
+                // mass of transitioning to dst vector
+                double m = src_mass_entry->second + lp[i] + log_tx;
+                dst->add(
+                    std::pair<VectorI, VectorI>(
+                        nbrs[i], src_mass_entry->first.first
+                    ),
+                    m
                 );
+                // aggregate total output mass
+                dst_mass = log_add(dst_mass, m);
             }
+        }
+    }
+    // standardize distribution
+    if(dst_mass != 0) {
+        auto dst_mass_entry = dst->data.begin();
+        auto dst_mass_end = dst->data.end();
+        for(dst_mass_entry; dst_mass_entry != dst_mass_end; ++dst_mass_entry) {
+            dst_mass_entry->second -= dst_mass;
         }
     }
 }
