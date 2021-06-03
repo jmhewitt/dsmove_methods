@@ -50,7 +50,7 @@ void diffuseMassSelfTxAR(LogARMap *src, LogARMap *dst, Neighborhood *nbhd,
         // get log-likelihood for current location
         double ll = srclik->ll(src_mass_entry->first);
         // forward-diffuse from location if observation likelihood is finite
-        if(isfinite(ll)) {
+        if(std::isfinite(ll)) {
             // find reachable nodes for current location
             nbhd->setCenter(src_mass_entry->first.first);
             size_type nnbrs = nbhd->neighborhoodSize();
@@ -285,7 +285,7 @@ double ARFilteredLL(
         for (auto iter = prev.data.begin(); iter != prev.data.end(); ++iter) {
             // get log-likelihood for diffused location
             double ll_state = lik.ll(iter->first);
-            if(isfinite(ll_state)) {
+            if(std::isfinite(ll_state)) {
                 ll_step = log_add(ll_step, iter->second + ll_state);
             }
         }
