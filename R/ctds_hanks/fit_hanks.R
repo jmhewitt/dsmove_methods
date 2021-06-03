@@ -1,4 +1,6 @@
 fit_hanks = function(params, niter, priors, states, times, dims, reps) {
+  # Approximate posterior distribution for the 2 parameter CTDS model
+  #
   # Parameters:
   #  params - list containing initial model parameters
   #  niter - number of MCMC samples to draw
@@ -8,14 +10,6 @@ fit_hanks = function(params, niter, priors, states, times, dims, reps) {
   #  dims - dimensions of spatial domain
   
   # following package use from help('ctmcmove')
-  
-  # targets::tar_load(sim_obs)
-  # targets::tar_load(sim_params)
-  # library(ctmcmove)
-  # 
-  # states = sim_obs[[1]]$states
-  # times = sim_obs[[1]]$times
-  # dims = sim_params$dims
   
   # extract coordinate/time triples
   xyt = cbind(states, times)
@@ -60,8 +54,11 @@ fit_hanks = function(params, niter, priors, states, times, dims, reps) {
   
   coords = round(coordinates(X))
 
-  # log-density for trajectory
+  # log-density for complete trajectory
   ld_path = function(theta, states, durations) {
+    # Parameters
+    #   theta - model parameters on the transformed scale, so all elements of 
+    #     theta are supported on \mathbb{R}
     
     # initial state of path
     prev_loc = states[1,]
@@ -110,12 +107,14 @@ fit_hanks = function(params, niter, priors, states, times, dims, reps) {
     # path likelihood
     ld_path(theta = theta, states = states, durations = durations) + 
     # prior
-    dnorm(x = theta[1], mean = priors$beta_ar$mean, sd = priors$beta_ar$sd,
+    dnorm(x = theta[1], mean = priors$betaAR['mean'], sd = priors$betaAR['sd'],
           log = TRUE) +
-    sum(dnorm(x = theta[-1], mean = priors$beta$mean, sd = priors$beta$sd,
-              log = TRUE))
+    dgamma(x = exp(theta[-1]), shape = priors$theta['shape'], 
+           rate =  priors$theta['rate'], log = TRUE) + 
+    # Jacobian to account for transformation in which sampling is done on 
+    #   unconstrained space, but prior for theta[-1] is defined on [0,\infty)
+    jac.log(x = theta[-1], log = TRUE)
   }
-  
   
   
   # 
@@ -157,7 +156,7 @@ fit_hanks = function(params, niter, priors, states, times, dims, reps) {
       lp = numeric(niter),
       ctmc = ctmc
     )
-    colnames(samples$param_vec) = c('beta_ar', 'beta_loc')
+    colnames(samples$param_vec) = c('betaAR', 'log_theta')
     
     # run sampler
     for(it in 1:niter) {
@@ -172,7 +171,6 @@ fit_hanks = function(params, niter, priors, states, times, dims, reps) {
       }
       
       # save samples
-      # samples$path[[it]] = path
       samples$param_vec[it, ] = param_vec
       samples$lp[it] =  lpfn(x = param_vec, x_ind = 1:n_params, 
                              theta = param_vec, states = ctmc$states, 
