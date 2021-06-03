@@ -16,7 +16,7 @@ tar_option_set(
   #              'nimble', 'expm', 'pryr', 'suncalc', 'tarchetypes', 'coda',
   #              'tidyr', 'future', 'future.batchtools', 'viridis'),
   packages = c('dsmovetools', 'ctmcmove', 'coda', 'ggplot2', 'ggthemes', 
-               'dplyr'),
+               'dplyr', 'bisque'),
   imports = 'dsmovetools',
   deployment = 'main'
 )
