@@ -98,7 +98,8 @@ simulation_targets = list(
     pattern = cross(sim_obs, rep_batch),
     deployment = 'worker',
     storage = 'worker',
-    memory = 'transient'
+    memory = 'transient',
+    error = 'continue'
   ),
   
   tar_target(
@@ -121,7 +122,8 @@ simulation_targets = list(
     pattern = map(sim_obs),
     deployment = 'worker',
     storage = 'worker',
-    memory = 'transient'
+    memory = 'transient',
+    error = 'continue'
   )
   
 )
