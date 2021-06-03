@@ -77,7 +77,8 @@ dtmc_ar_approximation = function(states, times, delta, priors, niter = 1e3,
   # extract initial gaussian approximation
   gapprox = list(
     post_mean = o$par,
-    post_cov = solve(-o$hessian)
+    post_cov = solve(-o$hessian),
+    convergence = o$convergence
   )
   gapprox$post_sd = sqrt(diag(gapprox$post_cov))
   names(gapprox$post_mean) = c('theta', 'betaAR')
