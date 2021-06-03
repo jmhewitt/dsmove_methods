@@ -53,7 +53,7 @@ simulation_targets = list(
     pattern = map(sim_params)
   ),
   
-  tar_target(obs_interval, c(5, 1, .5, .25)),
+  tar_target(obs_interval, c(2, 1, .5, .25)),
   
   # observe CTDS trajectory under increasing temporal resolution
   tar_target(
