@@ -106,6 +106,14 @@ simulation_targets = list(
     name = sim_fit_dtmc_gapprox, 
     command = {
       
+      message(paste(
+        tar_name(), ': ', 
+        ' betaAR: ', sim_obs[[1]]$params$betaAR,
+        ' obs_ind:', sim_obs[[1]]$obs_interval,
+        sep = ''
+      ))
+      
+      debugonce(dtmc_ar_approximation)
       gapprox = dtmc_ar_approximation(
         states = sim_obs[[1]]$obs$states, 
         times = sim_obs[[1]]$obs$times, 
