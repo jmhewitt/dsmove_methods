@@ -113,7 +113,6 @@ simulation_targets = list(
         sep = ''
       ))
       
-      debugonce(dtmc_ar_approximation)
       gapprox = dtmc_ar_approximation(
         states = sim_obs[[1]]$obs$states, 
         times = sim_obs[[1]]$obs$times, 
