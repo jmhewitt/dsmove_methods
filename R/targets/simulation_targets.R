@@ -117,7 +117,7 @@ simulation_targets = list(
       gapprox = dtmc_ar_approximation(
         states = sim_obs[[1]]$obs$states, 
         times = sim_obs[[1]]$obs$times, 
-        delta = .125, 
+        delta = .125/2,
         priors = sim_priors, 
         dims = sim_obs[[1]]$params$dims
       )
