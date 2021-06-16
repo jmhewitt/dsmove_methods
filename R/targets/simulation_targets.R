@@ -131,6 +131,136 @@ simulation_targets = list(
     storage = 'worker',
     memory = 'transient',
     error = 'continue'
+  ),
+  
+  tar_target(
+    name = simulation_hanks_summaries,
+    command = {
+      
+      sim_fits_hanks = readRDS('sim_fits_hanks.rds')
+
+      burn = 1:5e3
+      
+      # extract identifiers for each batch output
+      batch_ids = do.call(
+        rbind,  lapply(1:length(sim_fits_hanks), function(ind) {
+        res = sim_fits_hanks[[ind]]
+        data.frame(batch = ind, 
+          obs_interval = res$sim_obs$obs_interval,
+          beta = res$sim_obs$params$beta,
+          betaAR = res$sim_obs$params$betaAR)
+      }))
+      
+      # determine unique groups
+      groups = unique(batch_ids[, c('obs_interval', 'beta', 'betaAR')])
+      groups = cbind(groups, gid = 1:nrow(groups))
+      
+      # associate group ids with the batch numbers
+      batch_map = batch_ids %>% 
+        dplyr::left_join(groups, by = c('obs_interval', 'beta', 'betaAR')) %>% 
+        dplyr::select(batch, gid)
+      
+      # extract posterior summaries
+      summaries = do.call(rbind, lapply(groups$gid, function(g) {
+        # extract batches associated with group
+        res_subset = sim_fits_hanks[
+          batch_map %>% 
+            dplyr::filter(gid == g) %>% 
+            dplyr::select(batch) %>% 
+            unlist()
+        ]
+        # aggregate posterior samples
+        samples = do.call(rbind, lapply(res_subset, function(batches) {
+          do.call(rbind, lapply(batches$samples$samples, function(res) {
+            res$param_vec[-burn,]
+          }))
+        }))
+        # transform parameter
+        samples[,'log_theta'] = exp(samples[,'log_theta'])
+        colnames(samples)[2] = 'theta'
+        # hpds 
+        hpds = HPDinterval(mcmc(samples))
+        # package results
+        data.frame(
+          param = colnames(samples),
+          mean = colMeans(samples),
+          lwr = hpds[,'lower'],
+          upr = hpds[,'upper'],
+          truth = c(unlist(res_subset[[1]]$sim_obs$params['betaAR']),
+                    exp(unlist(res_subset[[1]]$sim_obs$params['beta']))),
+          method = 'Hanks',
+          obs.interval = res_subset[[1]]$sim_obs$obs_interval,
+          scenario = paste(
+            'theta = ', exp(res_subset[[1]]$sim_obs$params$beta),
+            ' betaAR = ', res_subset[[1]]$sim_obs$params$betaAR,
+            sep = ''
+          )
+        )
+      }))
+      
+      summaries
+    }
+  ),
+  
+  tar_target(
+    name = simulation_summaries_combined, 
+    command = {
+      
+      sim_fit_dtmc_gapprox = readRDS('sim_fit_dtmc_gapprox.rds')
+      
+      # extract posterior summaries from model fits
+      df = do.call(rbind, lapply(sim_fit_dtmc_gapprox, function(res) {
+        rbind(
+          data.frame(
+            mean = res$gapprox$post_mean['theta'],
+            lwr = res$gapprox$hpds['theta', 'lower'],
+            upr = res$gapprox$hpds['theta', 'upper'],
+            truth = exp(res$sim_obs$params$beta),
+            obs.interval = res$sim_obs$obs_interval,
+            scenario = paste(
+              'theta = ', exp(res$sim_obs$params$beta),
+              ' betaAR = ', res$sim_obs$params$betaAR,
+              sep = ''
+            ),
+            method = 'DTMC',
+            param = 'theta'
+          ),
+          data.frame(
+            mean = res$gapprox$post_mean['betaAR'],
+            lwr = res$gapprox$hpds['betaAR', 'lower'],
+            upr = res$gapprox$hpds['betaAR', 'upper'],
+            truth = res$sim_obs$params$betaAR,
+            obs.interval = res$sim_obs$obs_interval,
+            scenario = paste(
+              'theta = ', exp(res$sim_obs$params$beta),
+              ' betaAR = ', res$sim_obs$params$betaAR,
+              sep = ''
+            ),
+            method = 'DTMC',
+            param = 'betaAR'
+          )
+        )
+      }))
+      
+      # append hanks results
+      df = rbind(df, simulation_hanks_summaries)
+      
+      # 
+      plot_eps = .02
+      
+      pl = ggplot(df, aes(x = obs.interval - (method == 'Hanks') * plot_eps, 
+                          y = mean, ymin = lwr, ymax = upr, col = method)) + 
+        facet_wrap(~scenario*param, nrow = 2, scales = 'free') + 
+        geom_hline(mapping = aes(yintercept = truth), lty = 3) + 
+        scale_x_continuous('Time between observations', 
+                           breaks = sort(unique(df$obs.interval))) + 
+        geom_pointrange() + 
+        scale_color_brewer(type = 'qual', palette = 'Dark2') + 
+        theme_few()
+      
+      pl
+      ggsave(pl, filename = 'posteriors_2param.pdf', width = 8, height = 5)
+    }
   )
   
 )
