@@ -32,6 +32,49 @@ typedef TxModel<ZRN, RD, VectorI, double> TXM;
 
 template <typename size_type, typename Neighborhood, typename TxMod,
         typename SrcLik>
+void backFilterMassAF(LogARMap *src, LogARMap *dst, Neighborhood *nbhd,
+                      TxMod *txmod, double log_self_tx, SrcLik *srclik) {
+    // Parameters
+    //  log_self_tx - log of self-transition probability
+
+    // compute probability of making a transition
+    double log_tx = log_complement(log_self_tx);
+
+    // backward-filter all mass from the src vector to the dst vector
+    auto src_mass_entry = src->data.begin();
+    auto src_mass_end = src->data.end();
+    for(src_mass_entry; src_mass_entry != src_mass_end; ++src_mass_entry) {
+        // get weight for current entry
+        double lw = src_mass_entry->second;
+        // add self-transition probability
+        double ll = srclik->ll(src_mass_entry->first);
+        if(std::isfinite(ll)) {
+            // aggregate back-filtered mass in destination
+            dst->add(src_mass_entry->first, ll + log_self_tx + lw);
+        }
+        // loop over CTMC neighborhood of current entry "(cur_loc, prev_loc)"
+        nbhd->setCenter(src_mass_entry->first.second);
+        size_type nnbrs = nbhd->neighborhoodSize();
+        for(size_type i = 0; i < nnbrs; ++i) {
+            VectorI nbr = nbhd->nextNeighbor();
+            // compute and extract forward stepwise transition probabilities
+            txmod->constructProbs(src_mass_entry->first.second, nbr);
+            double ltx = txmod->ld(src_mass_entry->first.first);
+            // get log-likelihood for observation
+            VectorIPair ctmc_nbr = VectorIPair(
+                    src_mass_entry->first.second, nbr
+            );
+            double ll = srclik->ll(ctmc_nbr);
+            if(std::isfinite(ll)) {
+                // aggregate back-filtered mass in destination
+                dst->add(ctmc_nbr, ll + log_tx + ltx + lw);
+            }
+        }
+    }
+}
+
+template <typename size_type, typename Neighborhood, typename TxMod,
+        typename SrcLik>
 void diffuseMassSelfTxAR(LogARMap *src, LogARMap *dst, Neighborhood *nbhd,
                          TxMod *txmod, double log_self_tx, SrcLik *srclik) {
     // Parameters
@@ -418,6 +461,132 @@ Rcpp::List ARPredDist(
         }
 
         res[it] = out;
+    }
+
+    return res;
+}
+
+// [[Rcpp::export]]
+Rcpp::List ARBackInfoFilteringDist(
+        NumericMatrix a0, NumericMatrix a0_prev_coords,
+        NumericMatrix obs_coords, NumericVector log_a0val,
+        std::vector<unsigned int> dims, std::vector<double> surface_heights,
+        std::vector<double> domain_heights, double log_self_tx, double betaAR,
+        std::vector<unsigned int> pred_steps) {
+
+    // number of steps to integrate over in likelihood
+    unsigned int nsteps = obs_coords.nrow();
+
+    // initial probability container
+    LogARMap log_a0;
+
+    // fill initial probability container
+    for (int i = 0; i < a0.nrow(); i++) {
+        // munge R coordinate into array's storage format
+        VectorI c(a0.ncol());
+        VectorI c0(a0_prev_coords.ncol());
+        for (int j = 0; j < a0.ncol(); ++j) {
+            c[j] = a0(i, j);
+            c0[j] = a0_prev_coords(i, j);
+        }
+        // insert coord/value pair into sparse array
+        log_a0.set(VectorIPair(c, c0), log_a0val(i));
+    }
+
+    // initialize neighborhood and transition structures
+    ZRN zrn(dims, surface_heights.data(), domain_heights.data());
+    ZRN zrn2(dims, surface_heights.data(), domain_heights.data());
+    RD rd(a0.ncol());
+    TXM txm(zrn2, rd); // use a 2nd copy of neighborhood b/c its mutable
+    txm.setBetaAR(betaAR);
+
+    // initialize likelihood
+    ObsIndicatorLik lik(dims);
+
+    // initialize container for predictive distributions
+    std::vector<LogARMap> pred_distns;
+    pred_distns.reserve(pred_steps.size());
+
+    /*
+     * diffuse initial probability while aggregating likelihood
+     */
+
+    LogARMap cur, prev;
+    prev = log_a0;
+
+    auto pred_step_iter = pred_steps.rbegin();
+    auto pred_step_end = pred_steps.rend();
+
+    // diffuse mass across likelihood steps
+    for(IndexType step_cur = nsteps - 2; step_cur >= 0; --step_cur) {
+
+        // set observation likelihood, for diffusion
+        VectorI coord(a0.ncol());
+        for(int j = 0; j < a0.ncol(); ++j) {
+            if(std::isnan(obs_coords(step_cur,j))) {
+                coord[j] = dims[j] + 1;
+            } else {
+                coord[j] = obs_coords(step_cur,j);
+            }
+        }
+        lik.setObsLoc(coord);
+
+        // diffuse mass (i.e., update prediction distribution)
+        backFilterMassAF<IndexType, ZRN, TXM>(
+            &prev, &cur, &zrn, &txm, log_self_tx, &lik
+        );
+
+        // save prediction distribution
+        if(pred_step_iter != pred_step_end) {
+            if(*pred_step_iter == step_cur) {
+                pred_distns.push_back(cur);
+                pred_step_iter++;
+            }
+        }
+
+        // check end condition
+        if(pred_step_iter == pred_step_end) {
+            break;
+        }
+
+        // swap state, to prepare for next diffusion
+        prev.data.swap(cur.data);
+        cur.data.clear();
+    }
+
+    //
+    // package results
+    //
+
+    Rcpp::List res(pred_steps.size());
+
+    int it = 0;
+    auto distn_it = pred_distns.rbegin();
+    auto distn_end = pred_distns.rend();
+    for(distn_it; distn_it != distn_end ; ++distn_it) {
+
+        LogARMap pred_dist = *distn_it;
+
+        NumericMatrix out = NumericMatrix(pred_dist.data.size(),
+                                          a0.ncol() * 2 + 1);
+
+        int i =0;
+        auto iter = pred_dist.data.begin();
+        auto end = pred_dist.data.end();
+        for(iter; iter != end; ++iter) {
+            // extract coordinate info from array's storage format
+            VectorIPair c = iter->first;
+            for(int j=0; j < a0.ncol(); ++j) {
+                out(i,j) = c.first[j];
+            }
+            for(int j=0; j < a0.ncol(); ++j) {
+                out(i, a0.ncol() + j) = c.second[j];
+            }
+            // extract value information
+            out(i++, out.ncol() - 1) = iter->second;
+        }
+
+        res[it++] = out;
     }
 
     return res;
