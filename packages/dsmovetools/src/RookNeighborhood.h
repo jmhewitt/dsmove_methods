@@ -114,7 +114,7 @@ void RookNeighborhood<size_type, Index>::setCenter(const Index& coord) {
 template<typename size_type, typename Index>
 Index RookNeighborhood<size_type, Index>::nextNeighbor() {
     if(nnbrs == 0) {
-        // avoid infinite recursive if there is no neighborhood
+        // avoid infinite recursion if there is no neighborhood
         return center;
     } else if(dim_iter < ndim) {
         if(onLwr) {
