@@ -303,3 +303,126 @@ double ARFilteredLL(
 
     return ll;
 }
+
+// [[Rcpp::export]]
+Rcpp::List ARPredDist(
+        NumericMatrix a0, NumericMatrix a0_prev_coords,
+        NumericMatrix obs_coords, NumericVector log_a0val,
+        std::vector<unsigned int> dims, std::vector<double> surface_heights,
+        std::vector<double> domain_heights, double log_self_tx, double betaAR,
+        std::vector<unsigned int> pred_steps) {
+
+    // number of steps to integrate over in likelihood
+    unsigned int nsteps = obs_coords.nrow();
+
+    // initial probability container
+    LogARMap log_a0;
+
+    // fill initial probability container
+    for (int i = 0; i < a0.nrow(); i++) {
+        // munge R coordinate into array's storage format
+        VectorI c(a0.ncol());
+        VectorI c0(a0_prev_coords.ncol());
+        for (int j = 0; j < a0.ncol(); ++j) {
+            c[j] = a0(i, j);
+            c0[j] = a0_prev_coords(i, j);
+        }
+        // insert coord/value pair into sparse array
+        log_a0.set(VectorIPair(c, c0), log_a0val(i));
+    }
+
+    // initialize neighborhood and transition structures
+    ZRN zrn(dims, surface_heights.data(), domain_heights.data());
+    RD rd(a0.ncol());
+    TXM txm(zrn, rd);
+    txm.setBetaAR(betaAR);
+
+    // initialize likelihood
+    ObsIndicatorLik lik(dims);
+
+    // initialize container for predictive distributions
+    std::vector<LogARMap> pred_distns;
+    pred_distns.reserve(pred_steps.size());
+
+    /*
+     * diffuse initial probability while aggregating likelihood
+     */
+
+    LogARMap cur, prev;
+    prev = log_a0;
+
+    auto pred_step_iter = pred_steps.begin();
+    auto pred_step_end = pred_steps.end();
+
+    // diffuse mass across likelihood steps
+    for(IndexType step_cur = 0; step_cur < nsteps; ++step_cur) {
+
+        // set observation likelihood, for diffusion
+        VectorI coord(a0.ncol());
+        for(int j = 0; j < a0.ncol(); ++j) {
+            if(std::isnan(obs_coords(step_cur,j))) {
+                coord[j] = dims[j] + 1;
+            } else {
+                coord[j] = obs_coords(step_cur,j);
+            }
+        }
+        lik.setObsLoc(coord);
+
+        // save prediction distribution, and check end condition
+        if(pred_step_iter != pred_step_end) {
+            if(*pred_step_iter == step_cur) {
+                pred_distns.push_back(prev);
+                pred_step_iter++;
+            }
+        } else {
+            break;
+        }
+
+        // diffuse mass (i.e., update prediction distribution)
+        diffuseMassSelfTxAR<IndexType, ZRN, TXM>(
+                &prev, &cur, &zrn, &txm, log_self_tx, &lik
+        );
+
+        // swap state, to prepare for next diffusion
+        prev.data.swap(cur.data);
+        cur.data.clear();
+    }
+
+    //
+    // package results
+    //
+
+    Rcpp::List res(pred_steps.size());
+
+    Rcpp::Rcout << pred_distns.size() << std::endl;
+
+    for(IndexType it = 0; it < pred_distns.size(); ++it) {
+
+        LogARMap pred_dist = pred_distns[it];
+
+        Rcpp::Rcout << " " << pred_dist.data.size() << std::endl;
+
+        NumericMatrix out = NumericMatrix(pred_dist.data.size(),
+                                          a0.ncol() * 2 + 1);
+
+        int i =0;
+        auto iter = pred_dist.data.begin();
+        auto end = pred_dist.data.end();
+        for(iter; iter != end; ++iter) {
+            // extract coordinate info from array's storage format
+            VectorIPair c = iter->first;
+            for(int j=0; j < a0.ncol(); ++j) {
+                out(i,j) = c.first[j];
+            }
+            for(int j=0; j < a0.ncol(); ++j) {
+                out(i, a0.ncol() + j) = c.second[j];
+            }
+            // extract value information
+            out(i++, out.ncol() - 1) = iter->second;
+        }
+
+        res[it] = out;
+    }
+
+    return res;
+}

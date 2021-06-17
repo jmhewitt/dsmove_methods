@@ -53,6 +53,10 @@ ARFilteredLL <- function(a0, a0_prev_coords, obs_coords, log_a0val, dims, surfac
     .Call('_dsmovetools_ARFilteredLL', PACKAGE = 'dsmovetools', a0, a0_prev_coords, obs_coords, log_a0val, dims, surface_heights, domain_heights, log_self_tx, betaAR)
 }
 
+ARPredDist <- function(a0, a0_prev_coords, obs_coords, log_a0val, dims, surface_heights, domain_heights, log_self_tx, betaAR, pred_steps) {
+    .Call('_dsmovetools_ARPredDist', PACKAGE = 'dsmovetools', a0, a0_prev_coords, obs_coords, log_a0val, dims, surface_heights, domain_heights, log_self_tx, betaAR, pred_steps)
+}
+
 TestFFRW <- function(a0coords, a0values, dims, steps) {
     .Call('_dsmovetools_TestFFRW', PACKAGE = 'dsmovetools', a0coords, a0values, dims, steps)
 }
