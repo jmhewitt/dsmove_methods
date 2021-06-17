@@ -517,29 +517,13 @@ Rcpp::List ARBackInfoFilteringDist(
     auto pred_step_iter = pred_steps.rbegin();
     auto pred_step_end = pred_steps.rend();
 
-    // diffuse mass across likelihood steps
-    for(IndexType step_cur = nsteps - 2; step_cur >= 0; --step_cur) {
-
-        // set observation likelihood, for diffusion
-        VectorI coord(a0.ncol());
-        for(int j = 0; j < a0.ncol(); ++j) {
-            if(std::isnan(obs_coords(step_cur,j))) {
-                coord[j] = dims[j] + 1;
-            } else {
-                coord[j] = obs_coords(step_cur,j);
-            }
-        }
-        lik.setObsLoc(coord);
-
-        // diffuse mass (i.e., update prediction distribution)
-        backFilterMassAF<IndexType, ZRN, TXM>(
-            &prev, &cur, &zrn, &txm, log_self_tx, &lik
-        );
+    // diffuse mass across likelihood steps (not quite 0-based indexing)
+    for(IndexType step_cur = nsteps; step_cur > 1; --step_cur) {
 
         // save prediction distribution
         if(pred_step_iter != pred_step_end) {
             if(*pred_step_iter == step_cur) {
-                pred_distns.push_back(cur);
+                pred_distns.push_back(prev);
                 pred_step_iter++;
             }
         }
@@ -548,6 +532,23 @@ Rcpp::List ARBackInfoFilteringDist(
         if(pred_step_iter == pred_step_end) {
             break;
         }
+
+        // set observation likelihood, for diffusion; offset accounts for
+        // initialization using last observation and non 0-based indexing
+        VectorI coord(a0.ncol());
+        for(int j = 0; j < a0.ncol(); ++j) {
+            if(std::isnan(obs_coords(step_cur - 2, j))) {
+                coord[j] = dims[j] + 1;
+            } else {
+                coord[j] = obs_coords(step_cur - 2, j);
+            }
+        }
+        lik.setObsLoc(coord);
+
+        // diffuse mass (i.e., update prediction distribution)
+        backFilterMassAF<IndexType, ZRN, TXM>(
+            &prev, &cur, &zrn, &txm, log_self_tx, &lik
+        );
 
         // swap state, to prepare for next diffusion
         prev.data.swap(cur.data);
