@@ -394,13 +394,9 @@ Rcpp::List ARPredDist(
 
     Rcpp::List res(pred_steps.size());
 
-    Rcpp::Rcout << pred_distns.size() << std::endl;
-
     for(IndexType it = 0; it < pred_distns.size(); ++it) {
 
         LogARMap pred_dist = pred_distns[it];
-
-        Rcpp::Rcout << " " << pred_dist.data.size() << std::endl;
 
         NumericMatrix out = NumericMatrix(pred_dist.data.size(),
                                           a0.ncol() * 2 + 1);
