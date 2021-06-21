@@ -71,3 +71,48 @@ test_that('Validating input and output of coordinate pairs', {
   )
   
 })
+
+test_that('Validating input and output for hash map arrays', {
+  
+  # number of dimensions
+  dim = 2
+  # number of coordinates
+  n = 10
+  
+  # random coordinates and values
+  coords1 = matrix(1:(dim), nrow = n, ncol = dim)
+  coords2 = cbind(
+    c(2,2,4,4,6,6,7,7,5,5),
+    c(1,2,1,2,1,2,1,2,1,2)
+  )
+  x = runif(n)
+  
+  # lexicographic ordering fn. from statnet.common package
+  # author: Pavel N. Krivitsky
+  order.matrix<-function(..., na.last = TRUE, decreasing=FALSE){
+    x <- list(...)[[1L]]
+    do.call(base::order,c(lapply(seq_len(ncol(x)), function(i) x[,i]), 
+                          na.last=na.last, 
+                          decreasing=decreasing)
+    )
+  }
+  
+  # lexicographic ordering for coordinates
+  o = order.matrix(cbind(coords1, coords2))
+  reordered = cbind(coords1,coords2,x)[o,]
+  dimnames(reordered) = NULL
+  
+  # input/output from c++
+  vec_out = TestSparseNdimArrayHash(
+    coords1 = coords1, coords2 = coords2, values = x
+  )
+  o2 = order.matrix(vec_out[,-ncol(vec_out)])
+  vec_out_reordered = vec_out[o2,]
+  
+  # verify r/w data to the SparseNDimArray class in a predictable manner
+  expect_identical(
+    vec_out_reordered,
+    reordered
+  )
+  
+})
