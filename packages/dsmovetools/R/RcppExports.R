@@ -21,6 +21,10 @@ TestBivariateSparseNdimArrayReadWrite <- function(coords1, coords2, values) {
     .Call('_dsmovetools_TestBivariateSparseNdimArrayReadWrite', PACKAGE = 'dsmovetools', coords1, coords2, values)
 }
 
+TestSparseNdimArrayHash <- function(coords1, coords2, values) {
+    .Call('_dsmovetools_TestSparseNdimArrayHash', PACKAGE = 'dsmovetools', coords1, coords2, values)
+}
+
 TxModelParams <- function(cur_loc, prev_loc, dims, betaAR) {
     .Call('_dsmovetools_TxModelParams', PACKAGE = 'dsmovetools', cur_loc, prev_loc, dims, betaAR)
 }
