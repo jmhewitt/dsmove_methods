@@ -87,8 +87,6 @@ void GpsLik::setLikToObs(unsigned int ind) {
     }
 }
 
-// TODO: run some tests to ensure that the nan's will be read correctly, etc.
-
 // [[Rcpp::export]]
 double GpsLikEval(
         std::vector<double> obs_lons, std::vector<double> obs_lats,
