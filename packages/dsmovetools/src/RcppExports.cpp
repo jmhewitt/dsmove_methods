@@ -6,6 +6,25 @@
 
 using namespace Rcpp;
 
+// GpsLikEval
+double GpsLikEval(std::vector<double> obs_lons, std::vector<double> obs_lats, std::vector<double> semi_majors, std::vector<double> semi_minors, std::vector<double> orientations, double alpha, double test_lon, double test_lat, int ind);
+RcppExport SEXP _dsmovetools_GpsLikEval(SEXP obs_lonsSEXP, SEXP obs_latsSEXP, SEXP semi_majorsSEXP, SEXP semi_minorsSEXP, SEXP orientationsSEXP, SEXP alphaSEXP, SEXP test_lonSEXP, SEXP test_latSEXP, SEXP indSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_lons(obs_lonsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_lats(obs_latsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type semi_majors(semi_majorsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type semi_minors(semi_minorsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type orientations(orientationsSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type test_lon(test_lonSEXP);
+    Rcpp::traits::input_parameter< double >::type test_lat(test_latSEXP);
+    Rcpp::traits::input_parameter< int >::type ind(indSEXP);
+    rcpp_result_gen = Rcpp::wrap(GpsLikEval(obs_lons, obs_lats, semi_majors, semi_minors, orientations, alpha, test_lon, test_lat, ind));
+    return rcpp_result_gen;
+END_RCPP
+}
 // TestRookOrientation
 std::vector<unsigned int> TestRookOrientation(std::vector<unsigned int> head, std::vector<unsigned int> tail);
 RcppExport SEXP _dsmovetools_TestRookOrientation(SEXP headSEXP, SEXP tailSEXP) {
@@ -380,6 +399,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_dsmovetools_GpsLikEval", (DL_FUNC) &_dsmovetools_GpsLikEval, 9},
     {"_dsmovetools_TestRookOrientation", (DL_FUNC) &_dsmovetools_TestRookOrientation, 2},
     {"_dsmovetools_TestRookDot", (DL_FUNC) &_dsmovetools_TestRookDot, 3},
     {"_dsmovetools_TestRookNeighborhood", (DL_FUNC) &_dsmovetools_TestRookNeighborhood, 2},
