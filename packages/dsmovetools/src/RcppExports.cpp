@@ -6,6 +6,22 @@
 
 using namespace Rcpp;
 
+// DepthLikEval
+double DepthLikEval(std::vector<unsigned int> dims, std::vector<unsigned int> coords, std::vector<unsigned int> obs_depths, std::vector<double> zfield, std::vector<double> zvals, int ind);
+RcppExport SEXP _dsmovetools_DepthLikEval(SEXP dimsSEXP, SEXP coordsSEXP, SEXP obs_depthsSEXP, SEXP zfieldSEXP, SEXP zvalsSEXP, SEXP indSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type coords(coordsSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type obs_depths(obs_depthsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type zfield(zfieldSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type zvals(zvalsSEXP);
+    Rcpp::traits::input_parameter< int >::type ind(indSEXP);
+    rcpp_result_gen = Rcpp::wrap(DepthLikEval(dims, coords, obs_depths, zfield, zvals, ind));
+    return rcpp_result_gen;
+END_RCPP
+}
 // GpsLikEval
 double GpsLikEval(std::vector<double> obs_lons, std::vector<double> obs_lats, std::vector<double> semi_majors, std::vector<double> semi_minors, std::vector<double> orientations, double alpha, double test_lon, double test_lat, int ind);
 RcppExport SEXP _dsmovetools_GpsLikEval(SEXP obs_lonsSEXP, SEXP obs_latsSEXP, SEXP semi_majorsSEXP, SEXP semi_minorsSEXP, SEXP orientationsSEXP, SEXP alphaSEXP, SEXP test_lonSEXP, SEXP test_latSEXP, SEXP indSEXP) {
@@ -399,6 +415,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_dsmovetools_DepthLikEval", (DL_FUNC) &_dsmovetools_DepthLikEval, 6},
     {"_dsmovetools_GpsLikEval", (DL_FUNC) &_dsmovetools_GpsLikEval, 9},
     {"_dsmovetools_TestRookOrientation", (DL_FUNC) &_dsmovetools_TestRookOrientation, 2},
     {"_dsmovetools_TestRookDot", (DL_FUNC) &_dsmovetools_TestRookDot, 3},
