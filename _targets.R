@@ -16,7 +16,7 @@ tar_option_set(
   #              'nimble', 'expm', 'pryr', 'suncalc', 'tarchetypes', 'coda',
   #              'tidyr', 'future', 'future.batchtools', 'viridis'),
   packages = c('dsmovetools', 'ctmcmove', 'coda', 'ggplot2', 'ggthemes', 
-               'dplyr', 'bisque'),
+               'dplyr', 'bisque', 'sp', 'lubridate'),
   imports = 'dsmovetools',
   deployment = 'main'
 )
@@ -28,5 +28,6 @@ lapply(list.files("R", full.names = TRUE, recursive = TRUE), source)
 c(
   dir_targets,
   simulation_targets,
-  exact_targets
+  exact_targets,
+  whale_targets
 )
