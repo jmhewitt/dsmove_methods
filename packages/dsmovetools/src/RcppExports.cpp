@@ -286,6 +286,33 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// SattagFilteredLL
+double SattagFilteredLL(NumericMatrix a0, NumericMatrix a0_prev_coords, NumericVector log_a0val, double gps_trunc_alpha, std::vector<double> obs_lons, std::vector<double> obs_lats, std::vector<double> obs_semi_majors, std::vector<double> obs_semi_minors, std::vector<double> obs_orientations, std::vector<unsigned int> obs_depth_bins, std::vector<double> lon_gridvals, std::vector<double> lat_gridvals, std::vector<unsigned int> dims, std::vector<double> surface_heights, std::vector<double> domain_heights, double log_self_tx, double betaAR);
+RcppExport SEXP _dsmovetools_SattagFilteredLL(SEXP a0SEXP, SEXP a0_prev_coordsSEXP, SEXP log_a0valSEXP, SEXP gps_trunc_alphaSEXP, SEXP obs_lonsSEXP, SEXP obs_latsSEXP, SEXP obs_semi_majorsSEXP, SEXP obs_semi_minorsSEXP, SEXP obs_orientationsSEXP, SEXP obs_depth_binsSEXP, SEXP lon_gridvalsSEXP, SEXP lat_gridvalsSEXP, SEXP dimsSEXP, SEXP surface_heightsSEXP, SEXP domain_heightsSEXP, SEXP log_self_txSEXP, SEXP betaARSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type a0(a0SEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type a0_prev_coords(a0_prev_coordsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type log_a0val(log_a0valSEXP);
+    Rcpp::traits::input_parameter< double >::type gps_trunc_alpha(gps_trunc_alphaSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_lons(obs_lonsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_lats(obs_latsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_semi_majors(obs_semi_majorsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_semi_minors(obs_semi_minorsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_orientations(obs_orientationsSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type obs_depth_bins(obs_depth_binsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type lon_gridvals(lon_gridvalsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type lat_gridvals(lat_gridvalsSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type surface_heights(surface_heightsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type domain_heights(domain_heightsSEXP);
+    Rcpp::traits::input_parameter< double >::type log_self_tx(log_self_txSEXP);
+    Rcpp::traits::input_parameter< double >::type betaAR(betaARSEXP);
+    rcpp_result_gen = Rcpp::wrap(SattagFilteredLL(a0, a0_prev_coords, log_a0val, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depth_bins, lon_gridvals, lat_gridvals, dims, surface_heights, domain_heights, log_self_tx, betaAR));
+    return rcpp_result_gen;
+END_RCPP
+}
 // TestFFRW
 NumericMatrix TestFFRW(NumericMatrix a0coords, NumericVector a0values, std::vector<unsigned int> dims, int steps);
 RcppExport SEXP _dsmovetools_TestFFRW(SEXP a0coordsSEXP, SEXP a0valuesSEXP, SEXP dimsSEXP, SEXP stepsSEXP) {
@@ -433,6 +460,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_ARFilteredLL", (DL_FUNC) &_dsmovetools_ARFilteredLL, 9},
     {"_dsmovetools_ARPredDist", (DL_FUNC) &_dsmovetools_ARPredDist, 10},
     {"_dsmovetools_ARBackInfoFilteringDist", (DL_FUNC) &_dsmovetools_ARBackInfoFilteringDist, 10},
+    {"_dsmovetools_SattagFilteredLL", (DL_FUNC) &_dsmovetools_SattagFilteredLL, 17},
     {"_dsmovetools_TestFFRW", (DL_FUNC) &_dsmovetools_TestFFRW, 4},
     {"_dsmovetools_TestFFRWLight", (DL_FUNC) &_dsmovetools_TestFFRWLight, 4},
     {"_dsmovetools_TestFFRWLightLog", (DL_FUNC) &_dsmovetools_TestFFRWLightLog, 4},
