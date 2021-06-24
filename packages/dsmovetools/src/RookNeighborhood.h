@@ -27,6 +27,7 @@ class RookNeighborhood {
         size_type dim_cur;                  // dimension of current neighbor
 
         Index translateCoord(const Index&, const size_type, const int);
+        Index&   translateCoordInPlace(Index&, const size_type, const int);
 
     protected:
 
@@ -82,6 +83,15 @@ Index RookNeighborhood<size_type, Index>::translateCoord(const Index& coord,
 }
 
 template<typename size_type, typename Index>
+Index& RookNeighborhood<size_type, Index>::translateCoordInPlace(Index& coord,
+                                                         const size_type dim,
+                                                         const int value) {
+    // shift the coordinate by "value" units in dimension "dim"
+    coord[dim] += value;
+    return coord;
+}
+
+template<typename size_type, typename Index>
 void RookNeighborhood<size_type, Index>::setCenter(const Index& coord) {
     // keep a copy of the neighborhood center
     center = coord;
@@ -92,18 +102,19 @@ void RookNeighborhood<size_type, Index>::setCenter(const Index& coord) {
     // pre-explore the neighborhood
     if(inDomain(center)) {
         for(size_type i = 0; i < ndim; ++i) {
-            if(inDomain(translateCoord(center, i, -1))) {
+            if(inDomain(translateCoordInPlace(center, i, -1))) {
                 lwr_nbr[i] = true;
                 nnbrs++;
             } else {
                 lwr_nbr[i] = false;
             }
-            if(inDomain(translateCoord(center, i, 1))) {
+            if(inDomain(translateCoordInPlace(center, i, 2))) {
                 upr_nbr[i] = true;
                 nnbrs++;
             } else {
                 upr_nbr[i] = false;
             }
+            translateCoordInPlace(center, i, -1);
         }
     }
 

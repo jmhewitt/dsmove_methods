@@ -39,8 +39,10 @@ class TxModel {
         void setBetaAR(double v) { beta_ar = v; };
 
         std::vector<double> logProbs();
+        std::vector<double>* logProbs_ptr();
 
         std::vector<Index> neighbors();
+        std::vector<Index>* neighbors_ptr();
 
         Index sampleNeighbor();
 
@@ -51,7 +53,7 @@ class TxModel {
 
 template<typename N, typename D, typename I, typename size_type>
 void TxModel<N,D,I,size_type>::constructProbs(const I &cur_loc,
-                                              const I & prev_loc) {
+                                              const I &prev_loc) {
     // set neighborhood structure
     nbhd->setCenter(cur_loc);
     dirs->setOrientation(cur_loc, prev_loc);
@@ -93,8 +95,18 @@ std::vector<double> TxModel<N,D,I,size_type>::logProbs() {
 }
 
 template<typename N, typename D, typename I, typename size_type>
+std::vector<double>* TxModel<N,D,I,size_type>::logProbs_ptr() {
+    return &log_probs;
+}
+
+template<typename N, typename D, typename I, typename size_type>
 std::vector<I> TxModel<N,D,I,size_type>::neighbors() {
     return nbrs;
+}
+
+template<typename N, typename D, typename I, typename size_type>
+std::vector<I>* TxModel<N,D,I,size_type>::neighbors_ptr() {
+    return &nbrs;
 }
 
 template<typename N, typename D, typename Index, typename size_type>
@@ -129,12 +141,10 @@ Index TxModel<N,D,Index,size_type>::sampleNeighbor() {
 template<typename N, typename D, typename Index, typename size_type>
 double TxModel<N,D,Index,size_type>::ld(const Index &dst) {
 
-    // re-align neighborhood iterator with probability vector
-    nbhd->resetNeighborIterator();
-
+    auto nbr = nbrs.begin();
     auto end = log_probs.end();
     for(auto lp = log_probs.begin(); lp != end; ++lp) {
-        if(dst == nbhd->nextNeighbor()) {
+        if(dst == *(nbr++)) {
             return *lp;
         }
     }
