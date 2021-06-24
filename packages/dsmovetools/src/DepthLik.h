@@ -10,9 +10,13 @@
 
 using namespace Rcpp;
 
-class DepthLik {
+class DepthLikBase {
 
     private:
+
+        // domain structure for bathymetry data
+        ZConstrainedRookNeighborhood<unsigned int,
+                std::vector<unsigned int>> *domain;
 
         // quick switch to indicate that observations are NA
         bool na_obs;
@@ -20,9 +24,21 @@ class DepthLik {
         // depth bin to which likelihood is set
         unsigned int depth;
 
-        // domain structure for bathymetry data
-        ZConstrainedRookNeighborhood<unsigned int,
-            std::vector<unsigned int>> *domain;
+    public:
+
+        DepthLikBase(ZConstrainedRookNeighborhood<unsigned int,
+                     std::vector<unsigned int>> &nbhd) : domain(&nbhd) { };
+
+        // log-likelihood for coordinates relative to observation uncertainty
+        double ll(std::vector<unsigned int>);
+
+        void setLik(unsigned int);
+
+};
+
+class DepthLik : public DepthLikBase {
+
+    private:
 
         // depth bin observations
         std::vector<unsigned int> *depths;
@@ -33,13 +49,10 @@ class DepthLik {
             std::vector<unsigned int> &obs_depths,
             ZConstrainedRookNeighborhood<unsigned int,
                                          std::vector<unsigned int>> &nbhd
-        ) : depths(&obs_depths), domain(&nbhd) { };
+        ) : DepthLikBase(nbhd), depths(&obs_depths) { };
 
         // parameterize log-likelihood using an observation, specified via index
         void setLikToObs(unsigned int);
-
-        // log-likelihood for coordinates relative to observation uncertainty
-        double ll(std::vector<unsigned int>);
 
 };
 

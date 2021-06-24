@@ -1,20 +1,23 @@
 #include "DepthLik.h"
 
 
-void DepthLik::setLikToObs(unsigned int ind) {
-    if(std::isnan((*depths)[ind])) {
+/**
+ * @param d Discrete depth coordinate
+ */
+void DepthLikBase::setLik(unsigned int d) {
+    if(std::isnan(d)) {
         na_obs = true;
     } else {
         na_obs = false;
-        depth = (*depths)[ind];
+        depth = d;
     }
 }
 
-double DepthLik::ll(std::vector<unsigned int> coord) {
+double DepthLikBase::ll(std::vector<unsigned int> coord) {
 
     // uniform likelihood if no depth information available
     if(na_obs) {
-        return -std::numeric_limits<double>::infinity();
+      return 0;
     }
 
     // set depth in current location
@@ -22,6 +25,10 @@ double DepthLik::ll(std::vector<unsigned int> coord) {
 
     return domain->inDomain(coord) ? 0 :
         -std::numeric_limits<double>::infinity();
+}
+
+void DepthLik::setLikToObs(unsigned int ind) {
+    setLik((*depths)[ind]);
 }
 
 // [[Rcpp::export]]

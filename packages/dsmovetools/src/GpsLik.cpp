@@ -1,8 +1,15 @@
 #include "GpsLik.h"
 
-void GpsLik::parameterizeDistribution(
+void GpsLikBase::parameterizeDistribution(
         double lon_ctr, double lat_ctr, double semi_major, double semi_minor,
         double orientation) {
+
+    if(std::isnan(lon_ctr)) {
+        na_obs = true;
+        return;
+    } else {
+        na_obs = false;
+    }
 
     // Implements "Materials and Methods" from McClintock et al. (2015)
 
@@ -29,7 +36,7 @@ void GpsLik::parameterizeDistribution(
             ltrunc;
 }
 
-double GpsLik::ll(double lon, double lat) {
+double GpsLikBase::ll(double lon, double lat) {
 
     // flat likelihood when observations are NA (i.e., are uninformative)
     if(na_obs) {
@@ -51,7 +58,12 @@ double GpsLik::ll(double lon, double lat) {
     }
 }
 
-double GpsLik::distance_m(double lon1, double lat1, double lon2, double lat2) {
+double GpsLikGridded::ll(unsigned int lon_ind, unsigned int lat_ind) {
+    return GpsLik::ll((*lon_gridvals)[lon_ind],
+                      (*lat_gridvals)[lat_ind]);
+}
+
+double GpsLikBase::distance_m(double lon1, double lat1, double lon2, double lat2) {
 
     // convert units from degrees to radians
     lat1 = lat1 * M_PI / 180;
@@ -77,14 +89,9 @@ double GpsLik::distance_m(double lon1, double lat1, double lon2, double lat2) {
 }
 
 void GpsLik::setLikToObs(unsigned int ind) {
-    if(std::isnan((*lon_ctrs)[ind])){
-        na_obs = true;
-    } else {
-        na_obs = false;
-        parameterizeDistribution((*lon_ctrs)[ind], (*lat_ctrs)[ind],
-                                 (*semi_majors)[ind], (*semi_minors)[ind],
-                                 (*orientations)[ind]);
-    }
+    parameterizeDistribution((*lon_ctrs)[ind], (*lat_ctrs)[ind],
+                             (*semi_majors)[ind], (*semi_minors)[ind],
+                             (*orientations)[ind]);
 }
 
 // [[Rcpp::export]]
