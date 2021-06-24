@@ -1,3 +1,3 @@
 library(targets)
 
-tar_make_future(names = c(sim_fit_dtmc_gapprox, sim_fits_hanks), workers = 400)
+tar_make_future(names = c(whale_ll), workers = 400)
