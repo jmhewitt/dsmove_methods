@@ -1,3 +1,3 @@
 library(targets)
 
-tar_make_future(names = c(whale_ll), workers = 400)
+tar_make_future(names = whale_ll_srtm30, workers = 400)
