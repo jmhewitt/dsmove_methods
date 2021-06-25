@@ -6,6 +6,19 @@
 
 using namespace Rcpp;
 
+// TestDualSparseCoordVec
+double TestDualSparseCoordVec(std::vector<unsigned int> x1, std::vector<unsigned int> x2, double v);
+RcppExport SEXP _dsmovetools_TestDualSparseCoordVec(SEXP x1SEXP, SEXP x2SEXP, SEXP vSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type x1(x1SEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type x2(x2SEXP);
+    Rcpp::traits::input_parameter< double >::type v(vSEXP);
+    rcpp_result_gen = Rcpp::wrap(TestDualSparseCoordVec(x1, x2, v));
+    return rcpp_result_gen;
+END_RCPP
+}
 // DepthLikEval
 double DepthLikEval(std::vector<unsigned int> dims, std::vector<unsigned int> coords, std::vector<unsigned int> obs_depths, std::vector<double> zfield, std::vector<double> zvals, int ind);
 RcppExport SEXP _dsmovetools_DepthLikEval(SEXP dimsSEXP, SEXP coordsSEXP, SEXP obs_depthsSEXP, SEXP zfieldSEXP, SEXP zvalsSEXP, SEXP indSEXP) {
@@ -286,6 +299,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FFRWLightLogConstrainedSelfTxARCached
+NumericMatrix FFRWLightLogConstrainedSelfTxARCached(NumericMatrix a0, NumericMatrix a0_prev_coords, NumericVector log_a0val, std::vector<unsigned int> dims, int steps, std::vector<double> surface_heights, std::vector<double> domain_heights, double log_self_tx, double betaAR);
+RcppExport SEXP _dsmovetools_FFRWLightLogConstrainedSelfTxARCached(SEXP a0SEXP, SEXP a0_prev_coordsSEXP, SEXP log_a0valSEXP, SEXP dimsSEXP, SEXP stepsSEXP, SEXP surface_heightsSEXP, SEXP domain_heightsSEXP, SEXP log_self_txSEXP, SEXP betaARSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type a0(a0SEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type a0_prev_coords(a0_prev_coordsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type log_a0val(log_a0valSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type dims(dimsSEXP);
+    Rcpp::traits::input_parameter< int >::type steps(stepsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type surface_heights(surface_heightsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type domain_heights(domain_heightsSEXP);
+    Rcpp::traits::input_parameter< double >::type log_self_tx(log_self_txSEXP);
+    Rcpp::traits::input_parameter< double >::type betaAR(betaARSEXP);
+    rcpp_result_gen = Rcpp::wrap(FFRWLightLogConstrainedSelfTxARCached(a0, a0_prev_coords, log_a0val, dims, steps, surface_heights, domain_heights, log_self_tx, betaAR));
+    return rcpp_result_gen;
+END_RCPP
+}
 // SattagFilteredLL
 double SattagFilteredLL(NumericMatrix a0, NumericMatrix a0_prev_coords, NumericVector log_a0val, double gps_trunc_alpha, std::vector<double> obs_lons, std::vector<double> obs_lats, std::vector<double> obs_semi_majors, std::vector<double> obs_semi_minors, std::vector<double> obs_orientations, std::vector<unsigned int> obs_depth_bins, std::vector<double> lon_gridvals, std::vector<double> lat_gridvals, std::vector<unsigned int> dims, std::vector<double> surface_heights, std::vector<double> domain_heights, double log_self_tx, double betaAR);
 RcppExport SEXP _dsmovetools_SattagFilteredLL(SEXP a0SEXP, SEXP a0_prev_coordsSEXP, SEXP log_a0valSEXP, SEXP gps_trunc_alphaSEXP, SEXP obs_lonsSEXP, SEXP obs_latsSEXP, SEXP obs_semi_majorsSEXP, SEXP obs_semi_minorsSEXP, SEXP obs_orientationsSEXP, SEXP obs_depth_binsSEXP, SEXP lon_gridvalsSEXP, SEXP lat_gridvalsSEXP, SEXP dimsSEXP, SEXP surface_heightsSEXP, SEXP domain_heightsSEXP, SEXP log_self_txSEXP, SEXP betaARSEXP) {
@@ -442,6 +474,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_dsmovetools_TestDualSparseCoordVec", (DL_FUNC) &_dsmovetools_TestDualSparseCoordVec, 3},
     {"_dsmovetools_DepthLikEval", (DL_FUNC) &_dsmovetools_DepthLikEval, 6},
     {"_dsmovetools_GpsLikEval", (DL_FUNC) &_dsmovetools_GpsLikEval, 9},
     {"_dsmovetools_TestRookOrientation", (DL_FUNC) &_dsmovetools_TestRookOrientation, 2},
@@ -460,6 +493,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools_ARFilteredLL", (DL_FUNC) &_dsmovetools_ARFilteredLL, 9},
     {"_dsmovetools_ARPredDist", (DL_FUNC) &_dsmovetools_ARPredDist, 10},
     {"_dsmovetools_ARBackInfoFilteringDist", (DL_FUNC) &_dsmovetools_ARBackInfoFilteringDist, 10},
+    {"_dsmovetools_FFRWLightLogConstrainedSelfTxARCached", (DL_FUNC) &_dsmovetools_FFRWLightLogConstrainedSelfTxARCached, 9},
     {"_dsmovetools_SattagFilteredLL", (DL_FUNC) &_dsmovetools_SattagFilteredLL, 17},
     {"_dsmovetools_TestFFRW", (DL_FUNC) &_dsmovetools_TestFFRW, 4},
     {"_dsmovetools_TestFFRWLight", (DL_FUNC) &_dsmovetools_TestFFRWLight, 4},
