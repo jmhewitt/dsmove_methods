@@ -123,6 +123,15 @@ double SattagFilteredLL(
             }
         }
 
+        if(!std::isfinite(ll_step)) {
+            if(firstError) {
+                Rcpp::Rcout <<
+                    "first infinite marginal likelihood in step_cur: " <<
+                    step_cur << std::endl;
+                firstError = false;
+            }
+        }
+
         ll += ll_step;
 
         Rcpp::checkUserInterrupt();
