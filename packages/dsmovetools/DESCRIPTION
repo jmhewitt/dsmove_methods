@@ -9,7 +9,7 @@ Description: Animal movement modeling.
 License: GPL-3
 RoxygenNote: 7.1.1
 Suggests: testthat
-Depends: R (>= 3.5.0)
+Depends: R (>= 3.5.0), BH
 LinkingTo: Rcpp (>= 0.12.4)
 Imports: igraph, ggplot2, ggthemes, Matrix, Rcpp, dplyr
 Encoding: UTF-8
