@@ -38,7 +38,10 @@ whale_targets = list(
       g = SpatialGridDataFrame(
         grid = GridTopology(
           cellcentre.offset = c(min(bathy[,'lon']), min(bathy[,'lat'])), 
-          cellsize = rep(1/3, 2), 
+          cellsize = c(
+            diff(unique(bathy[,'lon']))[1],
+            diff(unique(bathy[,'lat']))[1]
+          ),
           cells.dim = c(length(unique(bathy[,'lon'])), 
                         length(unique(bathy[,'lat'])))
         ), 
