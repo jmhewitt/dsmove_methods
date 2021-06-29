@@ -8,6 +8,15 @@ whale_targets = list(
   tar_target(whale_ll_delta_srtm30, 60),
   
   tar_target(
+    name = cee_start, 
+    command = strptime(
+      x = '8/19/2019  7:11:00 PM UTC', 
+      format = '%m/%d/%Y %I:%M:%S %p',
+      tz = 'UTC'
+    )
+  ),
+  
+  tar_target(
     name = whale_ll_grid, 
     command = expand.grid(
       # m/s
