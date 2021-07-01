@@ -85,6 +85,10 @@ SattagFilteredLL <- function(a0, a0_prev_coords, log_a0val, gps_trunc_alpha, obs
     .Call('_dsmovetools_SattagFilteredLL', PACKAGE = 'dsmovetools', a0, a0_prev_coords, log_a0val, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depth_bins, lon_gridvals, lat_gridvals, dims, surface_heights, domain_heights, log_self_tx, betaAR)
 }
 
+SattagExpandNeighborhood <- function(a0, a0_prev_coords, log_a0val, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depth_bins, lon_gridvals, lat_gridvals, dims, surface_heights, domain_heights, obs_ind, nsteps) {
+    .Call('_dsmovetools_SattagExpandNeighborhood', PACKAGE = 'dsmovetools', a0, a0_prev_coords, log_a0val, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depth_bins, lon_gridvals, lat_gridvals, dims, surface_heights, domain_heights, obs_ind, nsteps)
+}
+
 TestFFRW <- function(a0coords, a0values, dims, steps) {
     .Call('_dsmovetools_TestFFRW', PACKAGE = 'dsmovetools', a0coords, a0values, dims, steps)
 }
