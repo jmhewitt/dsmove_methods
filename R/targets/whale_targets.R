@@ -20,7 +20,7 @@ whale_targets = list(
     name = whale_ll_grid, 
     command = expand.grid(
       # m/s
-      speed = seq(from = .01, to = 3, length.out = 20),
+      speed = seq(from = .01, to = 10, length.out = 100),
       betaAR = seq(from = -3, to = 3, length.out = 20)
     )
   ),
