@@ -58,8 +58,10 @@ CTDS2DDomain::CTDS2DDomain(
             // define states with N,E,S,W directions of movement to current loc.
             for(unsigned int dom = 0; dom < 4; ++dom) {
                 // initialize to 0 probability mass and reset cache counter
-                state_it->log_prob = -std::numeric_limits<double>::infinity();
-                state_it->prob_age = 0;
+                state_it->log_prob_a = -std::numeric_limits<double>::infinity();
+                state_it->log_prob_b = -std::numeric_limits<double>::infinity();
+                state_it->prob_age_a = 0;
+                state_it->prob_age_b = 0;
                 // destination location's spatial information
                 state_it->surface_height = surface_height;
                 state_it->lon_to = lon_to;
@@ -145,13 +147,20 @@ void CTDS2DDomain::set(
     CTDS2DState *tgt = statePtr(
         lon_from_ind, lat_from_ind, lon_to_ind, lat_to_ind
     );
-    // set state
-    set(tgt, log_prob);
+    // set active value in state
+    set(*tgt, log_prob);
 }
 
-void CTDS2DDomain::set(CTDS2DState *state, double log_prob) {
-    state->prob_age = prob_age;
-    state->log_prob = log_prob;
+void CTDS2DDomain::set(CTDS2DState &state, double log_prob) {
+    active_tgt->set(state, log_prob, prob_age);
+}
+
+void CTDS2DDomain::add(CTDS2DState &state, double log_prob) {
+    active_tgt->add(state, log_prob, prob_age);
+}
+
+void CTDS2DDomain::scale(CTDS2DState &state, double log_prob) {
+    active_tgt->scale(state, log_prob, prob_age);
 }
 
 NumericMatrix CTDS2DDomain::toNumericMatrix() {
@@ -166,12 +175,13 @@ NumericMatrix CTDS2DDomain::toNumericMatrix() {
     auto state_end = states.end();
 
     for(auto state_it = states.begin(); state_it != state_end; ++state_it) {
-        if(state_it->prob_age == prob_age) {
+        double state_lp = logProb(*state_it);
+        if(std::isfinite(state_lp)) {
             lon_from_ind.emplace_back(state_it->lon_from_ind);
             lat_from_ind.emplace_back(state_it->lat_from_ind);
             lon_to_ind.emplace_back(state_it->lon_to_ind);
             lat_to_ind.emplace_back(state_it->lat_to_ind);
-            lp.emplace_back(state_it->log_prob);
+            lp.emplace_back(state_lp);
         }
     }
 

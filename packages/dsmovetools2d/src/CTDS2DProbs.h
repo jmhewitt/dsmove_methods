@@ -36,7 +36,7 @@ public:
     // compute transition probabilities for a CTMC state
     void constructProbs(const CTDS2DState &state);
 
-    // extract transition probability
+    // extract transition probability to neighboring N,E,S,W state
     double logProb(unsigned int direction_of_movement);
 
 };

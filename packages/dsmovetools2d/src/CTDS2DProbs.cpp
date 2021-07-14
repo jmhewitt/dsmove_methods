@@ -79,7 +79,7 @@ NumericMatrix LogTxProbs(
     // extract transition probabilities
     for(unsigned int i = 0; i < 4; ++i) {
         if(tgt->nbr_to[i]) {
-            domain.set(tgt->nbr_to[i], probs.logProb(i));
+            domain.set(*tgt->nbr_to[i], probs.logProb(i));
         }
     }
 

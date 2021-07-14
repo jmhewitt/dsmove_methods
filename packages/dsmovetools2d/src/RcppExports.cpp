@@ -40,10 +40,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FF_DTMC
+NumericMatrix FF_DTMC(std::vector<double> lons, std::vector<double> lats, std::vector<double> surface_heights, NumericMatrix init_dsts, NumericMatrix init_srcs, std::vector<double> init_log_probs, unsigned int steps, double log_self_tx, double betaAR);
+RcppExport SEXP _dsmovetools2d_FF_DTMC(SEXP lonsSEXP, SEXP latsSEXP, SEXP surface_heightsSEXP, SEXP init_dstsSEXP, SEXP init_srcsSEXP, SEXP init_log_probsSEXP, SEXP stepsSEXP, SEXP log_self_txSEXP, SEXP betaARSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<double> >::type lons(lonsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type lats(latsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type surface_heights(surface_heightsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type init_dsts(init_dstsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type init_srcs(init_srcsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type init_log_probs(init_log_probsSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type steps(stepsSEXP);
+    Rcpp::traits::input_parameter< double >::type log_self_tx(log_self_txSEXP);
+    Rcpp::traits::input_parameter< double >::type betaAR(betaARSEXP);
+    rcpp_result_gen = Rcpp::wrap(FF_DTMC(lons, lats, surface_heights, init_dsts, init_srcs, init_log_probs, steps, log_self_tx, betaAR));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools2d_TestCTDS2DDomainIO", (DL_FUNC) &_dsmovetools2d_TestCTDS2DDomainIO, 6},
     {"_dsmovetools2d_LogTxProbs", (DL_FUNC) &_dsmovetools2d_LogTxProbs, 8},
+    {"_dsmovetools2d_FF_DTMC", (DL_FUNC) &_dsmovetools2d_FF_DTMC, 9},
     {NULL, NULL, 0}
 };
 
