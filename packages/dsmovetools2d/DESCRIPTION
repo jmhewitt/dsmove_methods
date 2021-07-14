@@ -1,0 +1,17 @@
+Package: dsmovetools2d
+Type: Package
+Title: Discrete Space Models for Animal Movement in two dimensions
+Version: 1.0.0
+Date: 2020-03-26
+Author: Joshua Hewitt
+Maintainer: Joshua Hewitt <joshua.hewitt@duke.edu>
+Description: Animal movement modeling.
+License: GPL-3
+RoxygenNote: 7.1.1
+Suggests: testthat
+Depends: R (>= 3.5.0), BH
+LinkingTo: Rcpp (>= 0.12.4)
+Imports: igraph, ggplot2, ggthemes, Matrix, Rcpp, dplyr
+Encoding: UTF-8
+LazyData: true
+SystemRequirements: C++11
