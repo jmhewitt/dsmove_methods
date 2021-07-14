@@ -210,6 +210,36 @@ exact_targets = list(
     memory = 'transient'
   ),
   
+  tar_target(delta_seq_1d, c(.125/2, .125, .25, .5, 1)),
+  
+  tar_target(
+    name = rw_post_dtmc_sensitivity_1d, 
+    command = {
+      # extract observations
+      obs = sim_rw_obs[[1]]$obs
+      m = nrow(obs$states) - 1
+      # simplify, skip some combinations
+      if(any(sim_rw_obs[[1]]$obs_interval != 1,
+             rw_priors$name != 'weak')) {
+        return(NULL)
+      }
+      # generate and package results
+      list(list(
+        posterior = dtmc_approximation(
+          states = obs$states, times = obs$times, delta = delta_seq_1d, 
+          priors = rw_priors, niter = mc_rw_params$niter
+        ),
+        priors = rw_priors,
+        obs_interval = sim_rw_obs[[1]]$obs_interval,
+        delta = delta_seq_1d
+      ))
+    },
+    pattern = cross(delta_seq_1d, map(rw_priors), sim_rw_obs),
+    deployment = 'worker',
+    storage = 'worker',
+    memory = 'transient'
+  ),
+  
   # batch execution plan for importance sampling
   tar_target(n_is_batches, 12),
   tar_target(importance_sample_batch, 1:n_is_batches),
@@ -457,8 +487,8 @@ exact_targets = list(
     command = {
       
       # load DTMC approximation results
-      rw_post_dtmc_raw = rw_post_dtmc
-      # rw_post_dtmc_raw = readRDS('rw_post_dtmc.rds')
+      # rw_post_dtmc_raw = rw_post_dtmc
+      rw_post_dtmc_raw = readRDS('rw_post_dtmc.rds')
       
       # extract parameters from model fits
       df = rbind(
@@ -599,6 +629,141 @@ exact_targets = list(
         theme_few() + 
         ggtitle('Posterior means and HPDs by prior')
     
+      ggsave(pl, filename = 'posteriors_without_model.png',
+             width = 12, height = 8)  
+      ggsave(pl2, filename = 'posteriors_with_model.png',
+             width = 12, height = 8)
+      ggsave(pl3, filename = 'posteriors_with_model_longer_x.png',
+             width = 12, height = 8)  
+      
+    }
+  ),
+  
+  tar_target(
+    name = rw_post_sensitivity_summaries_combined, 
+    command = {
+      
+      o = grep(pattern = 'rw_post_dtmc_sensitivity_1d', 
+               x = tar_objects(), 
+               value = TRUE)
+      
+      # load DTMC approximation results
+      rw_post_dtmc_sensitivity_1d = lapply(
+        o,
+        function(x) {
+          tryCatch(tar_read_raw(name = x), error = function(e) FALSE)
+        }
+      )
+      
+      lapply(
+        o[sapply(rw_post_dtmc_sensitivity_1d, is.null)],
+        function(x) tar_read_raw(x)
+      )
+      
+      
+      sim_fit_dtmc_gapprox_delta_sensitivity = 
+        sim_fit_dtmc_gapprox_delta_sensitivity[
+          !sapply(sim_fit_dtmc_gapprox_delta_sensitivity, is.null)
+        ]
+      
+      
+      # extract parameters from model fits
+      df = rbind(
+        do.call(rbind, lapply(rw_post_exact, function(res) {
+          data.frame(post.shape = res$parameters['shape'], 
+                     post.rate = res$parameters['rate'],
+                     prior = res$priors$name, 
+                     obs.interval = 0, 
+                     method = 'Truth known')
+        }))
+      )
+      # compute hpds
+      hpds = apply(df, 1, function(r) {
+        HDInterval::hdi(qgamma, credMass = .95, 
+                        shape = as.numeric(r['post.shape']), 
+                        rate = as.numeric(r['post.rate']))
+      }) 
+      # enrich extracted information with posterior summaries
+      df$post.mean = df$post.shape / df$post.rate
+      df$hpd.lwr = hpds['lower',]
+      df$hpd.upr = hpds['upper',]
+      
+      # remove terms that are not needed for full plotting
+      df$post.shape = NULL
+      df$post.rate = NULL
+      
+      df = rbind(
+        df,
+        do.call(rbind, lapply(rw_post_samples, function(res) {
+          hpd = HPDinterval(mcmc(res$post_samples))
+          data.frame(post.mean = mean(res$post_samples), 
+                     hpd.lwr = hpd[,'lower'],
+                     hpd.upr = hpd[,'upper'],
+                     prior = res$priors$name, 
+                     obs.interval = res$obs_interval,
+                     method = 'Model-based imputation')
+        })),
+        do.call(rbind, lapply(rw_post_dtmc_raw, function(res) {
+          data.frame(
+            prior = res$priors$name,
+            obs.interval = res$obs_interval,
+            method = 'DTMC approximation', 
+            post.mean = res$posterior$post_mean,
+            hpd.lwr = res$posterior$lower,
+            hpd.upr = res$posterior$upper
+          )
+        }))
+      )
+      
+      df = df %>% filter(
+        method %in% c('DTMC approximation', 'DTMC IS approximation', 'Hanks', 
+                      'Model-based imputation', 'Truth known')
+      )
+      
+      
+      pl = ggplot(df %>% dplyr::filter(obs.interval < 3,
+                                       method != 'Model-based imputation'), 
+                  aes(x = obs.interval, y = post.mean, ymin = hpd.lwr, 
+                      ymax = hpd.upr, col = method)) +
+        geom_hline(yintercept = sim_rw_params$theta, lty = 3) + 
+        geom_line(alpha  = .4) + 
+        geom_pointrange() +
+        xlab('Time between observations') + 
+        ylab(expression(theta)) + 
+        scale_color_brewer('Imputation method', 
+                           type = 'qual', palette = 'Dark2') + 
+        facet_wrap(~prior, scales = 'free', ncol = 1) + 
+        theme_few() + 
+        ggtitle('Posterior means and HPDs by prior')
+      
+      pl2 = ggplot(df %>% dplyr::filter(obs.interval < 3), 
+                   aes(x = obs.interval, y = post.mean, ymin = hpd.lwr, 
+                       ymax = hpd.upr, col = method)) +
+        geom_hline(yintercept = sim_rw_params$theta, lty = 3) + 
+        geom_line(alpha  = .4) + 
+        geom_pointrange() +
+        xlab('Time between observations') + 
+        ylab(expression(theta)) + 
+        scale_color_brewer('Imputation method', 
+                           type = 'qual', palette = 'Dark2') + 
+        facet_wrap(~prior, scales = 'free', ncol = 1) + 
+        theme_few() + 
+        ggtitle('Posterior means and HPDs by prior')
+      
+      pl3 = ggplot(df, 
+                   aes(x = obs.interval, y = post.mean, ymin = hpd.lwr, 
+                       ymax = hpd.upr, col = method)) +
+        geom_hline(yintercept = sim_rw_params$theta, lty = 3) + 
+        geom_line(alpha  = .4) + 
+        geom_pointrange() +
+        xlab('Time between observations') + 
+        ylab(expression(theta)) + 
+        scale_color_brewer('Imputation method', 
+                           type = 'qual', palette = 'Dark2') + 
+        facet_wrap(~prior, scales = 'free', ncol = 1) + 
+        theme_few() + 
+        ggtitle('Posterior means and HPDs by prior')
+      
       ggsave(pl, filename = 'posteriors_without_model.png',
              width = 12, height = 8)  
       ggsave(pl2, filename = 'posteriors_with_model.png',
