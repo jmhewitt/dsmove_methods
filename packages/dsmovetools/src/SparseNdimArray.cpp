@@ -2,8 +2,11 @@
 // Created by Joshua Hewitt on 12/14/20.
 //
 
+// [[Rcpp::depends(BH)]]
 #include <Rcpp.h>
 #include "SparseNdimArray.h"
+
+#include <boost/container_hash/hash.hpp>
 
 using namespace Rcpp;
 
@@ -97,14 +100,9 @@ NumericMatrix TestSparseNdimArrayHash(
     typedef std::pair<CoordVec, CoordVec> CoordVecPair;
 
     struct VectorHasher {
-        int operator()(const CoordVecPair &V) const {
-            int hash = V.first.size() + V.second.size();
-            for(auto &i : V.first) {
-                hash ^= i + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-            }
-            for(auto &i : V.second) {
-                hash ^= i + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-            }
+        std::size_t operator()(const CoordVecPair &V) const {
+            std::size_t hash = boost::hash_range(V.first.begin(), V.first.end());
+            boost::hash_range(hash, V.second.begin(), V.second.end());
             return hash;
         }
     };
