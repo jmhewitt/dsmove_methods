@@ -12,7 +12,8 @@ struct CTDS2DState {
     unsigned int prob_age, direction_of_movement, nnbrs;
     int lon_from_ind, lon_to_ind, lat_from_ind, lat_to_ind;
     bool well_defined;
-    CTDS2DState *nbr_to[4], *nbr_from[4];
+    CTDS2DState *nbr_to[4] = {nullptr, nullptr, nullptr, nullptr},
+                *nbr_from[4] = {nullptr, nullptr, nullptr, nullptr};
 };
 
 class CTDS2DDomain {
