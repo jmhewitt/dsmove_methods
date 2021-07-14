@@ -71,3 +71,45 @@ test_that('Validating directional persistence gives expected results', {
   
 })
 
+
+test_that('Validating directional persistence respects boundaries', {
+  
+  # define grid
+  lons = seq(from = 0, to = 40, length.out = 100)
+  lats = seq(from = 50, to = 70, length.out = 100)
+  
+  # arbitrary height-field
+  surface_heights = runif(length(lons) * length(lats))
+  
+  # coordinates (lon,lat) format
+  init_dsts = rbind(
+    c(0,0)
+  )
+  init_srcs = rbind(
+    c(0,1)
+  )
+  
+  betaAR = 1
+  
+  p = LogTxProbs(
+    lons = lons, lats = lats, surface_heights = surface_heights, 
+    lon_from_ind = init_srcs[1], lat_from_ind = init_srcs[2], 
+    lon_to_ind = init_dsts[1], lat_to_ind = init_dsts[2], 
+    betaAR = betaAR
+  )
+  
+  # expected neighborhood structure
+  expect_identical(
+    structure(
+      c(0, 0, 0, 0, 0, 1, 1, 0), 
+      .Dim = c(2L, 4L), 
+      .Dimnames = list(
+        NULL, c("lon_from_ind", "lat_from_ind", "lon_to_ind", "lat_to_ind")
+      )
+    ), 
+    p[,1:4]
+  )
+  
+  # more likely to move in new direction rather than reverse direction
+  expect_lt(p[1,'log_prob'], p[2,'log_prob'])
+})
