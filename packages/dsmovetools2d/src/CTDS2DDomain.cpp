@@ -145,7 +145,6 @@ void CTDS2DDomain::set(
     CTDS2DState *tgt = statePtr(
         lon_from_ind, lat_from_ind, lon_to_ind, lat_to_ind
     );
-
     // set state
     set(tgt, log_prob);
 }

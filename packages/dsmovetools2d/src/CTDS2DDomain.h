@@ -26,6 +26,13 @@ private:
 
 public:
 
+    /**
+     *
+     * @param lons unique list of longitudes in grid
+     * @param lats unique list of latitudes in grid
+     * @param surface_heights column-major list of heights at each grid point,
+     *   where latitudes form the rows, and longitudes form the columns
+     */
     CTDS2DDomain(std::vector<double> &lons, std::vector<double> &lats,
                  std::vector<double> &surface_heights);
 
