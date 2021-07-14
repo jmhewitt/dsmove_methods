@@ -18,19 +18,26 @@ struct CTDS2DState {
 class CTDS2DDomain {
 
 private:
+
     std::vector<CTDS2DState> states;
     unsigned int prob_age = 1;
     unsigned int nlons, nlats;
 
 public:
 
-    CTDS2DDomain(std::vector<double> lons, std::vector<double> lats,
-                 std::vector<double> surface_heights);
+    CTDS2DDomain(std::vector<double> &lons, std::vector<double> &lats,
+                 std::vector<double> &surface_heights);
 
+    // set log prob for a state in the domain
     void set(int lon_from_ind, int lat_from_ind, int lon_to_ind, int lat_to_ind,
              double log_prob);
+    void set(CTDS2DState *state, double log_prob);
 
-    // flatten sparse entries to matrix format
+    // access a state in the domain
+    CTDS2DState* statePtr(int lon_from_ind, int lat_from_ind, int lon_to_ind,
+                          int lat_to_ind);
+
+    // flatten non-zero entries to matrix format
     Rcpp::NumericMatrix toNumericMatrix();
 
 };

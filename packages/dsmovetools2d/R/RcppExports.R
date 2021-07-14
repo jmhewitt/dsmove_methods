@@ -5,3 +5,7 @@ TestCTDS2DDomainIO <- function(lons, lats, surface_heights, init_dsts, init_srcs
     .Call('_dsmovetools2d_TestCTDS2DDomainIO', PACKAGE = 'dsmovetools2d', lons, lats, surface_heights, init_dsts, init_srcs, log_probs)
 }
 
+LogTxProbs <- function(lons, lats, surface_heights, lon_from_ind, lat_from_ind, lon_to_ind, lat_to_ind, betaAR) {
+    .Call('_dsmovetools2d_LogTxProbs', PACKAGE = 'dsmovetools2d', lons, lats, surface_heights, lon_from_ind, lat_from_ind, lon_to_ind, lat_to_ind, betaAR)
+}
+

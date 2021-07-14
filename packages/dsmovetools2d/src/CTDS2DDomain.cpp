@@ -7,8 +7,8 @@
 using namespace Rcpp;
 
 CTDS2DDomain::CTDS2DDomain(
-    std::vector<double> lons, std::vector<double> lats,
-    std::vector<double> surface_heights
+    std::vector<double> &lons, std::vector<double> &lats,
+    std::vector<double> &surface_heights
 ) {
 
     // grid dimensions
@@ -56,7 +56,7 @@ CTDS2DDomain::CTDS2DDomain(
             }
 
             // define states with N,E,S,W directions of movement to current loc.
-            for(int dom = 0; dom < 4; ++dom) {
+            for(unsigned int dom = 0; dom < 4; ++dom) {
                 // initialize to 0 probability mass and reset cache counter
                 state_it->log_prob = -std::numeric_limits<double>::infinity();
                 state_it->prob_age = 0;
@@ -105,7 +105,9 @@ CTDS2DDomain::CTDS2DDomain(
                 }
                 // link to connecting states, which can be transitioned to
                 state_it->nnbrs = nnbrs;
-                std::memcpy(&(state_it->nbr_to), &nbr_to, sizeof(CTDS2DState*));
+                std::memcpy(
+                    &(state_it->nbr_to), &nbr_to, 4 * sizeof(CTDS2DState*)
+                );
 
                 // increment to new state object
                 ++state_it;
@@ -115,9 +117,8 @@ CTDS2DDomain::CTDS2DDomain(
 
 }
 
-void CTDS2DDomain::set(
-    int lon_from_ind, int lat_from_ind, int lon_to_ind, int lat_to_ind,
-    double log_prob
+CTDS2DState * CTDS2DDomain::statePtr(
+        int lon_from_ind, int lat_from_ind, int lon_to_ind, int lat_to_ind
 ) {
     // direction of movement to associate with transition
     unsigned int direction_of_movement = 0;
@@ -131,14 +132,27 @@ void CTDS2DDomain::set(
         direction_of_movement = 3;
     }
 
-    // pointer to state
-    CTDS2DState *tgt = &(
+    return &(
         states[ 4 * (lat_to_ind + lon_to_ind * nlons) + direction_of_movement ]
     );
+}
 
-    // set log probability
-    tgt->prob_age = prob_age;
-    tgt->log_prob =  log_prob;
+void CTDS2DDomain::set(
+    int lon_from_ind, int lat_from_ind, int lon_to_ind, int lat_to_ind,
+    double log_prob
+) {
+    // state pointer
+    CTDS2DState *tgt = statePtr(
+        lon_from_ind, lat_from_ind, lon_to_ind, lat_to_ind
+    );
+
+    // set state
+    set(tgt, log_prob);
+}
+
+void CTDS2DDomain::set(CTDS2DState *state, double log_prob) {
+    state->prob_age = prob_age;
+    state->log_prob = log_prob;
 }
 
 NumericMatrix CTDS2DDomain::toNumericMatrix() {
@@ -168,13 +182,17 @@ NumericMatrix CTDS2DDomain::toNumericMatrix() {
 
     NumericMatrix out = NumericMatrix(lp.size(), 5);
 
-    for(unsigned ind = 0; ind < out.nrow(); ++ind) {
+    for(unsigned int ind = 0; ind < out.nrow(); ++ind) {
         out(ind,0) = lon_from_ind[ind];
         out(ind,1) = lat_from_ind[ind];
         out(ind,2) = lon_to_ind[ind];
         out(ind,3) = lat_to_ind[ind];
         out(ind,4) = lp[ind];
     }
+
+    colnames(out) = CharacterVector({
+        "lon_from_ind", "lat_from_ind", "lon_to_ind", "lat_to_ind", "log_prob"
+    });
 
     return out;
 }
