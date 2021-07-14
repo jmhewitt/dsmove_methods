@@ -133,6 +133,44 @@ simulation_targets = list(
     error = 'continue'
   ),
   
+  tar_target(delta_seq, c(.125/2, .125, .25)),
+  
+  tar_target(
+    name = sim_fit_dtmc_gapprox_delta_sensitivity, 
+    command = {
+      
+      message(paste(
+        tar_name(), ': ', 
+        ' betaAR: ', sim_obs[[1]]$params$betaAR,
+        ' obs_ind:', sim_obs[[1]]$obs_interval,
+        sep = ''
+      ))
+      
+      if(sim_obs[[1]]$obs_interval != 1) {
+        return(NULL)
+      }
+      
+      gapprox = dtmc_ar_approximation(
+        states = sim_obs[[1]]$obs$states, 
+        times = sim_obs[[1]]$obs$times, 
+        delta = delta_seq,
+        priors = sim_priors, 
+        dims = sim_obs[[1]]$params$dims
+      )
+      
+      list(list(
+        gapprox = gapprox,
+        sim_obs = sim_obs[[1]],
+        delta = delta_seq
+      ))
+    },
+    pattern = cross(delta_seq, map(sim_obs)),
+    deployment = 'worker',
+    storage = 'worker',
+    memory = 'transient',
+    error = 'continue'
+  ),
+  
   tar_target(
     name = simulation_hanks_summaries,
     command = {
@@ -261,6 +299,104 @@ simulation_targets = list(
       pl
       ggsave(pl, filename = 'posteriors_2param.pdf', width = 8, height = 5)
     }
+  ),
+  
+  tar_target(
+    name = sensitivity_summaries_combined, 
+    command = {
+      
+      sim_fit_dtmc_gapprox_delta_sensitivity = lapply(
+        grep(pattern = 'sim_fit_dtmc_gapprox_delta_sensitivity', 
+             x = tar_objects(), 
+             value = TRUE),
+        function(x) { 
+          eval(substitute(tar_read(x), env = list(x=x)))[[1]]
+        }
+      )
+      
+      sim_fit_dtmc_gapprox_delta_sensitivity = 
+        sim_fit_dtmc_gapprox_delta_sensitivity[
+          !sapply(sim_fit_dtmc_gapprox_delta_sensitivity, is.null)
+        ]
+      
+      # extract posterior summaries from model fits
+      df = do.call(rbind, lapply(sim_fit_dtmc_gapprox_delta_sensitivity, function(res) {
+        rbind(
+          data.frame(
+            mean = res$gapprox$post_mean['theta'],
+            lwr = res$gapprox$hpds['theta', 'lower'],
+            upr = res$gapprox$hpds['theta', 'upper'],
+            truth = exp(res$sim_obs$params$beta),
+            obs.interval = res$sim_obs$obs_interval,
+            scenario = paste(
+              'theta = ', exp(res$sim_obs$params$beta),
+              ' betaAR = ', res$sim_obs$params$betaAR,
+              sep = ''
+            ),
+            delta = res$delta,
+            method = 'DTMC',
+            param = 'theta'
+          ),
+          data.frame(
+            mean = res$gapprox$post_mean['betaAR'],
+            lwr = res$gapprox$hpds['betaAR', 'lower'],
+            upr = res$gapprox$hpds['betaAR', 'upper'],
+            truth = res$sim_obs$params$betaAR,
+            obs.interval = res$sim_obs$obs_interval,
+            scenario = paste(
+              'theta = ', exp(res$sim_obs$params$beta),
+              ' betaAR = ', res$sim_obs$params$betaAR,
+              sep = ''
+            ),
+            delta = res$delta,
+            method = 'DTMC',
+            param = 'betaAR'
+          )
+        )
+      }))
+      
+      
+      # 
+      plot_eps = .02
+      
+      pl = ggplot(df, aes(x = delta, 
+                          y = mean, ymin = lwr, ymax = upr, )) + 
+        facet_wrap(~scenario*param, nrow = 2, scales = 'free') + 
+        geom_hline(mapping = aes(yintercept = truth), lty = 3) + 
+        scale_x_continuous(expression(delta)) +
+        geom_pointrange() + 
+        scale_color_brewer(type = 'qual', palette = 'Dark2') + 
+        theme_few()
+      
+      pl
+      ggsave(pl, filename = 'posteriors_2param.pdf', width = 8, height = 5)
+    }
+  ),
+  
+  tar_target(
+    name = sim_marg_dtmc_approx, 
+    command = {
+      
+      delta = .125/2
+      
+      gapprox = dtmc_ar_marginal_filtering(
+        states = sim_obs[[1]]$obs$states, 
+        times = sim_obs[[1]]$obs$times, 
+        delta = delta,
+        dims = sim_obs[[1]]$params$dims,
+        pred_times = sim_obs[[1]]$obs$times[5] + delta * 0:3
+      )
+      
+      list(list(
+        gapprox = gapprox,
+        sim_obs = sim_obs[[1]]
+      ))
+    },
+    pattern = map(sim_obs),
+    deployment = 'worker',
+    storage = 'worker',
+    memory = 'transient',
+    error = 'continue'
   )
   
 )
