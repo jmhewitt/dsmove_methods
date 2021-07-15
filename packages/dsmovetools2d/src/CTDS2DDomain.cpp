@@ -117,6 +117,8 @@ CTDS2DDomain::CTDS2DDomain(
         }
     }
 
+    // prune connections
+    updateConnections();
 }
 
 CTDS2DState * CTDS2DDomain::statePtr(
@@ -161,6 +163,47 @@ void CTDS2DDomain::add(CTDS2DState &state, double log_prob) {
 
 void CTDS2DDomain::scale(CTDS2DState &state, double log_prob) {
     active_tgt->scale(state, log_prob, prob_age);
+}
+
+void CTDS2DDomain::updateConnections() {
+
+    CTDS2DState *all_null[4] = {nullptr, nullptr, nullptr, nullptr};
+
+    // update connections from all states based on current well_defined value
+    auto state_end = states.end();
+    for(auto state_it = states.begin(); state_it != state_end; ++state_it) {
+        if(!state_it->well_defined) {
+            // remove all connections from an ill-defined state
+            std::memcpy(
+                &(state_it->nbr_to), &all_null, 4 * sizeof(CTDS2DState*)
+            );
+            // update neighbor count
+            state_it->nnbrs = 0;
+        } else {
+            for(unsigned int i = 0; i < 4; ++i) {
+                if(state_it->nbr_to[i]) {
+                    if(!state_it->nbr_to[i]->well_defined) {
+                        // remove connection to state that is ill-defined
+                        state_it->nbr_to[i] = nullptr;
+                        // update neighbor count
+                        --state_it->nnbrs;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void CTDS2DDomain::filterStates(CTDS2DStateFilter &stateFilter) {
+
+    // update well_defined flag on all states
+    auto state_end = states.end();
+    for(auto state_it = states.begin(); state_it != state_end; ++state_it) {
+        state_it->well_defined = stateFilter.isValid(*state_it);
+    }
+
+    // update connections from all states
+    updateConnections();
 }
 
 NumericMatrix CTDS2DDomain::toNumericMatrix() {

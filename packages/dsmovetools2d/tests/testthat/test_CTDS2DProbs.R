@@ -113,3 +113,90 @@ test_that('Validating directional persistence respects boundaries', {
   # more likely to move in new direction rather than reverse direction
   expect_lt(p[1,'log_prob'], p[2,'log_prob'])
 })
+
+test_that('Validating directional persistence respects height boundaries', {
+  
+  set.seed(2019)
+  
+  # define grid
+  lons = seq(from = 0, to = 40, length.out = 100)
+  lats = seq(from = 50, to = 70, length.out = 100)
+  
+  # arbitrary height-field
+  surface_heights = matrix(runif(length(lons) * length(lats)), 
+                           nrow = length(lats))
+  
+  # height above which locations are undefined
+  max_height = .8
+  
+  # find a tall location to transition to/from
+  tall_src = which(surface_heights > max_height, arr.ind = TRUE)[1e3,]
+  
+  
+  # surface_heights column-major list of heights at each grid point,
+  # where latitudes form the rows, and longitudes form the columns
+  
+  # coordinates (lon,lat) format, shifted for 0-indexing
+  init_dsts = c(
+    'lon_ind' = as.numeric(tall_src['col']) - 1, 
+    'lat_ind' = as.numeric(tall_src['row']) - 1
+  )
+  
+  init_srcs = init_dsts + c(0,1)
+  
+  # verify the init_dst location is not a valid location
+  expect_gt(
+    surface_heights[init_dsts['lat_ind']+1, init_dsts['lon_ind']+1], 
+    max_height
+  )
+  
+  # force the init_src location to be valid
+  surface_heights[
+    init_srcs['lat_ind']+1, init_srcs['lon_ind']+1
+  ] = max_height - .1
+  
+  betaAR = 1
+  
+  p = LogTxProbsElevation(
+    lons = lons, lats = lats, surface_heights = surface_heights, 
+    lon_from_ind = init_srcs['lon_ind'], lat_from_ind = init_srcs['lat_ind'], 
+    lon_to_ind = init_dsts['lon_ind'], lat_to_ind = init_dsts['lat_ind'], 
+    betaAR = betaAR, min_elevation = 0, max_elevation = .8
+  )
+  
+  # verify no transitions are possible from an invalid location
+  expect_equal(
+    nrow(p), 0
+  )
+  
+  # transition probs. when state direction is reversed, starting from a good loc.
+  p.rev = LogTxProbsElevation(
+    lons = lons, lats = lats, surface_heights = surface_heights, 
+    lon_from_ind = init_dsts['lon_ind'], lat_from_ind = init_dsts['lat_ind'], 
+    lon_to_ind = init_srcs['lon_ind'], lat_to_ind = init_srcs['lat_ind'], 
+    betaAR = betaAR, min_elevation = 0, max_elevation = .8
+  )
+  
+  # verify no transitions are made to the bad location
+  expect_false(
+    any(
+      (p.rev[,'lon_to_ind'] == init_dsts['lon_ind']) & 
+      (p.rev[,'lat_to_ind'] == init_dsts['lat_ind'])
+    )
+  )
+  
+  # verify total prob mass is 1
+  expect_equal(
+    sum(exp(p.rev[,'log_prob'])), 1
+  )
+  
+  # verify all transitions are made to good locations
+  expect_true(
+    all(
+      apply(p.rev, 1, function(r) {
+        surface_heights[r['lat_to_ind']+1, r['lon_to_ind']+1]
+      }) < max_height
+    )
+  )
+  
+})

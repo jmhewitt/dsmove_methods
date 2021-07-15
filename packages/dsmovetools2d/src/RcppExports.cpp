@@ -40,6 +40,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// LogTxProbsElevation
+NumericMatrix LogTxProbsElevation(std::vector<double> lons, std::vector<double> lats, std::vector<double> surface_heights, int lon_from_ind, int lat_from_ind, int lon_to_ind, int lat_to_ind, double betaAR, double min_elevation, double max_elevation);
+RcppExport SEXP _dsmovetools2d_LogTxProbsElevation(SEXP lonsSEXP, SEXP latsSEXP, SEXP surface_heightsSEXP, SEXP lon_from_indSEXP, SEXP lat_from_indSEXP, SEXP lon_to_indSEXP, SEXP lat_to_indSEXP, SEXP betaARSEXP, SEXP min_elevationSEXP, SEXP max_elevationSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<double> >::type lons(lonsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type lats(latsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type surface_heights(surface_heightsSEXP);
+    Rcpp::traits::input_parameter< int >::type lon_from_ind(lon_from_indSEXP);
+    Rcpp::traits::input_parameter< int >::type lat_from_ind(lat_from_indSEXP);
+    Rcpp::traits::input_parameter< int >::type lon_to_ind(lon_to_indSEXP);
+    Rcpp::traits::input_parameter< int >::type lat_to_ind(lat_to_indSEXP);
+    Rcpp::traits::input_parameter< double >::type betaAR(betaARSEXP);
+    Rcpp::traits::input_parameter< double >::type min_elevation(min_elevationSEXP);
+    Rcpp::traits::input_parameter< double >::type max_elevation(max_elevationSEXP);
+    rcpp_result_gen = Rcpp::wrap(LogTxProbsElevation(lons, lats, surface_heights, lon_from_ind, lat_from_ind, lon_to_ind, lat_to_ind, betaAR, min_elevation, max_elevation));
+    return rcpp_result_gen;
+END_RCPP
+}
 // FF_DTMC
 NumericMatrix FF_DTMC(std::vector<double> lons, std::vector<double> lats, std::vector<double> surface_heights, NumericMatrix init_dsts, NumericMatrix init_srcs, std::vector<double> init_log_probs, unsigned int steps, double log_self_tx, double betaAR);
 RcppExport SEXP _dsmovetools2d_FF_DTMC(SEXP lonsSEXP, SEXP latsSEXP, SEXP surface_heightsSEXP, SEXP init_dstsSEXP, SEXP init_srcsSEXP, SEXP init_log_probsSEXP, SEXP stepsSEXP, SEXP log_self_txSEXP, SEXP betaARSEXP) {
@@ -63,6 +83,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools2d_TestCTDS2DDomainIO", (DL_FUNC) &_dsmovetools2d_TestCTDS2DDomainIO, 6},
     {"_dsmovetools2d_LogTxProbs", (DL_FUNC) &_dsmovetools2d_LogTxProbs, 8},
+    {"_dsmovetools2d_LogTxProbsElevation", (DL_FUNC) &_dsmovetools2d_LogTxProbsElevation, 10},
     {"_dsmovetools2d_FF_DTMC", (DL_FUNC) &_dsmovetools2d_FF_DTMC, 9},
     {NULL, NULL, 0}
 };

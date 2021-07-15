@@ -17,6 +17,31 @@ struct CTDS2DState {
                 *nbr_from[4] = {nullptr, nullptr, nullptr, nullptr};
 };
 
+struct CTDS2DStateFilter {
+    virtual bool isValid(const CTDS2DState& state) { return true; }
+};
+
+/**
+ * Filter to remove states that have surface_height values above or below the
+ * range set by the min and max elevation arguments
+ */
+struct CTDS2DStateElevationFilter : public CTDS2DStateFilter {
+private:
+    double min_elevation, max_elevation;
+public:
+    CTDS2DStateElevationFilter(double min, double max) : min_elevation(min),
+        max_elevation(max) { }
+    bool isValid(const CTDS2DState& state) {
+        if(state.surface_height > max_elevation) {
+            return false;
+        }
+        if(state.surface_height < min_elevation) {
+            return false;
+        }
+        return true;
+    }
+};
+
 class CTDS2DDomain {
 
 private:
@@ -154,6 +179,12 @@ public:
     double logProbCached(const CTDS2DState &state) {
         return inactive_tgt->get(state, prob_age - 1);
     }
+
+    // remove pointers to/from CTDS2DState objects with well_defined == false
+    void updateConnections();
+
+    // remove states from domain using rules in provided filtering class
+    void filterStates(CTDS2DStateFilter &stateFilter);
 
     // flatten active non-zero entries to matrix format
     Rcpp::NumericMatrix toNumericMatrix();

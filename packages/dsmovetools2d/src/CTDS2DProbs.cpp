@@ -85,3 +85,38 @@ NumericMatrix LogTxProbs(
 
     return domain.toNumericMatrix();
 }
+
+// [[Rcpp::export]]
+NumericMatrix LogTxProbsElevation(
+        std::vector<double> lons, std::vector<double> lats,
+        std::vector<double> surface_heights, int lon_from_ind, int lat_from_ind,
+        int lon_to_ind, int lat_to_ind, double betaAR, double min_elevation,
+        double max_elevation
+) {
+
+    // initialize CTMC state space
+    CTDS2DDomain domain(lons, lats, surface_heights);
+
+    // filter state space
+    CTDS2DStateElevationFilter height_filter(min_elevation, max_elevation);
+    domain.filterStates(height_filter);
+
+    // access state from which transitions are made
+    CTDS2DState *tgt = domain.statePtr(
+            lon_from_ind, lat_from_ind, lon_to_ind, lat_to_ind
+    );
+
+    // compute transition probabilities for state
+    TxProbs probs;
+    probs.setBetaAR(betaAR);
+    probs.constructProbs(*tgt);
+
+    // extract transition probabilities
+    for(unsigned int i = 0; i < 4; ++i) {
+        if(tgt->nbr_to[i]) {
+            domain.set(*tgt->nbr_to[i], probs.logProb(i));
+        }
+    }
+
+    return domain.toNumericMatrix();
+}
