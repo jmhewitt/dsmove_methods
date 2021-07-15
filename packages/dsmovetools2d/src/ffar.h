@@ -26,9 +26,7 @@ void diffuseMass(CTDS2DDomain *src, TxProbs *txmod,
         // diffuse from entries with finite mass
         if(std::isfinite(src_wt)) {
             // log-likelihood for current location
-            double ll = srclik->ll(
-                src_state->lon_to_ind, src_state->lat_to_ind
-            );
+            double ll = srclik->ll(*src_state);
             // diffuse from entries with finite observation likelihood
             if(std::isfinite(ll)) {
                 // add mass for self-transition to dst vector

@@ -29,7 +29,7 @@ NumericMatrix FF_DTMC(
 
     class UniformLik {
     public:
-        double ll(const int lon_to_ind, const int lat_to_ind) {
+        double ll(const CTDS2DState& state) {
             return 0;
         }
     };
