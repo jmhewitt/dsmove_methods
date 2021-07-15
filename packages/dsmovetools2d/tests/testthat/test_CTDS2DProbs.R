@@ -4,8 +4,8 @@ context('CTDS2DProbs.h C++ methods')
 test_that('Validating directional persistence gives expected results', {
   
   # define grid
-  lons = seq(from = 0, to = 40, length.out = 100)
-  lats = seq(from = 50, to = 70, length.out = 100)
+  lons = seq(from = 0, to = 40, length.out = 87)
+  lats = seq(from = 50, to = 70, length.out = 89)
   
   # arbitrary height-field
   surface_heights = runif(length(lons) * length(lats))
@@ -75,7 +75,7 @@ test_that('Validating directional persistence gives expected results', {
 test_that('Validating directional persistence respects boundaries', {
   
   # define grid
-  lons = seq(from = 0, to = 40, length.out = 100)
+  lons = seq(from = 0, to = 40, length.out = 103)
   lats = seq(from = 50, to = 70, length.out = 100)
   
   # arbitrary height-field
@@ -119,7 +119,7 @@ test_that('Validating directional persistence respects height boundaries', {
   set.seed(2019)
   
   # define grid
-  lons = seq(from = 0, to = 40, length.out = 100)
+  lons = seq(from = 0, to = 40, length.out = 101)
   lats = seq(from = 50, to = 70, length.out = 100)
   
   # arbitrary height-field

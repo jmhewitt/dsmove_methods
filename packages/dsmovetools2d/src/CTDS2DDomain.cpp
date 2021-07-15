@@ -137,7 +137,7 @@ CTDS2DState * CTDS2DDomain::statePtr(
     }
 
     return &(
-        states[ 4 * (lat_to_ind + lon_to_ind * nlons) + direction_of_movement ]
+        states[ 4 * (lat_to_ind + lon_to_ind * nlats) + direction_of_movement ]
     );
 }
 

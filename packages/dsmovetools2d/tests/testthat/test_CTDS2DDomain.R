@@ -13,8 +13,8 @@ test_that('Validating basic input and output', {
   }
   
   # define grid
-  lons = seq(from = 0, to = 40, length.out = 100)
-  lats = seq(from = 50, to = 70, length.out = 100)
+  lons = seq(from = 0, to = 40, length.out = 57)
+  lats = seq(from = 50, to = 70, length.out = 61)
   
   # arbitrary height-field
   surface_heights = runif(length(lons) * length(lats))
