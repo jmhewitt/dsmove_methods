@@ -13,7 +13,15 @@ LogTxProbsElevation <- function(lons, lats, surface_heights, lon_from_ind, lat_f
     .Call('_dsmovetools2d_LogTxProbsElevation', PACKAGE = 'dsmovetools2d', lons, lats, surface_heights, lon_from_ind, lat_from_ind, lon_to_ind, lat_to_ind, betaAR, min_elevation, max_elevation)
 }
 
+GpsLikEval <- function(obs_lons, obs_lats, semi_majors, semi_minors, orientations, alpha, test_lon, test_lat, ind) {
+    .Call('_dsmovetools2d_GpsLikEval', PACKAGE = 'dsmovetools2d', obs_lons, obs_lats, semi_majors, semi_minors, orientations, alpha, test_lon, test_lat, ind)
+}
+
 FF_DTMC <- function(lons, lats, surface_heights, init_dsts, init_srcs, init_log_probs, steps, log_self_tx, betaAR) {
     .Call('_dsmovetools2d_FF_DTMC', PACKAGE = 'dsmovetools2d', lons, lats, surface_heights, init_dsts, init_srcs, init_log_probs, steps, log_self_tx, betaAR)
+}
+
+SattagFilteredLL <- function(init_dsts, init_srcs, init_log_probs, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR) {
+    .Call('_dsmovetools2d_SattagFilteredLL', PACKAGE = 'dsmovetools2d', init_dsts, init_srcs, init_log_probs, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR)
 }
 
