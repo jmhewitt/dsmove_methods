@@ -1179,8 +1179,8 @@ whale_targets = list(
           surface_heights = zsurf, 
           min_elevation = -10000, 
           max_elevation = 0, 
-          log_self_tx = log(.5), 
-          betaAR = 1
+          log_self_tx = log(theta[1]), 
+          betaAR = theta[2]
         ) 
       }
       
