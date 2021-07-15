@@ -17,7 +17,7 @@ tar_option_set(
   #              'tidyr', 'future', 'future.batchtools', 'viridis'),
   packages = c('dsmovetools', 'ctmcmove', 'coda', 'ggplot2', 'ggthemes', 
                'dplyr', 'bisque', 'sp', 'lubridate', 'ggnewscale', 'viridis',
-               'metR', 'fields'),
+               'metR', 'fields', 'dsmovetools2d'),
   imports = 'dsmovetools',
   deployment = 'main'
 )
