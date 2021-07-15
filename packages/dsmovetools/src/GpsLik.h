@@ -32,10 +32,13 @@ class GpsLikBase {
             qform_thresh(R::qchisq(1-alpha, 2, 1, 0)) { };
 
         // log-likelihood for coordinates relative to observation uncertainty
-        double ll(double, double);
+        double ll(double lon, double lat);
 
         // parameterize dist'n. using lon/lat/error information
-        void parameterizeDistribution(double, double, double, double, double);
+        void parameterizeDistribution(
+            double lon_ctr, double lat_ctr, double semi_major,
+            double semi_minor, double orientation
+        );
 
 };
 
@@ -77,7 +80,7 @@ class GpsLikGridded : public GpsLik {
                 GpsLik(alpha, lons, lats, majors, minors, orients),
                 lon_gridvals(&lon_grid), lat_gridvals(&lat_grid) { };
 
-        double ll(unsigned int, unsigned int);
+        double ll(unsigned int lon_ind, unsigned int lat_ind);
 
 };
 
