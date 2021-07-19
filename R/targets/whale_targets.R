@@ -809,7 +809,7 @@ whale_targets = list(
       
       # filter depth data to lie within the GPS date range
       depths_raw = depths_raw %>% filter(
-        date(Date) %in% date(range(x$date_time))
+        min(x$date_time) <= Date, Date <= max(x$date_time)
       )
       
       #
