@@ -846,16 +846,6 @@ whale_targets = list(
         sum(abs(mapped_coords[ind - 1,] - mapped_coords[ind,]))
       }))
       
-      delta_diffs = round(c(0, diff(as.numeric(x$date_time))/delta))
-      
-      # View(data.frame(
-      #   mapped_coords,
-      #   coord_diffs,
-      #   delta_diffs,
-      #   infeasible = delta_diffs < coord_diffs,
-      #   slack = abs(delta_diffs - coord_diffs)
-      # ))
-      
       # map gps observations to discretized timesteps
       obs_gps = data.frame(
         lon = rep(NA, length(tseq)),
@@ -1007,8 +997,31 @@ whale_targets = list(
       # zc095 gps observations
       x = readRDS('data/BeakedWhale/zctag095_gps.rds')
       
+      # map the observed lat-lons to the bathymetry lon/lat grid
+      # (needed to set initial filtering locations)
+      coords = coordinates(bathy)
+      lons = unique(coords[,1])
+      lats = unique(coords[,2])
+      x_mapped_coords = map_coords(
+        lon = x$Longitude, 
+        lat = x$Latitude, 
+        lon_grid = lons, 
+        lat_grid = lats, 
+        coord_grid = coords
+      )
+      
+      x$mapped_lon = lons[x_mapped_coords$lon_ind]
+      x$mapped_lat = lats[x_mapped_coords$lat_ind]
+      
       # filter out observations that are missing (Error) information
       x = x[complete.cases(x),]
+      
+      # x$mapped_filter = sdafilter(
+      #   lat = x$mapped_lat, lon = x$mapped_lon, dtime = x$date_time, 
+      #   lc = x$Quality, vmax = 5
+      # )
+      # 
+      # x = x[x$mapped_filter != 'removed',]
       
       # append with empirical speed estimates (m/s)
       x$empirical_speed = c(0, sapply(2:nrow(x), function(ind) {
@@ -1018,17 +1031,53 @@ whale_targets = list(
           diff(as.numeric(x$date_time[ind + (-1:0)]))
       }))
       
-      # filter out observations associated with large empirical speeds
-      x = x %>% filter(empirical_speed <= 6)
-      
-      # recompute empirical speed estimates (m/s)
-      x$empirical_speed = c(0, sapply(2:nrow(x), function(ind) {
-        rdist.earth(x1 = as.matrix(x[ind-1, c('Longitude', 'Latitude')]),
-                    x2 = as.matrix(x[ind, c('Longitude', 'Latitude')]), 
+      # empirical speed estimates wrt mapped coordinates
+      x$mapped_speed = c(0, sapply(2:nrow(x), function(ind) {
+        rdist.earth(x1 = as.matrix(x[ind-1, c('mapped_lon', 'mapped_lat')]),
+                    x2 = as.matrix(x[ind, c('mapped_lon', 'mapped_lat')]), 
                     miles = FALSE) * 1e3 / 
           diff(as.numeric(x$date_time[ind + (-1:0)]))
       }))
       
+      # (rounded) minutes between observations
+      x$time_diff = round(c(0, diff(as.numeric(x$date_time)))/60)
+      
+      # filter out observations associated with large empirical speeds
+      x = x %>% filter(mapped_speed <= 6)
+
+      # recompute empirical speed estimates (m/s)
+      x$empirical_speed = c(0, sapply(2:nrow(x), function(ind) {
+        rdist.earth(x1 = as.matrix(x[ind-1, c('Longitude', 'Latitude')]),
+                    x2 = as.matrix(x[ind, c('Longitude', 'Latitude')]),
+                    miles = FALSE) * 1e3 /
+          diff(as.numeric(x$date_time[ind + (-1:0)]))
+      }))
+
+      x$mapped_speed = c(0, sapply(2:nrow(x), function(ind) {
+        rdist.earth(x1 = as.matrix(x[ind-1, c('mapped_lon', 'mapped_lat')]),
+                    x2 = as.matrix(x[ind, c('mapped_lon', 'mapped_lat')]),
+                    miles = FALSE) * 1e3 /
+          diff(as.numeric(x$date_time[ind + (-1:0)]))
+      }))
+      
+      # filter out observations associated with large empirical speeds
+      x = x %>% filter(mapped_speed <= 6)
+      
+      # recompute empirical speed estimates (m/s)
+      x$empirical_speed = c(0, sapply(2:nrow(x), function(ind) {
+        rdist.earth(x1 = as.matrix(x[ind-1, c('Longitude', 'Latitude')]),
+                    x2 = as.matrix(x[ind, c('Longitude', 'Latitude')]),
+                    miles = FALSE) * 1e3 /
+          diff(as.numeric(x$date_time[ind + (-1:0)]))
+      }))
+      
+      x$mapped_speed = c(0, sapply(2:nrow(x), function(ind) {
+        rdist.earth(x1 = as.matrix(x[ind-1, c('mapped_lon', 'mapped_lat')]),
+                    x2 = as.matrix(x[ind, c('mapped_lon', 'mapped_lat')]),
+                    miles = FALSE) * 1e3 /
+          diff(as.numeric(x$date_time[ind + (-1:0)]))
+      }))
+
       # (rounded) minutes between observations
       x$time_diff = round(c(0, diff(as.numeric(x$date_time)))/60)
       
