@@ -1246,6 +1246,7 @@ whale_targets = list(
       
       res$computation_time = tock-tick
       res$computation_date = Sys.time()
+      res$computation_node = Sys.info()['nodename']
       
       res
     },
