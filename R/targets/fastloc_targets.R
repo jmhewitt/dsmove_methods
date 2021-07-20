@@ -223,6 +223,8 @@ fastloc_targets = list(
       tock = proc.time()[3]
       
       res$computation_time = tock-tick
+      res$computation_date = Sys.time()
+      res$computation_node = Sys.info()['nodename']
       
       res
     },
