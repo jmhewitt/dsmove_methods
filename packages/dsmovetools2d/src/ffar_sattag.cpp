@@ -101,16 +101,21 @@ double SattagFilteredLL(
 
         sattag_lik.setLikToObs(step_cur);
 
+
         // aggregate marginal likelihood over last diffused probability state
+        bool finiteStateWeight = false;
+        bool finiteLikObs = false;
         double ll_step = -std::numeric_limits<double>::infinity();
         auto state_end = pvec.end();
         for(auto state_it = pvec.begin(); state_it != state_end; ++state_it) {
             // extract state weight
             double w = pvec.logProbCached(*state_it);
             if(std::isfinite(w)) {
+                finiteStateWeight = true;
                 // get log-likelihood for diffused location
                 double ll_state = sattag_lik.ll(*state_it);
                 if(std::isfinite(ll_state)) {
+                    finiteLikObs = true;
                     ll_step = log_add(ll_step, ll_state + w);
                 }
             }
@@ -120,7 +125,10 @@ double SattagFilteredLL(
             if(firstError) {
                 Rcpp::Rcout <<
                     "first infinite marginal likelihood in step_cur: " <<
-                    step_cur << std::endl;
+                    step_cur << ", ll_step: " << ll_step <<
+                    ", finiteStateWeight: " << finiteStateWeight <<
+                    ", finiteLikObs: " << finiteLikObs <<
+                    std::endl;
                 firstError = false;
             }
         }
