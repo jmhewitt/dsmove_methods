@@ -1,6 +1,8 @@
 log_add = function(log_a, log_b) {
   # evaluate log(c) = log(a + b) when given log(a) and log(b)
-  
+  if(all(is.infinite(log_a), is.infinite(log_b))) {
+    return(-Inf)
+  }
   x = log_a - log_b
   exp_x = exp(x)
   if(is.infinite(exp_x)) {
