@@ -45,13 +45,13 @@ test_that('Validating directional persistence gives expected results', {
   
   # extremely strong preference to continue motion in current direction
   nzi = (p.large[,'lon_to_ind'] == 51) & (p.large[,'lat_to_ind'] == 50)
-  expect_identical(
+  expect_equal(
     exp(p.large[,'log_prob'][nzi]),
     1
   )
   
   # no directional preferences
-  expect_identical(
+  expect_equal(
     rep(1/nrow(p.equal), nrow(p.equal)),
     exp(p.equal[,'log_prob'])
   )

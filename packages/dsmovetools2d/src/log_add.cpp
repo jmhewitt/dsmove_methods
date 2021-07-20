@@ -12,6 +12,16 @@
  * corrections are made to account for the possibility that b = 0
  */
 double log_add(double log_a, double log_b) {
+    if(!std::isfinite(log_a)) {
+        if(log_a < 0) {
+            return log_b;
+        }
+    }
+    if(!std::isfinite(log_b)) {
+        if(log_b < 0) {
+            return log_a;
+        }
+    }
     double x = log_a - log_b;
     double exp_x = exp(x);
     // evaluate log(c)
@@ -21,5 +31,5 @@ double log_add(double log_a, double log_b) {
     if(exp_x == 0) { // a has negligible size relative to b
         return log_b;
     }
-    return log_b + log(1 + exp_x);
+    return log_b + std::log1p(exp_x);
 }
