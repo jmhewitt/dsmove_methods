@@ -4,6 +4,23 @@
 
 #include "Rcpp.h"
 
+/**
+ * Implement log(1 + e^x) via equation 10 in
+ * https://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
+ */
+double log1pexp(double x) {
+    if(x <= -37) {
+        return exp(x);
+    }
+    if(x <= 18) {
+        return std::log1p(exp(x));
+    }
+    if(x <= 33.3) {
+        return x + exp(-x);
+    }
+    return x;
+}
+
 /*
  * implement log(c) = log(a + b) given log(a) = v, log(b) = data[i],
  * and log(c) = data[i] (updated).  uses the identity:
@@ -23,13 +40,5 @@ double log_add(double log_a, double log_b) {
         }
     }
     double x = log_a - log_b;
-    double exp_x = exp(x);
-    // evaluate log(c)
-    if(exp_x == HUGE_VAL) { // exp_x == "Inf"
-        return log_a;
-    }
-    if(exp_x == 0) { // a has negligible size relative to b
-        return log_b;
-    }
-    return log_b + std::log1p(exp_x);
+    return log_b + log1pexp(x);
 }
