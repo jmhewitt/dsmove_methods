@@ -39,6 +39,5 @@ double log_add(double log_a, double log_b) {
             return log_a;
         }
     }
-    double x = log_a - log_b;
-    return log_b + log1pexp(x);
+    return log_b + log1pexp(log_a - log_b);
 }
