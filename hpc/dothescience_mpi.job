@@ -5,7 +5,7 @@
 #SBATCH --account gelfandlab
 #SBATCH --mail-type ALL
 #SBATCH --mail-user joshua.hewitt@duke.edu
-#SBATCH --ntasks 200
+#SBATCH --ntasks 110
 #SBATCH --time 96:00:00
 
 module unload R
