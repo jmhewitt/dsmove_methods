@@ -1132,7 +1132,8 @@ whale_targets = list(
       zsurf = matrix(
         getValues(bathy), 
         nrow = length(lats), 
-        ncol = length(lons)
+        ncol = length(lons),
+        byrow = TRUE
       )
       
       # discretized timesteps
