@@ -39,5 +39,6 @@ c(
   simulation_targets,
   exact_targets,
   whale_targets,
-  fastloc_targets
+  fastloc_targets,
+  whale_targets_multires
 )
