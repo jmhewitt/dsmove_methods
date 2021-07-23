@@ -65,27 +65,27 @@ double GpsLikGridded::ll(unsigned int lon_ind, unsigned int lat_ind) {
 
 double GpsLikBase::distance_m(double lon1, double lat1, double lon2, double lat2) {
 
-    // convert units from degrees to radians
-    lat1 = lat1 * M_PI / 180;
-    lon1 = lon1 * M_PI / 180;
-    lat2 = lat2 * M_PI / 180;
-    lon2 = lon2 * M_PI / 180;
-
-    // Haversine Formula
-    double dlon = lon2 - lon1;
-    double dlat = lat2 - lat1;
-
-    double ans = pow(sin(dlat / 2), 2) +
-                      cos(lat1) * cos(lat2) *
-                      pow(sin(dlon / 2), 2);
-
-    ans = 2 * asin(sqrt(ans));
-
+    double coslat1 = cos(lat1 * M_PI / 180);
+    double coslon1 = cos(lon1 * M_PI / 180);
+    double coslat2 = cos(lat2 * M_PI / 180);
+    double coslon2 = cos(lon2 * M_PI / 180);
+    double sinlon1 = sin(lon1 * M_PI / 180);
+    double sinlon2 = sin(lon2 * M_PI / 180);
+    double sinlat1 = sin(lat1 * M_PI / 180);
+    double sinlat2 = sin(lat2 * M_PI / 180);
+        
+    double pp = coslat1 * coslon1 * coslat2 * coslon2 +
+                coslat1 * sinlon1 * coslat2 * sinlon2 + 
+                sinlat1 * sinlat2;
+    
     // radius of Earth in meters
     double R = 6378388;
-
-    // Calculate the result
-    return ans * R;
+    
+    if(abs(pp) > 1) {
+        return R * acos(sign(pp));
+    } else {
+        return R * acos(pp);
+    }
 }
 
 void GpsLik::setLikToObs(unsigned int ind) {
