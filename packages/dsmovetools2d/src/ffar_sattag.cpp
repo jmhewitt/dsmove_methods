@@ -123,6 +123,7 @@ double SattagFilteredLL(
 
         if(!std::isfinite(ll_step)) {
             if(firstError) {
+                // print error message
                 Rcpp::Rcout <<
                     "first infinite marginal likelihood in step_cur: " <<
                     step_cur << ", ll_step: " << ll_step <<
@@ -130,6 +131,18 @@ double SattagFilteredLL(
                     ", finiteLikObs: " << finiteLikObs <<
                     std::endl;
                 firstError = false;
+                // read out state
+                pvec.unswapActive();
+                NumericMatrix state = pvec.toNumericMatrix();
+                pvec.swapActive();
+                // dump state to disk
+                Environment base("package:base");
+                Function saveRDS = base["saveRDS"];
+                std::string fname = std::string("pvec_state__step_cur_").
+                    append(std::to_string(step_cur)).append("__log_self_tx_").
+                    append(std::to_string(log_self_tx)).append("__betaAR_").
+                    append(std::to_string(betaAR)).append(".rds");
+                saveRDS(state, Named("file",fname));
             }
         }
 
