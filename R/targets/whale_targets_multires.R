@@ -234,7 +234,6 @@ whale_targets_multires = list(
         
         theta = c(1 - speed / grid_res * delta, betaAR)
         
-        browser()
         dsmovetools2d:::SattagFilteredLL(
           init_dsts = matrix(
             c(states[1,'lon_ind'], states[1,'lat_ind']), 
@@ -283,8 +282,6 @@ whale_targets_multires = list(
       res$computation_time = tock-tick
       res$computation_date = Sys.time()
       res$computation_node = Sys.info()['nodename']
-      
-      print(res)
       
       res
     },
