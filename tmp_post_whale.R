@@ -8,14 +8,15 @@ library(dplyr)
 
 # whale_ll_srtm30_filtered = readRDS('whale_ll_srtm30_filtered.rds')
 
-whale_ll_srtm30_filtered = readRDS('whale_ll_srtm30_filtered_alt_no5422.rds')
+# whale_ll_srtm30_filtered = readRDS('whale_ll_srtm30_filtered_alt_no5422.rds')
+whale_ll_srtm30_filtered = readRDS('dcc/whale_ll_srtm30_filtered_alt_bugfix.rds')
 
 source('R/utils/log_add.R')
 source('R/utils/distribution_parameters.R')
 
 
 priors = list(
-  speed = gamma.param(mu = .5, sd = .5)
+  speed = gamma.param(mu = 1, sd = .2)
 )
 
 lC = log_sum(
@@ -29,15 +30,25 @@ lC = log_sum(
 ) 
 
 
-ggplot(whale_ll_srtm30_filtered %>% 
-         filter( is.finite(ll), ll > -700  ),
+pl = ggplot(whale_ll_srtm30_filtered %>% 
+              mutate(ll = ll + 
+                       dgamma(x = whale_ll_srtm30_filtered$speed,
+                              shape = priors$speed['shape'],
+                              rate = priors$speed['rate'],
+                              log = TRUE)
+              ) %>% 
+          filter( ll > -800  ),
        aes(x = speed, y = betaAR, fill = ll, z = ll)) + 
   geom_raster() + 
   geom_contour2(col = 'grey50') +
   geom_text_contour(col = 'grey90') +
   theme_few() + 
-  scale_fill_viridis(direction = -1)
+  scale_fill_viridis(direction = -1) + 
+  ggtitle('Zc073_fastloc_mu_3_sd_1.pdf')
 
+pl
+
+ggsave(pl, filename = 'Zc073_fastloc_mu_3_sd_1.pdf')
 
 speed_marginal = whale_ll_srtm30_filtered %>%
   group_by(speed) %>% 
@@ -104,17 +115,19 @@ mean_speed = mean.marginal(
   p = exp(speed_marginal$lp) * diff(speed_marginal$speed)[1]
 )
 
-ggplot(speed_marginal, aes(x = speed, y = exp(lp))) + 
+pl = ggplot(speed_marginal, aes(x = speed, y = exp(lp))) + 
   stat_function(
     fun = function(x) { dgamma(x = x, shape = priors$speed['shape'],
                                rate = priors$speed['rate'], log = FALSE)},
                 lty = 3, geom = 'line') +
   geom_line() + 
-  geom_vline(xintercept = hpd_speed, lty = 3) + 
   theme_few() 
 
+pl
 
-whale_ll_srtm30_filtered %>% 
+ggsave(pl, filename = 'Zc073_fastloc_mu_3_sd_1_speed.pdf')
+
+pl = whale_ll_srtm30_filtered %>% 
   group_by(betaAR) %>% 
   summarise(
     lp = ll +
@@ -127,3 +140,7 @@ whale_ll_srtm30_filtered %>%
   ggplot(aes(x = betaAR, y = exp(lp))) + 
   geom_line() + 
   theme_few() 
+
+pl
+
+ggsave(pl, filename = 'Zc073_fastloc_mu_3_sd_1_betaAR.pdf')
