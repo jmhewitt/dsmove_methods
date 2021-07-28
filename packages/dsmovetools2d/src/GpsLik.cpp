@@ -22,8 +22,8 @@ void GpsLikBase::parameterizeDistribution(
     double sin_c = std::sin(c);
     double sin2_c = std::pow(sin_c, 2);
 
-    mu_lon = lon_ctr;
-    mu_lat = lat_ctr;
+    obs_lon = lon_ctr;
+    obs_lat = lat_ctr;
 
     sd_lon = std::sqrt(Mtsq_half * sin2_c + mtsq_half * cos2_c);
     sd_lat = std::sqrt(Mtsq_half * cos2_c + mtsq_half * sin2_c);
@@ -44,8 +44,16 @@ double GpsLikBase::ll(double lon, double lat) {
     }
 
     // convert distances wrt. lon and lat to m; scale wrt. uncertainty
-    double zx = distance_m(lon, mu_lat, mu_lon, mu_lat) / sd_lon;
-    double zy = distance_m(mu_lon, lat, mu_lon, mu_lat) / sd_lat;
+    double zx = distance_m(obs_lon, lat, lon, lat) / sd_lon;
+    double zy = distance_m(lon, obs_lat, lon, lat) / sd_lat;
+
+    // sign the distances
+    if(obs_lon < lon) {
+        zx *= -1;
+    }
+    if(obs_lat < lat) {
+        zy *= -1;
+    }
 
     // quadratic form
     double q = std::pow(zx, 2) - 2 * rho * zx * zy + std::pow(zy, 2);

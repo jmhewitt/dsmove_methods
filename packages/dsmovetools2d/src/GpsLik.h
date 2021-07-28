@@ -17,7 +17,7 @@ class GpsLikBase {
         bool na_obs;
 
         // bivariate normal parameters and constants
-        double mu_lon, mu_lat, sd_lon, sd_lat, rho, rhosq_c, lcst;
+        double obs_lon, obs_lat, sd_lon, sd_lat, rho, rhosq_c, lcst;
 
         // truncation parameters
         double qform_thresh, ltrunc;
