@@ -1071,6 +1071,18 @@ whale_targets = list(
           diff(as.numeric(x$date_time[ind + (-1:0)]))
       }))
       
+      x$mapped_dist = c(0, sapply(2:nrow(x), function(ind) {
+        rdist.earth(x1 = as.matrix(x[ind-1, c('mapped_lon', 'mapped_lat')]),
+                    x2 = as.matrix(x[ind, c('mapped_lon', 'mapped_lat')]),
+                    miles = FALSE)
+      }))
+      
+      x$dist = c(0, sapply(2:nrow(x), function(ind) {
+        rdist.earth(x1 = as.matrix(x[ind-1, c('Longitude', 'Latitude')]),
+                    x2 = as.matrix(x[ind, c('Longitude', 'Latitude')]),
+                    miles = FALSE)
+      }))
+      
       x$mapped_speed = c(0, sapply(2:nrow(x), function(ind) {
         rdist.earth(x1 = as.matrix(x[ind-1, c('mapped_lon', 'mapped_lat')]),
                     x2 = as.matrix(x[ind, c('mapped_lon', 'mapped_lat')]),
@@ -1106,6 +1118,9 @@ whale_targets = list(
       x$coord_diffs = c(0, sapply(2:nrow(mapped_coords), function(ind) {
         sum(abs(mapped_coords[ind - 1,] - mapped_coords[ind,]))
       }))
+      
+      meters_per_coord = x$dist * 1e3 / x$coord_diffs
+      summary(meters_per_coord[is.finite(meters_per_coord)])
       
       # load depth data
       template_bins = read.csv('data/BeakedWhale/template_bins.csv')
