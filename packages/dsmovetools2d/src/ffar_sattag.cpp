@@ -148,12 +148,6 @@ double SattagFilteredLL(
 
         ll += ll_step;
 
-//        if(step_cur % checkmark_interval == 0) {
-//            std::time_t result = std::time(nullptr);
-//            Rcpp::Rcout << "step_cur " << step_cur << " of " << nsteps <<
-//                " at " << std::ctime(&result) << std::endl;
-//        }
-//
         Rcpp::checkUserInterrupt();
 
         // diffuse mass (i.e., update prediction distribution)
