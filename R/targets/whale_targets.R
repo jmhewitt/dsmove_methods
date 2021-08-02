@@ -1016,13 +1016,6 @@ whale_targets = list(
       # filter out observations that are missing (Error) information
       x = x[complete.cases(x),]
       
-      # x$mapped_filter = sdafilter(
-      #   lat = x$mapped_lat, lon = x$mapped_lon, dtime = x$date_time, 
-      #   lc = x$Quality, vmax = 5
-      # )
-      # 
-      # x = x[x$mapped_filter != 'removed',]
-      
       # append with empirical speed estimates (m/s)
       x$empirical_speed = c(0, sapply(2:nrow(x), function(ind) {
         rdist.earth(x1 = as.matrix(x[ind-1, c('Longitude', 'Latitude')]),
@@ -1208,7 +1201,7 @@ whale_targets = list(
       obs_depths = rep(NA, length(tseq))
       for(ind in 1:nrow(depths_raw)) {
         obs_depths[which.min(abs(depths_raw$Date[ind] - tseq))] = 
-          obs_depths = -depths_raw$Depth[ind]
+          -depths_raw$Depth[ind]
       }
       
       # log-likelihood for observations
@@ -1233,12 +1226,12 @@ whale_targets = list(
           ), 
           init_log_probs = rep(log(1/4),4), 
           gps_trunc_alpha = .05, 
-          obs_lons = obs_gps$lon[1:5420], 
-          obs_lats = obs_gps$lat[1:5420], 
-          obs_semi_majors = obs_gps$semi_major[1:5420], 
-          obs_semi_minors = obs_gps$semi_minor[1:5420], 
-          obs_orientations = obs_gps$orientation[1:5420], 
-          obs_depths = obs_depths[1:5420], 
+          obs_lons = obs_gps$lon, 
+          obs_lats = obs_gps$lat, 
+          obs_semi_majors = obs_gps$semi_major, 
+          obs_semi_minors = obs_gps$semi_minor,
+          obs_orientations = obs_gps$orientation,
+          obs_depths = obs_depths,
           lon_gridvals = lons, 
           lat_gridvals = lats, 
           surface_heights = zsurf, 
