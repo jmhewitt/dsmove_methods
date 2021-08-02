@@ -16,7 +16,7 @@ void GpsLikBase::parameterizeDistribution(
     double Mtsq_half = std::pow(semi_major, 2) / 2;
     double mtsq_half = std::pow(semi_minor, 2) / 2;
 
-    double c = (90 - orientation) / 180 * M_PI;
+    double c = orientation / 180 * M_PI;
     double cos_c = std::cos(c);
     double cos2_c = std::pow(cos_c, 2);
     double sin_c = std::sin(c);
@@ -58,12 +58,13 @@ double GpsLikBase::ll(double lon, double lat) {
     // quadratic form
     double q = std::pow(zx, 2) - 2 * rho * zx * zy + std::pow(zy, 2);
 
-    // return -Inf if lon/lat are outside the ellipse truncation boundary
-    if(q < qform_thresh) {
-        return - q / 2 / rhosq_c + lcst;
-    } else {
-        return -std::numeric_limits<double>::infinity();
-    }
+    return - q / 2 / rhosq_c + lcst;
+//    // return -Inf if lon/lat are outside the ellipse truncation boundary
+//    if(q < qform_thresh) {
+//        return - q / 2 / rhosq_c + lcst;
+//    } else {
+//        return -std::numeric_limits<double>::infinity();
+//    }
 }
 
 double GpsLikGridded::ll(unsigned int lon_ind, unsigned int lat_ind) {
