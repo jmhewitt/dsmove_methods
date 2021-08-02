@@ -35,24 +35,29 @@ CTDS2DDomain::CTDS2DDomain(
             double lat_to = lats[lat_ind];
             double surface_height = *(surface_height_it++);
 
-            // addresses to connecting states, which can be transitioned to
+            // addresses to connecting states, which can be transitioned to/from
             CTDS2DState *nbr_to[] = {nullptr, nullptr, nullptr, nullptr};
+            CTDS2DState *nbr_from[] = {nullptr, nullptr, nullptr, nullptr};
             unsigned int nnbrs = 0;
             if(lat_ind + 1 < nlats) {
                 ++nnbrs;
                 nbr_to[0] = &states[ 4 * ( lat_ind + 1 + lon_ind * nlats) + 0 ];
+                nbr_from[2] = nbr_to[0];
             }
             if(lon_ind + 1 < nlons) {
                 ++nnbrs;
                 nbr_to[1] = &states[ 4 * ( lat_ind + (lon_ind + 1) * nlats) + 1 ];
+                nbr_from[3] = nbr_to[1];
             }
             if(lat_ind - 1 > 0) {
                 ++nnbrs;
                 nbr_to[2] = &states[ 4 * ( lat_ind - 1 + lon_ind * nlats) + 2 ];
+                nbr_from[0] = nbr_to[2];
             }
             if(lon_ind - 1 > 0) {
                 ++nnbrs;
                 nbr_to[3] = &states[ 4 * ( lat_ind + (lon_ind - 1) * nlats) + 3 ];
+                nbr_from[1] = nbr_to[3];
             }
 
             // define states with N,E,S,W directions of movement to current loc.
@@ -105,10 +110,13 @@ CTDS2DDomain::CTDS2DDomain(
                 if(state_it->lat_from_ind >= nlats) {
                     state_it->well_defined = false;
                 }
-                // link to connecting states, which can be transitioned to
+                // link to connecting states, which can be transitioned to/from
                 state_it->nnbrs = nnbrs;
                 std::memcpy(
                     &(state_it->nbr_to), &nbr_to, 4 * sizeof(CTDS2DState*)
+                );
+                std::memcpy(
+                    &(state_it->nbr_from), &nbr_from, 4 * sizeof(CTDS2DState*)
                 );
 
                 // increment to new state object
@@ -177,6 +185,9 @@ void CTDS2DDomain::updateConnections() {
             std::memcpy(
                 &(state_it->nbr_to), &all_null, 4 * sizeof(CTDS2DState*)
             );
+            std::memcpy(
+                &(state_it->nbr_from), &all_null, 4 * sizeof(CTDS2DState*)
+            );
             // update neighbor count
             state_it->nnbrs = 0;
         } else {
@@ -187,6 +198,13 @@ void CTDS2DDomain::updateConnections() {
                         state_it->nbr_to[i] = nullptr;
                         // update neighbor count
                         --state_it->nnbrs;
+                    }
+                }
+                if(state_it->nbr_from[i]) {
+                    if(!state_it->nbr_from[i]->well_defined) {
+                        // remove connection from state that is ill-defined
+                        state_it->nbr_from[i] = nullptr;
+                        // neighbor count previously updates
                     }
                 }
             }
