@@ -9,14 +9,20 @@ library(dplyr)
 # whale_ll_srtm30_filtered = readRDS('whale_ll_srtm30_filtered.rds')
 
 # whale_ll_srtm30_filtered = readRDS('whale_ll_srtm30_filtered_alt_no5422.rds')
-whale_ll_srtm30_filtered = readRDS('dcc/whale_ll_srtm30_filtered_alt_bugfix.rds')
+whale_ll_srtm30_filtered = readRDS('dcc/whale_ll_srtm30_filtered_alt_orientation.rds')
+
+# rescale speed grid to align with average meters traveled per cell transition
+whale_ll_srtm30_filtered$speed = whale_ll_srtm30_filtered$speed * 623.7801 / 1187.295
+
 
 source('R/utils/log_add.R')
 source('R/utils/distribution_parameters.R')
 
 
 priors = list(
-  speed = gamma.param(mu = 1, sd = .2)
+  # speed = gamma.param(mu = .5, sd = .5)
+  speed = gamma.param(mu = 1, sd = 1)
+  # speed = c(shape = 2, rate = 1)
 )
 
 lC = log_sum(
@@ -44,11 +50,11 @@ pl = ggplot(whale_ll_srtm30_filtered %>%
   geom_text_contour(col = 'grey90') +
   theme_few() + 
   scale_fill_viridis(direction = -1) + 
-  ggtitle('Zc073_fastloc_mu_3_sd_1.pdf')
+  ggtitle('Zc093 prior mean = 1, sd = 1')
 
 pl
 
-ggsave(pl, filename = 'Zc073_fastloc_mu_3_sd_1.pdf')
+ggsave(pl, filename = 'Zc093_mu_1_sd_1.pdf')
 
 speed_marginal = whale_ll_srtm30_filtered %>%
   group_by(speed) %>% 
@@ -71,6 +77,18 @@ mean.marginal = function(x, p) {
   #  p - probability of value
   
   sum(x * p)
+}
+
+var.marginal = function(x, p) {
+  # Variance when given values and probabilities
+  # 
+  # Parameters:
+  #  x - grid of values
+  #  p - probability of value
+  
+  mu = mean.marginal(x = x, p = p)
+  
+  sum((x-mu)^2 * p)
 }
 
 hpd.marginal = function(x, p, level = .95) {
@@ -115,17 +133,28 @@ mean_speed = mean.marginal(
   p = exp(speed_marginal$lp) * diff(speed_marginal$speed)[1]
 )
 
+sd_speed = sqrt(var.marginal(
+  x = speed_marginal$speed,
+  p = exp(speed_marginal$lp) * diff(speed_marginal$speed)[1]
+))
+
+
+print(hpd_speed)
+print(mean_speed)
+print(sd_speed)
+
 pl = ggplot(speed_marginal, aes(x = speed, y = exp(lp))) + 
   stat_function(
     fun = function(x) { dgamma(x = x, shape = priors$speed['shape'],
                                rate = priors$speed['rate'], log = FALSE)},
                 lty = 3, geom = 'line') +
   geom_line() + 
-  theme_few() 
+  theme_few() + 
+  ggtitle('Zc093 prior mean = 1, sd = 1; post. mean = 1.8, sd = .5')
 
 pl
 
-ggsave(pl, filename = 'Zc073_fastloc_mu_3_sd_1_speed.pdf')
+ggsave(pl, filename = 'Zc093_mu_1_sd_1_speed.pdf')
 
 pl = whale_ll_srtm30_filtered %>% 
   group_by(betaAR) %>% 
