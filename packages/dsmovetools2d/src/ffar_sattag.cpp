@@ -158,3 +158,173 @@ double SattagFilteredLL(
 
     return ll;
 }
+
+// [[Rcpp::export]]
+std::vector<NumericMatrix> SattagPredDist(
+        NumericMatrix init_dsts, NumericMatrix init_srcs,
+        std::vector<double> init_log_probs,
+        double gps_trunc_alpha, std::vector<double> obs_lons,
+        std::vector<double> obs_lats, std::vector<double> obs_semi_majors,
+        std::vector<double> obs_semi_minors, std::vector<double> obs_orientations,
+        std::vector<double> obs_depths,
+        std::vector<double> lon_gridvals, std::vector<double> lat_gridvals,
+        std::vector<double> surface_heights, double min_elevation,
+        double max_elevation, double log_self_tx, double betaAR,
+        std::vector<unsigned int> pred_steps) {
+
+    // Return for prediction at pred_steps given data up to pred_steps - 1
+
+    // number of steps to integrate over in likelihood
+    unsigned int nsteps = obs_lats.size();
+
+    // initialize container for predictive distributions
+    std::vector<NumericMatrix> pred_distns;
+    pred_distns.reserve(pred_steps.size());
+
+    // initialize CTMC state space probability vector
+    CTDS2DDomain pvec(lon_gridvals, lat_gridvals, surface_heights);
+
+    // filter state space
+    CTDS2DStateElevationFilter height_filter(min_elevation, max_elevation);
+    pvec.filterStates(height_filter);
+
+    // fill initial probability container
+    for(unsigned int ind = 0; ind < init_dsts.nrow(); ++ind) {
+        pvec.set(init_srcs(ind, 0), init_srcs(ind, 1), init_dsts(ind, 0),
+                 init_dsts(ind, 1), init_log_probs[ind]);
+    }
+
+    // finalize initial probability vector
+    pvec.swapActive();
+
+    // set transition parameters
+    TxProbs txmod;
+    txmod.setBetaAR(betaAR);
+
+    // initialize GPS and composite likelihoods
+    GpsLik gps_lik(gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors,
+                   obs_semi_minors, obs_orientations);
+    DepthLik depth_lik(obs_depths);
+    LocationDepthLik sattag_lik(gps_lik, depth_lik);
+
+
+    /*
+     * diffuse initial probability while aggregating likelihood
+     */
+
+    auto pred_step_iter = pred_steps.begin();
+    auto pred_step_end = pred_steps.end();
+
+    // diffuse mass across likelihood steps
+    for(unsigned int step_cur = 0; step_cur < nsteps; ++step_cur) {
+
+        sattag_lik.setLikToObs(step_cur);
+
+        // save prediction distribution, and check end condition
+        if(pred_step_iter != pred_step_end) {
+            if(*pred_step_iter == step_cur) {
+                pvec.unswapActive();
+                pred_distns.push_back(pvec.toNumericMatrix());
+                pred_step_iter++;
+                pvec.swapActive();
+            }
+        } else {
+            break;
+        }
+
+        Rcpp::checkUserInterrupt();
+
+        // diffuse mass (i.e., update prediction distribution)
+        diffuseMass<LocationDepthLik>(&pvec, &txmod, log_self_tx, &sattag_lik);
+        // swap state
+        pvec.swapActive();
+    }
+
+    return pred_distns;
+}
+
+// [[Rcpp::export]]
+std::vector<NumericMatrix> BackInfoFilteringDist(
+        NumericMatrix init_dsts, NumericMatrix init_srcs,
+        std::vector<double> init_log_probs,
+        double gps_trunc_alpha, std::vector<double> obs_lons,
+        std::vector<double> obs_lats, std::vector<double> obs_semi_majors,
+        std::vector<double> obs_semi_minors, std::vector<double> obs_orientations,
+        std::vector<double> obs_depths,
+        std::vector<double> lon_gridvals, std::vector<double> lat_gridvals,
+        std::vector<double> surface_heights, double min_elevation,
+        double max_elevation, double log_self_tx, double betaAR,
+        std::vector<unsigned int> pred_steps) {
+
+    // number of steps to integrate over in likelihood
+    unsigned int nsteps = obs_lats.size();
+
+    // initialize container for predictive distributions
+    std::vector<NumericMatrix> pred_distns;
+    pred_distns.reserve(pred_steps.size());
+
+    // initialize CTMC state space probability vector
+    CTDS2DDomain pvec(lon_gridvals, lat_gridvals, surface_heights);
+
+    // filter state space
+    CTDS2DStateElevationFilter height_filter(min_elevation, max_elevation);
+    pvec.filterStates(height_filter);
+
+    // fill initial probability container
+    for(unsigned int ind = 0; ind < init_dsts.nrow(); ++ind) {
+        pvec.set(init_srcs(ind, 0), init_srcs(ind, 1), init_dsts(ind, 0),
+                 init_dsts(ind, 1), init_log_probs[ind]);
+    }
+
+    // finalize initial probability vector
+    pvec.swapActive();
+
+    // set transition parameters
+    TxProbs txmod;
+    txmod.setBetaAR(betaAR);
+
+    // initialize GPS and composite likelihoods
+    GpsLik gps_lik(gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors,
+                   obs_semi_minors, obs_orientations);
+    DepthLik depth_lik(obs_depths);
+    LocationDepthLik sattag_lik(gps_lik, depth_lik);
+
+
+    /*
+     * diffuse initial probability while aggregating likelihood
+     */
+
+    auto pred_step_iter = pred_steps.rbegin();
+    auto pred_step_end = pred_steps.rend();
+
+    // diffuse mass across likelihood steps
+    for(unsigned int step_cur = nsteps; step_cur > 1; --step_cur) {
+
+        // save prediction distribution
+        if(pred_step_iter != pred_step_end) {
+            if(*pred_step_iter == step_cur) {
+                pvec.unswapActive();
+                pred_distns.push_back(pvec.toNumericMatrix());
+                pred_step_iter++;
+                pvec.swapActive();
+            }
+        }
+
+        // check end condition
+        if(pred_step_iter == pred_step_end) {
+            break;
+        }
+
+        sattag_lik.setLikToObs(step_cur);
+
+
+        Rcpp::checkUserInterrupt();
+
+        // diffuse mass (i.e., update prediction distribution)
+        backFilterMass<LocationDepthLik>(&pvec, &txmod, log_self_tx, &sattag_lik);
+        // swap state
+        pvec.swapActive();
+    }
+
+    return pred_distns;
+}
