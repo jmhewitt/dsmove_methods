@@ -10,6 +10,43 @@
 #include "log_complement.h"
 
 template<typename SrcLik>
+void backFilterMass(CTDS2DDomain *src, TxProbs *txmod, double log_self_tx,
+                    SrcLik *srclik) {
+
+    // compute probability of making a transition
+    double log_tx = log_complement(log_self_tx);
+
+    // backward-filter all mass from the src vector to the dst vector
+    auto src_end = src->end();
+    for(auto src_state = src->begin(); src_state != src_end; ++src_state) {
+        double src_wt = src->logProbCached(*src_state);
+        // (backward) diffuse to entries with finite mass
+        if(std::isfinite(src_wt)) {
+            // add self-transition probability
+            double ll = srclik->ll(*src_state);
+            if(std::isfinite(ll)) {
+                // aggregate back-filtered mass in destination
+                src->add(*src_state, ll + log_self_tx + src_wt);
+            }
+            // loop over locations that transition to src_state
+            for(unsigned int i = 0; i < 4; ++i) {
+                if(src_state->nbr_from[i]) {
+                    // log-likelihood for state
+                    ll = srclik->ll(*(src_state->nbr_from[i]));
+                    if(std::isfinite(ll)) {
+                        // compute transition probabilities from state
+                        txmod->constructProbs(*(src_state->nbr_from[i]));
+                        // aggregate back-filtered mass in dst vector
+                        double m = ll + log_tx + txmod->logProb(i) + src_wt;
+                        src->add(*(src_state->nbr_from[i]), m);
+                    }
+                }
+            }
+        }
+    }
+}
+
+template<typename SrcLik>
 void diffuseMass(CTDS2DDomain *src, TxProbs *txmod,
                  double log_self_tx, SrcLik *srclik) {
 
