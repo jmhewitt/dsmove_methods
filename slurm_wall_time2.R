@@ -79,11 +79,12 @@ sim = function(njobs, ncores, time_to_submit, time_to_complete) {
 # timple for a single movement diffusion likelihood evaluaton
 complete_time = function(){
   # runif(n = 1, min = 19125.94, max = 22444.54)  # fastloc whale data
-  runif(n = 1, min = 1100, max = 2000) # zc093 data
+  # runif(n = 1, min = 1100, max = 2000) # zc093 data
+  runif(n = 1, min = 2300, max = 3600) # zc093 data with no gps truncation
 }
 
 # Monte Carlo simulations of runs when varying number of cores available
-sims = lapply(seq(from = 50, to = 300, by = 10), function(ncores) {
+sims = lapply(seq(from = 100, to = 300, by = 10), function(ncores) {
   list(
     ncores = ncores,
     simulations = replicate(
