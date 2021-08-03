@@ -33,3 +33,7 @@ BackInfoFilteringDist <- function(init_dsts, init_srcs, init_log_probs, gps_trun
     .Call('_dsmovetools2d_BackInfoFilteringDist', PACKAGE = 'dsmovetools2d', init_dsts, init_srcs, init_log_probs, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR, pred_steps)
 }
 
+log_sum_c <- function(x) {
+    .Call('_dsmovetools2d_log_sum_c', PACKAGE = 'dsmovetools2d', x)
+}
+

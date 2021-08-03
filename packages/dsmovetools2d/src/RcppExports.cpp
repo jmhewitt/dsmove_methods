@@ -181,6 +181,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// log_sum_c
+double log_sum_c(std::vector<double> x);
+RcppExport SEXP _dsmovetools2d_log_sum_c(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<double> >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(log_sum_c(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools2d_TestCTDS2DDomainIO", (DL_FUNC) &_dsmovetools2d_TestCTDS2DDomainIO, 6},
@@ -191,6 +202,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools2d_SattagFilteredLL", (DL_FUNC) &_dsmovetools2d_SattagFilteredLL, 17},
     {"_dsmovetools2d_SattagPredDist", (DL_FUNC) &_dsmovetools2d_SattagPredDist, 18},
     {"_dsmovetools2d_BackInfoFilteringDist", (DL_FUNC) &_dsmovetools2d_BackInfoFilteringDist, 18},
+    {"_dsmovetools2d_log_sum_c", (DL_FUNC) &_dsmovetools2d_log_sum_c, 1},
     {NULL, NULL, 0}
 };
 

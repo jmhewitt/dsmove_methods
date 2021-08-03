@@ -41,3 +41,13 @@ double log_add(double log_a, double log_b) {
     }
     return log_b + log1pexp(log_a - log_b);
 }
+
+// [[Rcpp::export]]
+double log_sum_c(std::vector<double> x) {
+    auto iter = x.begin();
+    auto end = x.end();
+    double  res = *(iter++);
+    for(iter; iter != end; ++iter)
+        res = log_add(res, *iter);
+    return res;
+}
