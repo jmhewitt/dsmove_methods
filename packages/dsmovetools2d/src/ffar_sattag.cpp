@@ -151,7 +151,7 @@ double SattagFilteredLL(
         Rcpp::checkUserInterrupt();
 
         // diffuse mass (i.e., update prediction distribution)
-        diffuseMass<LocationDepthLik>(&pvec, &txmod, log_self_tx, &sattag_lik);
+        diffuseMassPred<LocationDepthLik>(&pvec, &txmod, log_self_tx, &sattag_lik);
         // swap state
         pvec.swapActive();
     }
@@ -220,7 +220,7 @@ std::vector<NumericMatrix> SattagPredDist(
 
         sattag_lik.setLikToObs(step_cur);
 
-        // save prediction distribution, and check end condition
+        // save prediction distribution
         if(pred_step_iter != pred_step_end) {
             if(*pred_step_iter == step_cur) {
                 pvec.unswapActive();
@@ -228,14 +228,17 @@ std::vector<NumericMatrix> SattagPredDist(
                 pred_step_iter++;
                 pvec.swapActive();
             }
-        } else {
+        }
+
+        // check end condition
+        if(pred_step_iter == pred_step_end) {
             break;
         }
 
         Rcpp::checkUserInterrupt();
 
         // diffuse mass (i.e., update prediction distribution)
-        diffuseMass<LocationDepthLik>(&pvec, &txmod, log_self_tx, &sattag_lik);
+        diffuseMassPred<LocationDepthLik>(&pvec, &txmod, log_self_tx, &sattag_lik);
         // swap state
         pvec.swapActive();
     }
@@ -315,8 +318,8 @@ std::vector<NumericMatrix> BackInfoFilteringDist(
             break;
         }
 
-        sattag_lik.setLikToObs(step_cur);
-
+        // set observation likelihood, for diffusion
+        sattag_lik.setLikToObs(step_cur - 1);
 
         Rcpp::checkUserInterrupt();
 

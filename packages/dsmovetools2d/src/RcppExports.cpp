@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // TestCTDS2DDomainIO
 NumericMatrix TestCTDS2DDomainIO(std::vector<double> lons, std::vector<double> lats, std::vector<double> surface_heights, NumericMatrix init_dsts, NumericMatrix init_srcs, std::vector<double> log_probs);
 RcppExport SEXP _dsmovetools2d_TestCTDS2DDomainIO(SEXP lonsSEXP, SEXP latsSEXP, SEXP surface_heightsSEXP, SEXP init_dstsSEXP, SEXP init_srcsSEXP, SEXP log_probsSEXP) {
