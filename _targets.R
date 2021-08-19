@@ -40,5 +40,8 @@ c(
   exact_targets,
   whale_targets,
   fastloc_targets,
-  whale_targets_multires
+  whale_targets_multires,
+  marginal_targets
 )
+
+
