@@ -19,7 +19,8 @@ flatten_data = function(
   #  max_speed_iter - max_speed_filter will be applied iteratively, this many
   #    times 
   #  obs_depth - vector of observed depths, or NULL if depth data will not 
-  #    be incorporated into analysis
+  #    be incorporated into analysis.  NOTE: depths must be negative in order 
+  #    to be properly modeled
   #  obs_depth_time - vector of depth observation times (POSIXct format)
   #  obs_semi_major - vector of semi-major values for lon/lat error ellipses
   #  obs_semi_minor - vector of semi-minor values for lon/lat error ellipses
@@ -34,6 +35,10 @@ flatten_data = function(
   #  a list containing the reduced dataset.  Indices of mapped lon/lat 
   #  coordinates are not 0-indexed (i.e., their range is 1...nlons).  This must 
   #  be done elsewhere if this is important (i.e., for using as C++ indices).
+  
+  if(any(obs_depth > 0)) {
+    warning('Depth data is outside expected range of (-Inf, 0).')
+  }
   
   # consolidate location data
   x = data.frame(
@@ -173,6 +178,8 @@ flatten_data = function(
     bathymetry_matrix = zsurf,
     mapped_data = flattened_coords[
       1:nrow(flattened_coords), setdiff(colnames(flattened_coords), 'sqerror')
-    ]
+    ],
+    mapped_times = tseq,
+    delta = delta
   )
 }
