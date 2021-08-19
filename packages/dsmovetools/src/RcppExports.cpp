@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // TestDualSparseCoordVec
 double TestDualSparseCoordVec(std::vector<unsigned int> x1, std::vector<unsigned int> x2, double v);
 RcppExport SEXP _dsmovetools_TestDualSparseCoordVec(SEXP x1SEXP, SEXP x2SEXP, SEXP vSEXP) {
