@@ -1,6 +1,6 @@
 #!/bin/sh
 
-#SBATCH --job-name likelihood_approx
+#SBATCH --job-name marginal_imputation
 #SBATCH --partition common,scavenger
 #SBATCH --account gelfandlab
 #SBATCH --mail-type ALL
@@ -16,7 +16,7 @@ R_PROFILE=/opt/apps/rhel7/R-3.5.2/lib64/R/library/snow/RMPISNOWprofile; export R
 
 date
 START=`date +%s`
-mpirun R --no-save --no-restore CMD BATCH make_slurm.R ${SLURM_JOB_NAME}.Rout
+mpirun R --no-save --no-restore CMD BATCH make_slurm2.R ${SLURM_JOB_NAME}.Rout
 END=`date +%s`
 date
 
