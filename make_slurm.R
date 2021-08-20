@@ -1,1 +1,5 @@
-targets::tar_make(names = whale_ll_srtm30_marginal_alt, callr_function = NULL)
+targets::tar_make_future(
+  names = c('whale_ll_approx', 'whale_marginal_approx'), 
+  workers = 400, 
+  callr_function = NULL
+)
