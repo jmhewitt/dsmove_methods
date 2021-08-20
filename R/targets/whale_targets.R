@@ -77,7 +77,7 @@ whale_targets = list(
                                    origin = '1970-01-01 00:00.00 UTC')
       # subset data rules
       if(whale_pkg_subset == 'with_depth') {
-        depth_data = depths_raw$Depth
+        depth_data = -depths_raw$Depth
       } else {
         depth_data = NULL
       }
