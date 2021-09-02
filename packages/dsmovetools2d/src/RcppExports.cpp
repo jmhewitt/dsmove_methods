@@ -197,6 +197,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// completeObsLL
+double completeObsLL(double betaAR, double speed, double cell_size, std::vector<double> durations, std::vector<unsigned int> direction_of_movement);
+RcppExport SEXP _dsmovetools2d_completeObsLL(SEXP betaARSEXP, SEXP speedSEXP, SEXP cell_sizeSEXP, SEXP durationsSEXP, SEXP direction_of_movementSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type betaAR(betaARSEXP);
+    Rcpp::traits::input_parameter< double >::type speed(speedSEXP);
+    Rcpp::traits::input_parameter< double >::type cell_size(cell_sizeSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type durations(durationsSEXP);
+    Rcpp::traits::input_parameter< std::vector<unsigned int> >::type direction_of_movement(direction_of_movementSEXP);
+    rcpp_result_gen = Rcpp::wrap(completeObsLL(betaAR, speed, cell_size, durations, direction_of_movement));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools2d_TestCTDS2DDomainIO", (DL_FUNC) &_dsmovetools2d_TestCTDS2DDomainIO, 6},
@@ -208,6 +223,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools2d_SattagPredDist", (DL_FUNC) &_dsmovetools2d_SattagPredDist, 18},
     {"_dsmovetools2d_BackInfoFilteringDist", (DL_FUNC) &_dsmovetools2d_BackInfoFilteringDist, 18},
     {"_dsmovetools2d_log_sum_c", (DL_FUNC) &_dsmovetools2d_log_sum_c, 1},
+    {"_dsmovetools2d_completeObsLL", (DL_FUNC) &_dsmovetools2d_completeObsLL, 5},
     {NULL, NULL, 0}
 };
 

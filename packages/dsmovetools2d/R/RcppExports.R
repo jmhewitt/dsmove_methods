@@ -37,3 +37,7 @@ log_sum_c <- function(x) {
     .Call('_dsmovetools2d_log_sum_c', PACKAGE = 'dsmovetools2d', x)
 }
 
+completeObsLL <- function(betaAR, speed, cell_size, durations, direction_of_movement) {
+    .Call('_dsmovetools2d_completeObsLL', PACKAGE = 'dsmovetools2d', betaAR, speed, cell_size, durations, direction_of_movement)
+}
+
