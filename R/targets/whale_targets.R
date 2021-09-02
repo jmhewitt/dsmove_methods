@@ -212,10 +212,10 @@ whale_targets = list(
   ),
   
   tar_target(
-    name = whale_post_marginal,
+    name = whale_post_marginal_parameters,
     command = {
       # marginal distributions for different parameterizations by data subset
-      lapply(whale_post_joint, function(param) {
+      lapply(whale_post_joint_parameters, function(param) {
         # process each parameterization separately
         lapply(param, function(r) {
           
