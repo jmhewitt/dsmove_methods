@@ -142,7 +142,7 @@ whale_targets = list(
   ),
   
   tar_target(
-    name = whale_post_joint,
+    name = whale_post_joint_parameters,
     command = {
       # specify priors to use
       priors = whale_priors
@@ -292,6 +292,87 @@ whale_targets = list(
     retrieval = 'worker',
     memory = 'transient',
     error = 'continue'
+  ),
+  
+  tar_target(
+    name = whale_marginal_location_post,
+    command = {
+      # initialize hierarchical container for all outputs
+      res = list()
+      whale_marginal_approx = dir(pattern = 'whale_marginal_approx')
+      # aggregate posteriors across files
+      for(f in whale_marginal_approx) {
+        tick = proc.time()[3]
+        # load file containing posteriors for marginal location cdt'l. on params
+        conditional_marginal_location = readRDS(f)
+        # aggregate posteriors for each timestamp
+        for(tind in 1:length(conditional_marginal_location$times)) {
+          # extract time to be processed
+          post_time = as.character(conditional_marginal_location$times[tind])
+          # retrieve output for the timepoint being analyzed
+          posteriors_for_times = res[[post_time]]
+          # initialize the output if necessary
+          if(is.null(posteriors_for_times)) {
+            posteriors_for_times = list()
+          }
+          # retrieve output for the data subset being analyzed
+          posteriors_for_data = posteriors_for_times[[
+            conditional_marginal_location$subset
+          ]]
+          # initialize the output if necessary
+          if(is.null(posteriors_for_data)) {
+            posteriors_for_data = list()
+          }
+          # extract posterior surface for parameters matching file's data subset
+          param_posteriors = whale_post_joint_parameters[[
+            conditional_marginal_location$subset
+          ]]
+          # aggregate posteriors over different model specifications
+          for(model_spec in names(param_posteriors)) {
+            # extract log-posterior weight for parameter combination
+            lp_param = param_posteriors[[model_spec]] %>% 
+              filter(speed == conditional_marginal_location$params$speed,
+                     betaAR == conditional_marginal_location$params$betaAR) %>% 
+              select(lpost) %>% unlist()
+            # weight conditional marginal location surface by log-posterior
+            conditional_marginal_location$marginal_location[[tind]]$lp = 
+              conditional_marginal_location$marginal_location[[tind]]$lp + 
+              lp_param
+            # retrieve output for the model specification being analyzed
+            posteriors_for_spec = posteriors_for_data[[model_spec]]
+            # form output
+            if(is.null(posteriors_for_spec)) {
+              # initialize the output if necessary
+              posteriors_for_spec = 
+                conditional_marginal_location$marginal_location[[tind]]
+            } else {
+              # merge conditional marginal location surface being processsed
+              posteriors_for_spec = full_join(
+                x = posteriors_for_spec,
+                y = conditional_marginal_location$marginal_location[[tind]], 
+                by = c('lon_to_ind', 'lat_to_ind')
+              ) 
+              # collapse probability mass
+              posteriors_for_spec$lp = mapply(function(lx, ly) {
+                dsmovetools2d:::log_sum_c(c(lx,ly))
+              }, lx = posteriors_for_spec$lp.x, ly = posteriors_for_spec$lp.y)
+              # remove unmerged data
+              posteriors_for_spec$lp.x = NULL
+              posteriors_for_spec$lp.y = NULL
+            }
+            # update posteriors in output
+            posteriors_for_data[[model_spec]] = posteriors_for_spec
+          }
+          # update posteriors in output
+          posteriors_for_times[[conditional_marginal_location$subset]] = 
+            posteriors_for_data
+          res[[post_time]] = posteriors_for_times
+        }
+        tock = proc.time()[3]
+        print(tock- tick)
+      }
+      res 
+    }
   )
   
 )
