@@ -52,6 +52,25 @@ void TxProbs::constructProbs(const CTDS2DState &state) {
 
 }
 
+void TxProbs::constructProbs(unsigned int direction_of_movement) {
+
+    // reset total transition mass
+    log_total_mass = -std::numeric_limits<double>::infinity();
+
+    // assign first probability to the transition that continues movement dir.
+    ProbContainer *cur = &tx_probs[direction_of_movement];
+
+    // cycle through all 4 neighbors CW from initial position
+    for(unsigned int i = 0; i < 4; ++i) {
+        cur->log_prob = prob_order[i];
+        log_total_mass = log_add(log_total_mass, prob_order[i]);
+        // increment direction
+        cur = cur->next;
+    }
+
+}
+
+
 double TxProbs::logProb(unsigned int direction_of_movement) {
     return tx_probs[direction_of_movement].log_prob - log_total_mass;
 }
