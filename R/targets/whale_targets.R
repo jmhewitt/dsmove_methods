@@ -366,7 +366,7 @@ whale_targets = list(
         tock = proc.time()[3]
         print(tock- tick)
       }
-      res 
+      list(res)
     },
     pattern = map(posterior_marginal_location_combinations),
     deployment = 'worker',
