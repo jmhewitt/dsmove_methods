@@ -7,6 +7,12 @@ whale_targets = list(
   # time-discretization step size (seconds)
   tar_target(whale_ll_delta, 30),
   
+  tar_target(whale_priors, list(
+    speed = gamma.param(mu = 1, sd = 1),
+    betaAR = c(mean = 0, sd = 1e2),
+    beta0 = c(mean = 0, sd = 1e2)
+  )),
+  
   tar_target(
     name = cee_start, 
     command = strptime(
@@ -133,6 +139,126 @@ whale_targets = list(
     retrieval = 'worker',
     memory = 'transient',
     error = 'continue'
+  ),
+  
+  tar_target(
+    name = whale_post_joint,
+    command = {
+      # specify priors to use
+      priors = whale_priors
+      # joint posteriors of parameters for different parameterizations by subset
+      lapply(split(whale_ll_approx, whale_ll_approx$subset), function(r) {
+        
+        # extract grid dimensions
+        dx = diff(sort(unique(r$speed))[2:3])
+        dy = diff(sort(unique(r$betaAR))[2:3])
+        
+        # reparameterized model parameter
+        beta0 = log(r$speed) - log(r$cell_size) - 
+          log(2 + exp(-r$betaAR) + exp(r$betaAR))
+        
+        # log-prior for reparameterized model, normalized to grid
+        lprior_reparam = log_density_gridded(
+          x = r$speed, y = r$betaAR, dx = dx, dy = dy,
+          ld = # prior for reparameterized parameters
+            dnorm(x = beta0, mean = priors$beta0['mean'], 
+                  sd = priors$beta0['sd'], log = TRUE) + 
+            dnorm(x = r$betaAR, mean = priors$betaAR['mean'], 
+                  sd = priors$betaAR['sd'], log = TRUE) - 
+            # jacobian for transformation
+            log(r$speed) 
+        )
+        
+        # log-prior for model, normalized to grid
+        lprior = log_density_gridded(
+          x = r$speed, y = r$betaAR, dx = dx, dy = dy,
+          ld = # prior for parameters
+            dgamma(x = r$speed, shape = priors$speed['shape'], 
+                   rate = priors$speed['rate'], log = TRUE) + 
+            dnorm(x = r$betaAR, mean = priors$betaAR['mean'], 
+                  sd = priors$betaAR['sd'], log = TRUE)
+        )
+        
+        # posterior surfaces 
+        list(
+          # direct transition rate model
+          speed_parameterization = data.frame(
+            data_subset = r$subset,
+            speed = r$speed,
+            betaAR = r$betaAR,
+            beta0 = beta0,
+            lprior = lprior,
+            parameterization = 'direct',
+            lpost = log_density_gridded(
+              x = r$speed, y = r$betaAR, ld = r$ll + lprior, dx = dx, dy = dy
+            )
+          ),
+          # original transition rate model
+          beta0_parameterization = data.frame(
+            data_subset = r$subset,
+            speed = r$speed,
+            betaAR = r$betaAR,
+            beta0 = beta0,
+            lprior = lprior_reparam,
+            parameterization = 'local_tx_rate',
+            lpost = log_density_gridded(
+              x = r$speed, y = r$betaAR, ld = r$ll + lprior_reparam, dx = dx, 
+              dy = dy
+            )
+          )
+        )
+      })
+    }
+  ),
+  
+  tar_target(
+    name = whale_post_marginal,
+    command = {
+      # marginal distributions for different parameterizations by data subset
+      lapply(whale_post_joint, function(param) {
+        # process each parameterization separately
+        lapply(param, function(r) {
+          
+          # extract grid dimensions
+          dx = diff(sort(unique(r$speed))[2:3])
+          dy = diff(sort(unique(r$betaAR))[2:3])
+          
+          # marginal prior and posterior for speed
+          speed_marginal = rbind(
+            log_marginal_x(x = r$speed, y = r$betaAR, ld = r$lpost, dy = dy) %>% 
+              mutate(density = 'posterior', 
+                     parameter = 'speed',
+                     parameterization = r$parameterization[1],
+                     data_subset = r$data_subset[1]),
+            log_marginal_x(x = r$speed, y = r$betaAR, ld = r$lprior, dy = dy) %>% 
+              mutate(density = 'prior',
+                     parameter = 'speed',
+                     parameterization = r$parameterization[1],
+                     data_subset = r$data_subset[1])
+          )
+          
+          # marginal prior and posterior for directional persistence
+          persistence_marginal = rbind(
+            log_marginal_x(x = r$betaAR, y = r$speed, ld = r$lpost, dy = dx) %>% 
+              mutate(density = 'posterior', 
+                     parameter = 'persistence',
+                     parameterization = r$parameterization[1],
+                     data_subset = r$data_subset[1]),
+            log_marginal_x(x = r$betaAR, y = r$speed, ld = r$lprior, dy = dx) %>% 
+              mutate(density = 'prior',
+                     parameter = 'persistence',
+                     parameterization = r$parameterization[1],
+                     data_subset = r$data_subset[1])
+          )
+          
+          # package results
+          list(
+            speed = speed_marginal,
+            persistence = persistence_marginal
+          )
+        })
+      })
+    }
   ),
   
   tar_target(
