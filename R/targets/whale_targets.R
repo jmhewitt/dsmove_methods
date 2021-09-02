@@ -299,7 +299,6 @@ whale_targets = list(
     command = {
       # initialize hierarchical container for all outputs
       res = list()
-      whale_marginal_approx = dir(pattern = 'whale_marginal_approx')
       # aggregate posteriors across files
       for(f in whale_marginal_approx) {
         tick = proc.time()[3]
