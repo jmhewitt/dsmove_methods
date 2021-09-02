@@ -285,7 +285,7 @@ whale_targets = list(
       f = file.path(d, paste(tar_name(), '.rds', sep = ''))
       saveRDS(res, file = f)
       f
-    } ,
+    },
     pattern = cross(whale_ll_grid, map(whale_pkg)),
     deployment = 'worker',
     storage = 'worker',
@@ -294,84 +294,86 @@ whale_targets = list(
     error = 'continue'
   ),
   
+  # combinations of posterior surfaces to merge for margianl loc. distributions
+  tar_target(
+    name = posterior_marginal_location_combinations,
+    command = {
+      expand.grid(
+        time = cee_posterior_location_times,
+        data_subset = names(whale_post_joint_parameters),
+        model_specification = names(whale_post_joint_parameters[[1]])
+      )
+    }
+  ),
+  
   tar_target(
     name = whale_marginal_location_post,
     command = {
-      # initialize hierarchical container for all outputs
-      res = list()
+      # initialize container for output
+      res = list(meta = posterior_marginal_location_combinations)
       # aggregate posteriors across files
       for(f in whale_marginal_approx) {
         tick = proc.time()[3]
         # load file containing posteriors for marginal location cdt'l. on params
         conditional_marginal_location = readRDS(f)
-        # aggregate posteriors for each timestamp
-        for(tind in 1:length(conditional_marginal_location$times)) {
-          # extract time to be processed
-          post_time = as.character(conditional_marginal_location$times[tind])
-          # retrieve output for the timepoint being analyzed
-          posteriors_for_times = res[[post_time]]
-          # initialize the output if necessary
-          if(is.null(posteriors_for_times)) {
-            posteriors_for_times = list()
-          }
-          # retrieve output for the data subset being analyzed
-          posteriors_for_data = posteriors_for_times[[
-            conditional_marginal_location$subset
-          ]]
-          # initialize the output if necessary
-          if(is.null(posteriors_for_data)) {
-            posteriors_for_data = list()
-          }
-          # extract posterior surface for parameters matching file's data subset
-          param_posteriors = whale_post_joint_parameters[[
-            conditional_marginal_location$subset
-          ]]
-          # aggregate posteriors over different model specifications
-          for(model_spec in names(param_posteriors)) {
-            # extract log-posterior weight for parameter combination
-            lp_param = param_posteriors[[model_spec]] %>% 
-              filter(speed == conditional_marginal_location$params$speed,
-                     betaAR == conditional_marginal_location$params$betaAR) %>% 
-              select(lpost) %>% unlist()
-            # weight conditional marginal location surface by log-posterior
-            conditional_marginal_location$marginal_location[[tind]]$lp = 
-              conditional_marginal_location$marginal_location[[tind]]$lp + 
-              lp_param
-            # retrieve output for the model specification being analyzed
-            posteriors_for_spec = posteriors_for_data[[model_spec]]
-            # form output
-            if(is.null(posteriors_for_spec)) {
-              # initialize the output if necessary
-              posteriors_for_spec = 
-                conditional_marginal_location$marginal_location[[tind]]
-            } else {
-              # merge conditional marginal location surface being processsed
-              posteriors_for_spec = full_join(
-                x = posteriors_for_spec,
-                y = conditional_marginal_location$marginal_location[[tind]], 
-                by = c('lon_to_ind', 'lat_to_ind')
-              ) 
-              # collapse probability mass
-              posteriors_for_spec$lp = mapply(function(lx, ly) {
-                dsmovetools2d:::log_sum_c(c(lx,ly))
-              }, lx = posteriors_for_spec$lp.x, ly = posteriors_for_spec$lp.y)
-              # remove unmerged data
-              posteriors_for_spec$lp.x = NULL
-              posteriors_for_spec$lp.y = NULL
-            }
-            # update posteriors in output
-            posteriors_for_data[[model_spec]] = posteriors_for_spec
-          }
-          # update posteriors in output
-          posteriors_for_times[[conditional_marginal_location$subset]] = 
-            posteriors_for_data
-          res[[post_time]] = posteriors_for_times
+        # skip file if it does not contain fit based on specified data subset
+        if(conditional_marginal_location$subset != 
+           posterior_marginal_location_combinations$data_subset) {
+          next
         }
+        # conditional marginal location surface to process based on time index
+        tind = which(
+          posterior_marginal_location_combinations$time ==
+            conditional_marginal_location$times
+        )
+        # extract log-posterior weight for data/model/parameter combination
+        lp_param = whale_post_joint_parameters[[
+          conditional_marginal_location$subset
+        ]][[
+          posterior_marginal_location_combinations$model_specification
+        ]] %>% 
+          filter(speed == conditional_marginal_location$params$speed,
+                 betaAR == conditional_marginal_location$params$betaAR) %>% 
+          select(lpost) %>% 
+          unlist()
+        # extract conditional marginal location surface
+        marginal_surf = conditional_marginal_location$marginal_location[[tind]]
+        # weight conditional marginal location surface by log-posterior
+        marginal_surf$lp = marginal_surf$lp + lp_param
+        # retrieve output for the model specification being analyzed
+        posterior_for_location = res$posterior
+        # form output
+        if(is.null(posterior_for_location)) {
+          # initialize the output if necessary
+          posterior_for_location = marginal_surf
+        } else {
+          # merge conditional marginal location surface being processsed
+          posterior_for_location = full_join(
+            x = posterior_for_location,
+            y = marginal_surf, 
+            by = c('lon_to_ind', 'lat_to_ind')
+          ) 
+          # collapse probability mass
+          posterior_for_location$lp = mapply(function(lx, ly) {
+            dsmovetools2d:::log_sum_c(c(lx,ly))
+          }, lx = posterior_for_location$lp.x, ly = posterior_for_location$lp.y)
+          # remove unmerged data
+          posterior_for_location$lp.x = NULL
+          posterior_for_location$lp.y = NULL
+        }
+        # update posterior in output
+        res$posterior = posterior_for_location
         tock = proc.time()[3]
         print(tock- tick)
       }
       res 
-    }
+    },
+    pattern = map(posterior_marginal_location_combinations),
+    deployment = 'worker',
+    storage = 'worker',
+    retrieval = 'worker',
+    memory = 'transient',
+    error = 'continue'
   )
   
 )
