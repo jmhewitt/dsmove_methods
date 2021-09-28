@@ -53,6 +53,8 @@ fit_hanks_imputed = function(
   
   for(rep in 1:reps) {
     
+    message(paste('Starting rep ', rep, sep = ''))
+    
     n_params = 2
     
     # optimize initial parameters
