@@ -148,12 +148,6 @@ public:
         ++prob_age;
     }
 
-    // dencrement age and change storage for old probabilities
-    void unswapActive() {
-        std::swap(active_tgt, inactive_tgt);
-        --prob_age;
-    }
-
     // set active log prob for a state in the domain
     void set(int lon_from_ind, int lat_from_ind, int lon_to_ind, int lat_to_ind,
              double log_prob);
@@ -188,6 +182,8 @@ public:
 
     // flatten active non-zero entries to matrix format
     Rcpp::NumericMatrix toNumericMatrix();
+    // flatten active (true) or inactive (false) non-zero entries to matrix fmt
+    Rcpp::NumericMatrix toNumericMatrix(bool active);
 
     using CTDS2DStateType = std::vector<CTDS2DState>;
 

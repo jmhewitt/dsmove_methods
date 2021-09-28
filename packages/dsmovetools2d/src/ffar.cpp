@@ -48,6 +48,5 @@ NumericMatrix FF_DTMC(
     }
 
     // extract diffused probabilities
-    pvec.unswapActive();
-    return pvec.toNumericMatrix();
+    return pvec.toNumericMatrix(false);
 }

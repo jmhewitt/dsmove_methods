@@ -225,6 +225,10 @@ void CTDS2DDomain::filterStates(CTDS2DStateFilter &stateFilter) {
 }
 
 NumericMatrix CTDS2DDomain::toNumericMatrix() {
+    return toNumericMatrix(true);
+}
+
+NumericMatrix CTDS2DDomain::toNumericMatrix(bool active) {
 
     //
     // extract probabilities
@@ -236,7 +240,7 @@ NumericMatrix CTDS2DDomain::toNumericMatrix() {
     auto state_end = states.end();
 
     for(auto state_it = states.begin(); state_it != state_end; ++state_it) {
-        double state_lp = logProb(*state_it);
+        double state_lp = active ? logProb(*state_it) : logProbCached(*state_it);
         if(std::isfinite(state_lp)) {
             lon_from_ind.emplace_back(state_it->lon_from_ind);
             lat_from_ind.emplace_back(state_it->lat_from_ind);

@@ -132,9 +132,7 @@ double SattagFilteredLL(
                     std::endl;
                 firstError = false;
                 // read out state
-                pvec.unswapActive();
-                NumericMatrix state = pvec.toNumericMatrix();
-                pvec.swapActive();
+                NumericMatrix state = pvec.toNumericMatrix(false);
                 // dump state to disk
                 Environment base("package:base");
                 Function saveRDS = base["saveRDS"];
@@ -223,10 +221,8 @@ std::vector<NumericMatrix> SattagPredDist(
         // save prediction distribution
         if(pred_step_iter != pred_step_end) {
             if(*pred_step_iter == step_cur) {
-                pvec.unswapActive();
-                pred_distns.push_back(pvec.toNumericMatrix());
+                pred_distns.push_back(pvec.toNumericMatrix(false));
                 pred_step_iter++;
-                pvec.swapActive();
             }
         }
 
@@ -306,10 +302,8 @@ std::vector<NumericMatrix> BackInfoFilteringDist(
         // save prediction distribution
         if(pred_step_iter != pred_step_end) {
             if(*pred_step_iter == step_cur) {
-                pvec.unswapActive();
-                pred_distns.push_back(pvec.toNumericMatrix());
+                pred_distns.push_back(pvec.toNumericMatrix(false));
                 pred_step_iter++;
-                pvec.swapActive();
             }
         }
 
