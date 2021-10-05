@@ -13,8 +13,12 @@ struct CTDS2DState {
     unsigned int prob_age_a, prob_age_b, direction_of_movement, nnbrs;
     int lon_from_ind, lon_to_ind, lat_from_ind, lat_to_ind;
     bool well_defined;
-    CTDS2DState *nbr_to[4] = {nullptr, nullptr, nullptr, nullptr},
-                *nbr_from[4] = {nullptr, nullptr, nullptr, nullptr};
+    CTDS2DState // spatial structure
+                *nbr_to[4] = {nullptr, nullptr, nullptr, nullptr},
+                *nbr_from[4] = {nullptr, nullptr, nullptr, nullptr},
+                // linked list to iterate over non-zero log_prob_a/b entries
+                *prev_written_state_a = nullptr,
+                *prev_written_state_b = nullptr;
 };
 
 struct CTDS2DStateFilter {
@@ -78,19 +82,29 @@ private:
                 }
             }
         public:
+            CTDS2DState* last_state_written = nullptr;
             virtual void set(CTDS2DState& x, double v, unsigned int age) { }
             virtual void add(CTDS2DState& x, double v, unsigned int age) { }
             virtual void scale(CTDS2DState& x, double v, unsigned int age) { }
             virtual double get(const CTDS2DState& x, unsigned int age) { }
+            virtual CTDS2DState* getPrevStateWritten(CTDS2DState* x) { }
     };
 
     // handler to update log_prob_a values in CTDS2DState objects
     class ModProbA : public ProbMods {
         public:
             void set(CTDS2DState& x, double v, unsigned int age) {
+                if(age != x.prob_age_a) {
+                    x.prev_written_state_a = last_state_written;
+                    last_state_written = &x;
+                }
                 ProbMods::set(x.log_prob_a, x.prob_age_a, v, age);
             }
             void add(CTDS2DState& x, double v, unsigned int age) {
+                if(age != x.prob_age_a) {
+                    x.prev_written_state_a = last_state_written;
+                    last_state_written = &x;
+                }
                 ProbMods::add(x.log_prob_a, x.prob_age_a, v, age);
             }
             void scale(CTDS2DState& x, double v, unsigned int age) {
@@ -99,15 +113,26 @@ private:
             double get(const CTDS2DState& x, unsigned int age) {
                 return ProbMods::get(x.log_prob_a, x.prob_age_a, age);
             }
+            CTDS2DState* getPrevStateWritten(CTDS2DState* x) {
+                return x->prev_written_state_a;
+            }
     };
 
     // handler to update log_prob_b values in CTDS2DState objects
     class ModProbB : public ProbMods {
         public:
             void set(CTDS2DState& x, double v, unsigned int age) {
+                if(age != x.prob_age_b) {
+                    x.prev_written_state_b = last_state_written;
+                    last_state_written = &x;
+                }
                 ProbMods::set(x.log_prob_b, x.prob_age_b, v, age);
             }
             void add(CTDS2DState& x, double v, unsigned int age) {
+                if(age != x.prob_age_b) {
+                    x.prev_written_state_b = last_state_written;
+                    last_state_written = &x;
+                }
                 ProbMods::add(x.log_prob_b, x.prob_age_b, v, age);
             }
             void scale(CTDS2DState& x, double v, unsigned int age) {
@@ -115,6 +140,9 @@ private:
             }
             double get(const CTDS2DState& x, unsigned int age) {
                 return ProbMods::get(x.log_prob_b, x.prob_age_b, age);
+            }
+            CTDS2DState* getPrevStateWritten(CTDS2DState* x) {
+                return x->prev_written_state_b;
             }
     };
 
@@ -146,6 +174,8 @@ public:
     void swapActive() {
         std::swap(active_tgt, inactive_tgt);
         ++prob_age;
+        // reset tail element of linked lists over nonzero sparse vector entries
+        active_tgt->last_state_written = nullptr;
     }
 
     // set active log prob for a state in the domain
@@ -187,8 +217,57 @@ public:
 
     using CTDS2DStateType = std::vector<CTDS2DState>;
 
-    CTDS2DStateType::iterator begin() { return states.begin(); }
-    CTDS2DStateType::iterator end() { return states.end(); }
+    struct Iterator {
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = CTDS2DState;
+        using pointer = value_type*;
+        using reference = value_type&;
+
+        Iterator(pointer ptr, ProbMods *pmod) : m_ptr(ptr), pmod_ptr(pmod) { }
+
+        reference operator*() const { return *m_ptr; }
+        pointer operator->() { return m_ptr; }
+
+        // Prefix increment
+        Iterator& operator++() {
+            m_ptr = pmod_ptr->getPrevStateWritten(m_ptr);
+            return *this;
+        }
+
+        friend bool operator== (const Iterator& a, const Iterator& b) {
+            return a.m_ptr == b.m_ptr;
+        };
+        friend bool operator!= (const Iterator& a, const Iterator& b) {
+            return a.m_ptr != b.m_ptr;
+        };
+
+    private:
+        pointer m_ptr;
+        ProbMods* pmod_ptr;
+    };
+
+//    CTDS2DStateType::iterator begin() { return states.begin(); }
+//    CTDS2DStateType::iterator end() { return states.end(); }
+
+    Iterator begin() { return begin(false); }
+    Iterator end() { return end(false); }
+
+    Iterator begin(bool active) {
+        if(active) {
+            return Iterator(active_tgt->last_state_written, active_tgt);
+        } else {
+            return Iterator(inactive_tgt->last_state_written, inactive_tgt);
+        }
+    }
+
+    Iterator end(bool active) {
+        if(active) {
+            return Iterator(nullptr, active_tgt);
+        } else {
+            return Iterator(nullptr, inactive_tgt);
+        }
+    }
 
 };
 
