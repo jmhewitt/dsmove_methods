@@ -8,8 +8,38 @@
 #include "ffar.h"
 #include "GpsLik.h"
 #include "DepthLik.h"
+#include "ExactLocationLik.h"
 
 using namespace Rcpp;
+
+// composite likelihood class
+class ExactLocationDepthLik {
+
+private:
+
+    ExactLocationLik *loc_lik;
+    DepthLik *depth_lik;
+
+public:
+
+    ExactLocationDepthLik(ExactLocationLik &e, DepthLik &d) :
+    loc_lik(&e), depth_lik(&d) { };
+
+    double ll(const CTDS2DState& state) {
+        double d = depth_lik->ll(state.surface_height);
+        if(!std::isfinite(d)) {
+            return d;
+        }
+        double g = loc_lik->ll(state.lon_to, state.lat_to);
+        return g + d;
+    };
+
+    void setLikToObs(unsigned int ind) {
+        loc_lik->setLikToObs(ind);
+        depth_lik->setLikToObs(ind);
+    };
+
+};
 
 // composite likelihood class
 class LocationDepthLik {
@@ -41,24 +71,118 @@ class LocationDepthLik {
 };
 
 
+/**
+ *
+ * @tparam TxModel
+ * @tparam LikModel
+ * @param nsteps
+ * @param txmod
+ * @param pvec CTDS domain object w/init. probs. in the cached position.
+ * @param sattag_lik
+ * @return
+ */
+template<typename TxModel, typename LikModel>
+double sattag_ll(unsigned int nsteps, TxModel &txmod, CTDS2DDomain &pvec,
+                 LikModel &sattag_lik, double lptrunc, double log_self_tx,
+                 double betaAR) {
+
+    double ll = 0;
+
+    /*
+     * diffuse initial probability while aggregating likelihood
+     */
+
+    double lpmax = 0;
+    double lpthresh = lpmax - lptrunc;
+
+    bool firstError = true;
+
+    unsigned int checkmark_interval = .1 * nsteps;
+
+    // diffuse mass across likelihood steps
+    for(unsigned int step_cur = 0; step_cur < nsteps; ++step_cur) {
+
+        sattag_lik.setLikToObs(step_cur);
+
+        //        Rcpp::Rcout << step_cur << std::endl;
+
+        // aggregate marginal likelihood over last diffused probability state
+        bool finiteStateWeight = false;
+        bool finiteLikObs = false;
+        double ll_step = -std::numeric_limits<double>::infinity();
+        auto state_end = pvec.end();
+        for(auto state_it = pvec.begin(); state_it != state_end; ++state_it) {
+            //        auto state_end = pvec.states_written.end();
+            //        for(auto state_it = pvec.states_written.begin(); state_it != state_end;
+            //            ++state_it) {
+            // extract state weight
+            double w = pvec.logProbCached(*state_it);
+            if(std::isfinite(w)) {
+                finiteStateWeight = true;
+                // get log-likelihood for diffused location
+                double ll_state = sattag_lik.ll(*state_it);
+                if(std::isfinite(ll_state)) {
+                    finiteLikObs = true;
+                    ll_step = log_add(ll_step, ll_state + w);
+                }
+            }
+        }
+
+        if(!std::isfinite(ll_step)) {
+            if(firstError) {
+                // print error message
+                Rcpp::Rcout <<
+                "first infinite marginal likelihood in step_cur: " <<
+                step_cur << ", ll_step: " << ll_step <<
+                ", finiteStateWeight: " << finiteStateWeight <<
+                ", finiteLikObs: " << finiteLikObs <<
+                std::endl;
+                firstError = false;
+                // read out state
+                NumericMatrix state = pvec.toNumericMatrix(false);
+                // dump state to disk
+                Environment base("package:base");
+                Function saveRDS = base["saveRDS"];
+                std::string fname = std::string("pvec_state__step_cur_").
+                        append(std::to_string(step_cur)).append("__log_self_tx_").
+                        append(std::to_string(log_self_tx)).append("__betaAR_").
+                        append(std::to_string(betaAR)).append(".rds");
+                saveRDS(state, Named("file",fname));
+            }
+        }
+
+        ll += ll_step;
+
+        //        Rcpp::checkUserInterrupt();
+
+        // diffuse mass (i.e., update prediction distribution)
+        lpmax = diffuseMassPred<LikModel>(&pvec, &txmod, log_self_tx,
+                                          &sattag_lik, lpthresh);
+
+        lpthresh = lpmax - lptrunc;
+
+        // swap state
+        pvec.swapActive();
+    }
+
+    return ll;
+
+}
+
 // [[Rcpp::export]]
-double SattagFilteredLL(
-    NumericMatrix init_dsts, NumericMatrix init_srcs,
-    std::vector<double> init_log_probs,
-    double gps_trunc_alpha, std::vector<double> obs_lons,
-    std::vector<double> obs_lats, std::vector<double> obs_semi_majors,
-    std::vector<double> obs_semi_minors, std::vector<double> obs_orientations,
-    std::vector<double> obs_depths,
-    std::vector<double> lon_gridvals, std::vector<double> lat_gridvals,
-    std::vector<double> surface_heights, double min_elevation,
-    double max_elevation, double log_self_tx, double betaAR
-) {
+double ExactSattagFilteredLL(
+        NumericMatrix init_dsts, NumericMatrix init_srcs,
+        std::vector<double> init_log_probs,
+        std::vector<double> obs_lons,
+        std::vector<double> obs_lats,
+        std::vector<double> obs_depths,
+        std::vector<double> lon_gridvals, std::vector<double> lat_gridvals,
+        std::vector<double> surface_heights, double min_elevation,
+        double max_elevation, double log_self_tx, double betaAR, double lptrunc
+        ) {
 
     // number of steps to integrate over in likelihood
     unsigned int nsteps = obs_lats.size();
-
-    // initialize log-likelihood
-    double ll = 0;
 
     // initialize CTMC state space probability vector
     CTDS2DDomain pvec(lon_gridvals, lat_gridvals, surface_heights);
@@ -80,6 +204,51 @@ double SattagFilteredLL(
     TxProbs txmod;
     txmod.setBetaAR(betaAR);
 
+    // initialize GPS and composite likelihoods
+    ExactLocationLik loc_lik(obs_lons, obs_lats);
+    DepthLik depth_lik(obs_depths);
+    ExactLocationDepthLik sattag_lik(loc_lik, depth_lik);
+
+    // evaluate likelihood
+    return sattag_ll(nsteps, txmod, pvec, sattag_lik, lptrunc,
+                     log_self_tx, betaAR);
+}
+
+// [[Rcpp::export]]
+double SattagFilteredLL(
+    NumericMatrix init_dsts, NumericMatrix init_srcs,
+    std::vector<double> init_log_probs,
+    double gps_trunc_alpha, std::vector<double> obs_lons,
+    std::vector<double> obs_lats, std::vector<double> obs_semi_majors,
+    std::vector<double> obs_semi_minors, std::vector<double> obs_orientations,
+    std::vector<double> obs_depths,
+    std::vector<double> lon_gridvals, std::vector<double> lat_gridvals,
+    std::vector<double> surface_heights, double min_elevation,
+    double max_elevation, double log_self_tx, double betaAR, double lptrunc
+) {
+
+    // number of steps to integrate over in likelihood
+    unsigned int nsteps = obs_lats.size();
+
+    // initialize CTMC state space probability vector
+    CTDS2DDomain pvec(lon_gridvals, lat_gridvals, surface_heights);
+
+    // filter state space
+    CTDS2DStateElevationFilter height_filter(min_elevation, max_elevation);
+    pvec.filterStates(height_filter);
+
+    // fill initial probability container
+    for(unsigned int ind = 0; ind < init_dsts.nrow(); ++ind) {
+        pvec.set(init_srcs(ind, 0), init_srcs(ind, 1), init_dsts(ind, 0),
+                 init_dsts(ind, 1), init_log_probs[ind]);
+    }
+
+    // finalize initial probability vector
+    pvec.swapActive();
+
+    // set transition parameters
+    TxProbs txmod;
+    txmod.setBetaAR(betaAR);
 
     // initialize GPS and composite likelihoods
     GpsLik gps_lik(gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors,
@@ -87,74 +256,9 @@ double SattagFilteredLL(
     DepthLik depth_lik(obs_depths);
     LocationDepthLik sattag_lik(gps_lik, depth_lik);
 
-
-    /*
-     * diffuse initial probability while aggregating likelihood
-     */
-
-    bool firstError = true;
-
-    unsigned int checkmark_interval = .1 * nsteps;
-
-    // diffuse mass across likelihood steps
-    for(unsigned int step_cur = 0; step_cur < nsteps; ++step_cur) {
-
-        sattag_lik.setLikToObs(step_cur);
-
-
-        // aggregate marginal likelihood over last diffused probability state
-        bool finiteStateWeight = false;
-        bool finiteLikObs = false;
-        double ll_step = -std::numeric_limits<double>::infinity();
-        auto state_end = pvec.end();
-        for(auto state_it = pvec.begin(); state_it != state_end; ++state_it) {
-            // extract state weight
-            double w = pvec.logProbCached(*state_it);
-            if(std::isfinite(w)) {
-                finiteStateWeight = true;
-                // get log-likelihood for diffused location
-                double ll_state = sattag_lik.ll(*state_it);
-                if(std::isfinite(ll_state)) {
-                    finiteLikObs = true;
-                    ll_step = log_add(ll_step, ll_state + w);
-                }
-            }
-        }
-
-        if(!std::isfinite(ll_step)) {
-            if(firstError) {
-                // print error message
-                Rcpp::Rcout <<
-                    "first infinite marginal likelihood in step_cur: " <<
-                    step_cur << ", ll_step: " << ll_step <<
-                    ", finiteStateWeight: " << finiteStateWeight <<
-                    ", finiteLikObs: " << finiteLikObs <<
-                    std::endl;
-                firstError = false;
-                // read out state
-                NumericMatrix state = pvec.toNumericMatrix(false);
-                // dump state to disk
-                Environment base("package:base");
-                Function saveRDS = base["saveRDS"];
-                std::string fname = std::string("pvec_state__step_cur_").
-                    append(std::to_string(step_cur)).append("__log_self_tx_").
-                    append(std::to_string(log_self_tx)).append("__betaAR_").
-                    append(std::to_string(betaAR)).append(".rds");
-                saveRDS(state, Named("file",fname));
-            }
-        }
-
-        ll += ll_step;
-
-        Rcpp::checkUserInterrupt();
-
-        // diffuse mass (i.e., update prediction distribution)
-        diffuseMassPred<LocationDepthLik>(&pvec, &txmod, log_self_tx, &sattag_lik);
-        // swap state
-        pvec.swapActive();
-    }
-
-    return ll;
+    // evaluate likelihood
+    return sattag_ll(nsteps, txmod, pvec, sattag_lik, lptrunc,
+                     log_self_tx, betaAR);
 }
 
 // [[Rcpp::export]]

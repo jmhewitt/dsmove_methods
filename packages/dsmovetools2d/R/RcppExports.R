@@ -21,8 +21,16 @@ FF_DTMC <- function(lons, lats, surface_heights, init_dsts, init_srcs, init_log_
     .Call('_dsmovetools2d_FF_DTMC', PACKAGE = 'dsmovetools2d', lons, lats, surface_heights, init_dsts, init_srcs, init_log_probs, steps, log_self_tx, betaAR)
 }
 
-SattagFilteredLL <- function(init_dsts, init_srcs, init_log_probs, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR) {
-    .Call('_dsmovetools2d_SattagFilteredLL', PACKAGE = 'dsmovetools2d', init_dsts, init_srcs, init_log_probs, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR)
+ExactLocFilteredLL <- function(init_dsts, init_srcs, init_log_probs, obs_x_coords, obs_y_coords, x_coords, y_coords, surface_heights, log_self_tx, betaAR, lptrunc) {
+    .Call('_dsmovetools2d_ExactLocFilteredLL', PACKAGE = 'dsmovetools2d', init_dsts, init_srcs, init_log_probs, obs_x_coords, obs_y_coords, x_coords, y_coords, surface_heights, log_self_tx, betaAR, lptrunc)
+}
+
+ExactSattagFilteredLL <- function(init_dsts, init_srcs, init_log_probs, obs_lons, obs_lats, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR, lptrunc) {
+    .Call('_dsmovetools2d_ExactSattagFilteredLL', PACKAGE = 'dsmovetools2d', init_dsts, init_srcs, init_log_probs, obs_lons, obs_lats, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR, lptrunc)
+}
+
+SattagFilteredLL <- function(init_dsts, init_srcs, init_log_probs, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR, lptrunc) {
+    .Call('_dsmovetools2d_SattagFilteredLL', PACKAGE = 'dsmovetools2d', init_dsts, init_srcs, init_log_probs, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR, lptrunc)
 }
 
 SattagPredDist <- function(init_dsts, init_srcs, init_log_probs, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR, pred_steps) {

@@ -103,9 +103,54 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ExactLocFilteredLL
+double ExactLocFilteredLL(NumericMatrix init_dsts, NumericMatrix init_srcs, std::vector<double> init_log_probs, std::vector<double> obs_x_coords, std::vector<double> obs_y_coords, std::vector<double> x_coords, std::vector<double> y_coords, std::vector<double> surface_heights, double log_self_tx, double betaAR, double lptrunc);
+RcppExport SEXP _dsmovetools2d_ExactLocFilteredLL(SEXP init_dstsSEXP, SEXP init_srcsSEXP, SEXP init_log_probsSEXP, SEXP obs_x_coordsSEXP, SEXP obs_y_coordsSEXP, SEXP x_coordsSEXP, SEXP y_coordsSEXP, SEXP surface_heightsSEXP, SEXP log_self_txSEXP, SEXP betaARSEXP, SEXP lptruncSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type init_dsts(init_dstsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type init_srcs(init_srcsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type init_log_probs(init_log_probsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_x_coords(obs_x_coordsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_y_coords(obs_y_coordsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type x_coords(x_coordsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type y_coords(y_coordsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type surface_heights(surface_heightsSEXP);
+    Rcpp::traits::input_parameter< double >::type log_self_tx(log_self_txSEXP);
+    Rcpp::traits::input_parameter< double >::type betaAR(betaARSEXP);
+    Rcpp::traits::input_parameter< double >::type lptrunc(lptruncSEXP);
+    rcpp_result_gen = Rcpp::wrap(ExactLocFilteredLL(init_dsts, init_srcs, init_log_probs, obs_x_coords, obs_y_coords, x_coords, y_coords, surface_heights, log_self_tx, betaAR, lptrunc));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ExactSattagFilteredLL
+double ExactSattagFilteredLL(NumericMatrix init_dsts, NumericMatrix init_srcs, std::vector<double> init_log_probs, std::vector<double> obs_lons, std::vector<double> obs_lats, std::vector<double> obs_depths, std::vector<double> lon_gridvals, std::vector<double> lat_gridvals, std::vector<double> surface_heights, double min_elevation, double max_elevation, double log_self_tx, double betaAR, double lptrunc);
+RcppExport SEXP _dsmovetools2d_ExactSattagFilteredLL(SEXP init_dstsSEXP, SEXP init_srcsSEXP, SEXP init_log_probsSEXP, SEXP obs_lonsSEXP, SEXP obs_latsSEXP, SEXP obs_depthsSEXP, SEXP lon_gridvalsSEXP, SEXP lat_gridvalsSEXP, SEXP surface_heightsSEXP, SEXP min_elevationSEXP, SEXP max_elevationSEXP, SEXP log_self_txSEXP, SEXP betaARSEXP, SEXP lptruncSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type init_dsts(init_dstsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type init_srcs(init_srcsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type init_log_probs(init_log_probsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_lons(obs_lonsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_lats(obs_latsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_depths(obs_depthsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type lon_gridvals(lon_gridvalsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type lat_gridvals(lat_gridvalsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type surface_heights(surface_heightsSEXP);
+    Rcpp::traits::input_parameter< double >::type min_elevation(min_elevationSEXP);
+    Rcpp::traits::input_parameter< double >::type max_elevation(max_elevationSEXP);
+    Rcpp::traits::input_parameter< double >::type log_self_tx(log_self_txSEXP);
+    Rcpp::traits::input_parameter< double >::type betaAR(betaARSEXP);
+    Rcpp::traits::input_parameter< double >::type lptrunc(lptruncSEXP);
+    rcpp_result_gen = Rcpp::wrap(ExactSattagFilteredLL(init_dsts, init_srcs, init_log_probs, obs_lons, obs_lats, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR, lptrunc));
+    return rcpp_result_gen;
+END_RCPP
+}
 // SattagFilteredLL
-double SattagFilteredLL(NumericMatrix init_dsts, NumericMatrix init_srcs, std::vector<double> init_log_probs, double gps_trunc_alpha, std::vector<double> obs_lons, std::vector<double> obs_lats, std::vector<double> obs_semi_majors, std::vector<double> obs_semi_minors, std::vector<double> obs_orientations, std::vector<double> obs_depths, std::vector<double> lon_gridvals, std::vector<double> lat_gridvals, std::vector<double> surface_heights, double min_elevation, double max_elevation, double log_self_tx, double betaAR);
-RcppExport SEXP _dsmovetools2d_SattagFilteredLL(SEXP init_dstsSEXP, SEXP init_srcsSEXP, SEXP init_log_probsSEXP, SEXP gps_trunc_alphaSEXP, SEXP obs_lonsSEXP, SEXP obs_latsSEXP, SEXP obs_semi_majorsSEXP, SEXP obs_semi_minorsSEXP, SEXP obs_orientationsSEXP, SEXP obs_depthsSEXP, SEXP lon_gridvalsSEXP, SEXP lat_gridvalsSEXP, SEXP surface_heightsSEXP, SEXP min_elevationSEXP, SEXP max_elevationSEXP, SEXP log_self_txSEXP, SEXP betaARSEXP) {
+double SattagFilteredLL(NumericMatrix init_dsts, NumericMatrix init_srcs, std::vector<double> init_log_probs, double gps_trunc_alpha, std::vector<double> obs_lons, std::vector<double> obs_lats, std::vector<double> obs_semi_majors, std::vector<double> obs_semi_minors, std::vector<double> obs_orientations, std::vector<double> obs_depths, std::vector<double> lon_gridvals, std::vector<double> lat_gridvals, std::vector<double> surface_heights, double min_elevation, double max_elevation, double log_self_tx, double betaAR, double lptrunc);
+RcppExport SEXP _dsmovetools2d_SattagFilteredLL(SEXP init_dstsSEXP, SEXP init_srcsSEXP, SEXP init_log_probsSEXP, SEXP gps_trunc_alphaSEXP, SEXP obs_lonsSEXP, SEXP obs_latsSEXP, SEXP obs_semi_majorsSEXP, SEXP obs_semi_minorsSEXP, SEXP obs_orientationsSEXP, SEXP obs_depthsSEXP, SEXP lon_gridvalsSEXP, SEXP lat_gridvalsSEXP, SEXP surface_heightsSEXP, SEXP min_elevationSEXP, SEXP max_elevationSEXP, SEXP log_self_txSEXP, SEXP betaARSEXP, SEXP lptruncSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -126,7 +171,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type max_elevation(max_elevationSEXP);
     Rcpp::traits::input_parameter< double >::type log_self_tx(log_self_txSEXP);
     Rcpp::traits::input_parameter< double >::type betaAR(betaARSEXP);
-    rcpp_result_gen = Rcpp::wrap(SattagFilteredLL(init_dsts, init_srcs, init_log_probs, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR));
+    Rcpp::traits::input_parameter< double >::type lptrunc(lptruncSEXP);
+    rcpp_result_gen = Rcpp::wrap(SattagFilteredLL(init_dsts, init_srcs, init_log_probs, gps_trunc_alpha, obs_lons, obs_lats, obs_semi_majors, obs_semi_minors, obs_orientations, obs_depths, lon_gridvals, lat_gridvals, surface_heights, min_elevation, max_elevation, log_self_tx, betaAR, lptrunc));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -219,7 +265,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools2d_LogTxProbsElevation", (DL_FUNC) &_dsmovetools2d_LogTxProbsElevation, 10},
     {"_dsmovetools2d_GpsLikEval", (DL_FUNC) &_dsmovetools2d_GpsLikEval, 9},
     {"_dsmovetools2d_FF_DTMC", (DL_FUNC) &_dsmovetools2d_FF_DTMC, 9},
-    {"_dsmovetools2d_SattagFilteredLL", (DL_FUNC) &_dsmovetools2d_SattagFilteredLL, 17},
+    {"_dsmovetools2d_ExactLocFilteredLL", (DL_FUNC) &_dsmovetools2d_ExactLocFilteredLL, 11},
+    {"_dsmovetools2d_ExactSattagFilteredLL", (DL_FUNC) &_dsmovetools2d_ExactSattagFilteredLL, 14},
+    {"_dsmovetools2d_SattagFilteredLL", (DL_FUNC) &_dsmovetools2d_SattagFilteredLL, 18},
     {"_dsmovetools2d_SattagPredDist", (DL_FUNC) &_dsmovetools2d_SattagPredDist, 18},
     {"_dsmovetools2d_BackInfoFilteringDist", (DL_FUNC) &_dsmovetools2d_BackInfoFilteringDist, 18},
     {"_dsmovetools2d_log_sum_c", (DL_FUNC) &_dsmovetools2d_log_sum_c, 1},
