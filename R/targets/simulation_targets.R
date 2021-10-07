@@ -548,13 +548,20 @@ simulation_targets = list(
         
       }
       
-      
       # package results
-      list(list(
+      res = list(list(
         obs = obs,
         o = o,
         samples = samples
       ))
+      
+      # save results to disk
+      f = file.path('output', 'simulation')
+      dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
+      saveRDS(res, file = file.path(f, paste(tar_name, '.rds', sep = '')))
+      
+      # return results
+      res
     },
     pattern = map(sim_obs),
     deployment = 'worker',
