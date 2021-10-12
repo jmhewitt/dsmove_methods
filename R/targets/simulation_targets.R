@@ -564,7 +564,7 @@ simulation_targets = list(
       # save results to disk
       f = file.path('output', 'simulation')
       dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
-      saveRDS(res, file = file.path(f, paste(tar_name, '.rds', sep = '')))
+      saveRDS(res, file = file.path(f, paste(tar_name(), '.rds', sep = '')))
       
       # return results
       res
