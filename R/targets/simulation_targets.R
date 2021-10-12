@@ -86,14 +86,20 @@ simulation_targets = list(
         states = sim_obs[[1]]$obs$states,
         times = sim_obs[[1]]$obs$times,
         dims = sim_obs[[1]]$params$dims,
-        reps = 10
+        reps = 100
       )
 
-      list(list(
+      r = list(list(
         samples = post_samples, 
         rep = rep_batch, 
         sim_obs = sim_obs[[1]]
       ))
+      
+      f = file.path('output', 'simulation')
+      dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
+      saveRDS(r, file = file.path(f, tar_name(), '.rds', sep = ''))
+      
+      r 
     },
     pattern = cross(sim_obs, rep_batch),
     deployment = 'worker',
