@@ -110,6 +110,40 @@ simulation_targets = list(
   ),
   
   tar_target(
+    name = sim_fits_hanks_univariate,
+    command = {
+      
+      post_samples = fit_hanks(
+        params = list(beta_ar = 0, beta_loc = 0),
+        niter = 1e4, priors = sim_priors,
+        states = sim_obs[[1]]$obs$states,
+        times = sim_obs[[1]]$obs$times,
+        dims = sim_obs[[1]]$params$dims,
+        reps = 100,
+        univariate = TRUE
+      )
+      
+      r = list(list(
+        samples = post_samples, 
+        rep = rep_batch, 
+        sim_obs = sim_obs[[1]]
+      ))
+      
+      f = file.path('output', 'simulation')
+      dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
+      f = file.path(f, paste(tar_name(), '.rds', sep = ''))
+      saveRDS(r, file = f)
+      
+      f
+    },
+    pattern = cross(sim_obs, rep_batch),
+    deployment = 'worker',
+    storage = 'worker',
+    memory = 'transient',
+    error = 'continue'
+  ),
+  
+  tar_target(
     name = sim_fit_dtmc_gapprox, 
     command = {
       

@@ -1,4 +1,5 @@
-fit_hanks = function(params, niter, priors, states, times, dims, reps) {
+fit_hanks = function(params, niter, priors, states, times, dims, reps, 
+                     univariate = FALSE) {
   # Approximate posterior distribution for the 2 parameter CTDS model
   #
   # Parameters:
@@ -130,23 +131,33 @@ fit_hanks = function(params, niter, priors, states, times, dims, reps) {
     ctmc=path2ctmc(path$xy,path$t, X, method="LinearInterp")
     ctmc$states = coordinates(coords[ctmc$ec,])
     
-    # read in initial parameters
-    param_vec = c(params$beta_ar, params$beta_loc)
-    n_params = length(param_vec)
+    # read in initial parameters, and set optimization routine
+    if(univariate) {
+      param_vec = c(0, params$beta_loc)
+      est_param = c(FALSE, TRUE)
+      n_params = 1
+    } else {
+      param_vec = c(params$beta_ar, params$beta_loc)
+      est_param = c(TRUE, TRUE)
+      n_params = 2
+    }
+    
+    browser()
     
     # optimize initial parameters
-    o = optim(par = param_vec, fn = function(theta) {
-      lpfn(x = theta, x_ind = 1:n_params, theta = theta, states = ctmc$states, 
-           durations = ctmc$rt)
+    o = optim(par = param_vec[est_param], fn = function(theta) {
+      lpfn(x = theta, x_ind = which(est_param), theta = param_vec, 
+           states = ctmc$states, durations = ctmc$rt)
     }, control = list(fnscale = - 1), hessian = TRUE)
     if(o$convergence == 0) {
-      param_vec = o$par
+      param_vec[est_param] = o$par
       init_sd = sqrt(diag(solve(-o$hessian)))
     }
     
     # construct MHRW samplers
-    paramSamplers = lapply(1:n_params, function(ind) {
-      Mhrw1DAdaptive$new(x = param_vec[ind], sd = init_sd[ind], 
+    paramSamplers = lapply(1:length(which(est_param)), function(ind) {
+      Mhrw1DAdaptive$new(x = param_vec[which(est_param)[ind]], 
+                         sd = init_sd[ind], 
                          lp = lpfn, C = .75, alpha = .44, adaptive = TRUE)
     })
     
@@ -162,17 +173,17 @@ fit_hanks = function(params, niter, priors, states, times, dims, reps) {
     for(it in 1:niter) {
       
       # update model parameters
-      for(i in 1:n_params) {
+      for(i in 1:length(which(est_param))) {
         update = paramSamplers[[i]]$sample(
-          x_ind = i, theta = param_vec, states = ctmc$states, 
+          x_ind = which(est_param)[i], theta = param_vec, states = ctmc$states, 
           durations = ctmc$rt
         )
-        param_vec[i] = update$x
+        param_vec[which(est_param)[i]] = update$x
       }
       
       # save samples
       samples$param_vec[it, ] = param_vec
-      samples$lp[it] =  lpfn(x = param_vec, x_ind = 1:n_params, 
+      samples$lp[it] =  lpfn(x = param_vec, x_ind = 1:length(param_vec), 
                              theta = param_vec, states = ctmc$states, 
                              durations = ctmc$rt)
       
