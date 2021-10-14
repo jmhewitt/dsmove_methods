@@ -97,9 +97,10 @@ simulation_targets = list(
       
       f = file.path('output', 'simulation')
       dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
-      saveRDS(r, file = file.path(f, tar_name(), '.rds', sep = ''))
+      f = file.path(f, paste(tar_name(), '.rds', sep = ''))
+      saveRDS(r, file = f)
       
-      r 
+      f
     },
     pattern = cross(sim_obs, rep_batch),
     deployment = 'worker',
