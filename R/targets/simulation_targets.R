@@ -119,7 +119,7 @@ simulation_targets = list(
         states = sim_obs[[1]]$obs$states,
         times = sim_obs[[1]]$obs$times,
         dims = sim_obs[[1]]$params$dims,
-        reps = 100,
+        reps = 10,
         univariate = TRUE
       )
       
