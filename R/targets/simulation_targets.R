@@ -575,6 +575,82 @@ simulation_targets = list(
     storage = 'worker',
     memory = 'transient',
     error = 'continue'
+  ),
+  
+  
+  tar_target(
+    name = simulation_results_combined, 
+    command = {
+      
+      # DTMC MCMC sample files
+      sample.files = dir(
+        path = file.path('output', 'simulation'), 
+        pattern = 'sim_dtmc_mcmc_', 
+        full.names = TRUE
+      )
+      
+      # compile results from DTMC MCMC samplers
+      df = do.call(rbind, lapply(sample.files, function(f) {
+        samples = readRDS(f)[[1]]
+        samples$samples$param_vec[,'log_theta'] = exp(
+          samples$samples$param_vec[,'log_theta']
+        )
+        colnames(samples$samples$param_vec)[2] = 'theta'
+        hpd = HPDinterval(mcmc(samples$samples$param_vec))
+        colnames(hpd) = c('lwr','upr')
+        data.frame(
+          param = colnames(samples$samples$param_vec),
+          mean = colMeans(mcmc(samples$samples$param_vec)),
+          hpd,
+          truth = c(
+            samples$obs$params$betaAR,
+            exp(samples$obs$params$beta)
+          ),
+          method = 'DTMC',
+          obs.interval = samples$obs$obs_interval,
+          scenario = paste(
+            'theta = ', exp(samples$obs$params$beta),
+            ' betaAR = ', samples$obs$params$betaAR,
+            sep = ''
+          )
+        )
+      }))
+      
+      # merge simulation results with hanks results
+      df = rbind(
+        df,
+        simulation_hanks_summaries %>% mutate(method = 'AID')
+      )
+      
+      # visualize results!
+      pl = ggplot(df %>% 
+               filter(scenario == 'theta = 1 betaAR = 1') %>%
+               mutate(method = gsub('DTMC', 'Time discretization', method),
+                      method = gsub('AID', 'Data augmentation', method),
+                      param = gsub('betaAR', 'beta[1]', param),
+                      param = gsub('theta', 'beta[0]', param),
+                      Approximation = method), 
+             aes(x = obs.interval, y = mean, ymin = lwr, ymax = upr,
+                 col = Approximation)) + 
+        # horizontal lines at truth 
+        geom_hline(mapping = aes(yintercept = truth), lty = 3) + 
+        # posterior means and HPD intervals
+        geom_pointrange() + 
+        # split plot
+        facet_wrap(~param, scales = 'free', labeller = label_parsed) + 
+        # formatting
+        xlab(expression('Time between observations'~(t[i+1]-t[i]))) + 
+        ylab('Posterior value') +
+        scale_color_brewer(type = 'qual', palette = 'Dark2') + 
+        theme_few()
+      
+      f = file.path('output', 'figures')
+      dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
+      f = file.path(f, paste(tar_name(), '.png', sep=''))
+      ggsave(pl, filename = f)
+      
+      f
+    }
   )
   
 )
