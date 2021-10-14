@@ -469,7 +469,7 @@ simulation_targets = list(
       saveRDS(res, file = file.path(f, paste(tar_name(), '.rds', sep = '')))
       
       # return results
-      res
+      list(res)
     },
     pattern = cross(map(sim_obs), univariate_options),
     deployment = 'worker',
