@@ -11,7 +11,9 @@ dtmc_likelihood = function(
   
   # model parameters
   theta = c(1 - speed / cell_size * pkg$delta, betaAR)
-  
+
+  browser()
+  tick = proc.time()[3]
   ll = dsmovetools2d:::SattagFilteredLL(
     init_dsts = matrix(
       pkg$mapped_data[1, c('lon_ind', 'lat_ind')] - 1,
@@ -40,8 +42,10 @@ dtmc_likelihood = function(
     min_elevation = -1e4,
     max_elevation = 0, 
     log_self_tx = log(theta[1]), 
-    betaAR = theta[2]
+    betaAR = theta[2], lptrunc = 15
   )
+  tock = proc.time()[3]
+  print(tock-tick)
   
   # package results
   data.frame(

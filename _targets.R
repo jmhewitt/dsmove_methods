@@ -39,6 +39,7 @@ c(
   simulation_targets,
   exact_targets,
   whale_targets,
+  whale_targets_approx,
   fastloc_targets
 )
 
