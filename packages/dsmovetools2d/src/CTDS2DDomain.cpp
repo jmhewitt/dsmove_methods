@@ -15,6 +15,8 @@ CTDS2DDomain::CTDS2DDomain(
     nlons = lons.size();
     nlats = lats.size();
 
+    states_written.reserve(nlons * nlats * 4);
+
     // initialize CTDS state space
     states = std::vector<CTDS2DState>( nlons * nlats * 4 );
     auto state_it = states.begin();
@@ -162,10 +164,18 @@ void CTDS2DDomain::set(
 }
 
 void CTDS2DDomain::set(CTDS2DState &state, double log_prob) {
+    if(!state.logged_active) {
+        states_written.insert(&state);
+        state.logged_active = true;
+    }
     active_tgt->set(state, log_prob, prob_age);
 }
 
 void CTDS2DDomain::add(CTDS2DState &state, double log_prob) {
+    if(!state.logged_active) {
+        states_written.insert(&state);
+        state.logged_active = true;
+    }
     active_tgt->add(state, log_prob, prob_age);
 }
 

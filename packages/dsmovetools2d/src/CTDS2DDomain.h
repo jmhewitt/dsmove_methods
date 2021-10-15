@@ -13,6 +13,7 @@ struct CTDS2DState {
     unsigned int prob_age_a, prob_age_b, direction_of_movement, nnbrs;
     int lon_from_ind, lon_to_ind, lat_from_ind, lat_to_ind;
     bool well_defined;
+    bool logged_active = false;
     CTDS2DState // spatial structure
                 *nbr_to[4] = {nullptr, nullptr, nullptr, nullptr},
                 *nbr_from[4] = {nullptr, nullptr, nullptr, nullptr},
@@ -160,6 +161,8 @@ private:
 
 public:
 
+    std::unordered_set<CTDS2DState*> states_written;
+
     /**
      *
      * @param lons unique list of longitudes in grid
@@ -168,7 +171,7 @@ public:
      *   where latitudes form the rows, and longitudes form the columns
      */
     CTDS2DDomain(std::vector<double> &lons, std::vector<double> &lats,
-                 std::vector<double> &surface_heights);
+                     std::vector<double> &surface_heights);
 
     // increment age and change storage for new probabilities
     void swapActive() {

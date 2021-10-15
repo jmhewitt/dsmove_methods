@@ -338,7 +338,35 @@ simulation_targets = list(
         theme_few()
       
       pl
+      
+      browser()
       ggsave(pl, filename = 'posteriors_2param.pdf', width = 8, height = 5)
+      
+      
+      df2 = df %>% 
+        mutate(method = gsub('DTMC', 'Discretization', method),
+               method = gsub('Hanks', 'Imputation', method),
+               param = gsub('betaAR', 'Autocorrelation', param),
+               param = gsub('theta', 'Speed', param)) %>% 
+        filter(scenario == 'theta = 1 betaAR = 1')
+      
+      
+      pl = ggplot(df2, aes(x = obs.interval - (method == 'Hanks') * plot_eps, 
+                          y = mean, ymin = lwr, ymax = upr, col = method)) + 
+        facet_wrap(~param, nrow = 2, scales = 'free') + 
+        geom_hline(mapping = aes(yintercept = truth), lty = 3) + 
+        scale_x_continuous('Time between observations', 
+                           breaks = sort(unique(df$obs.interval))) + 
+        geom_pointrange() + 
+        scale_color_brewer('Approx. type', type = 'qual', palette = 'Dark2') + 
+        theme_few() + 
+        ylab('Est. Value')
+      
+      pl
+      
+      ggsave(pl, filename = 'posteriors_2param_simple.png', width = 8.2, 
+             height = 6.5)
+      
     }
   ),
   
