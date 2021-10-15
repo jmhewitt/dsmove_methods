@@ -142,6 +142,8 @@ fit_hanks = function(params, niter, priors, states, times, dims, reps,
       n_params = 2
     }
     
+    browser()
+    
     # optimize initial parameters
     o = optim(par = param_vec[est_param], fn = function(theta) {
       lpfn(x = theta, x_ind = which(est_param), theta = param_vec, 

@@ -146,7 +146,6 @@ whale_targets = list(
     command = {
       # specify priors to use
       priors = whale_priors
-      whale_ll_approx = readRDS('whale_ll_subsets.rds')
       # joint posteriors of parameters for different parameterizations by subset
       lapply(split(whale_ll_approx, whale_ll_approx$subset), function(r) {
         
@@ -310,7 +309,6 @@ whale_targets = list(
   tar_target(
     name = whale_marginal_location_post,
     command = {
-      whale_marginal_approx = dir(pattern = 'whale_marginal_approx')
       # initialize container for output
       res = list(meta = posterior_marginal_location_combinations)
       # aggregate posteriors across files
