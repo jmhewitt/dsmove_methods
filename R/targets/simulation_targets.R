@@ -460,16 +460,17 @@ simulation_targets = list(
         dims = obs$params$dims,
         states = obs$obs$states,
         times = obs$obs$times,
-        univariate = FALSE
+        univariate = univariate_options
       )
       
       # save results to disk
       f = file.path('output', 'simulation')
       dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
-      saveRDS(res, file = file.path(f, paste(tar_name(), '.rds', sep = '')))
+      f = file.path(f, paste(tar_name(), '.rds', sep = ''))
+      saveRDS(res, file = f)
       
       # return results
-      list(res)
+      f
     },
     pattern = cross(map(sim_obs), univariate_options),
     deployment = 'worker',
