@@ -282,6 +282,70 @@ simulation_targets = list(
   ),
   
   tar_target(
+    name = simulation_hanks_univariate_summaries,
+    command = {
+      
+      # AID MCMC sample files
+      sample.files = dir(
+        path = file.path('output', 'simulation'), 
+        pattern = 'sim_fits_hanks_univariate_', 
+        full.names = TRUE
+      )
+      
+      samples.aggregate = do.call(rbind, lapply(sample.files, function(f) {
+        x = readRDS(f)[[1]]
+        burn = 1:5e3
+        thin = 5
+        samples = exp(x$samples$samples[[1]]$param_vec[-burn,'log_theta'])
+        data.frame(
+          theta = samples[seq(from = 1, to = length(samples), by = thin)],
+          rep = x$rep,
+          obs_interval = x$sim_obs$obs_interval,
+          beta = x$sim_obs$params$beta,
+          betaAR = x$sim_obs$params$betaAR
+        )
+      }))
+      
+      # determine unique groups
+      groups = unique(samples.aggregate[, c('obs_interval', 'beta', 'betaAR')])
+      groups = cbind(groups, gid = 1:nrow(groups))
+
+      # extract posterior summaries
+      summaries = do.call(rbind, lapply(groups$gid, function(g) {
+        # aggregate posterior samples associated with group
+        res_subset = samples.aggregate %>% 
+          filter(
+            obs_interval == groups[g, 'obs_interval'],
+            beta == groups[g, 'beta'],
+            betaAR == groups[g, 'betaAR']
+          )
+        
+        # extract parameter samples
+        samples = res_subset$theta
+        # hpds
+        hpds = HPDinterval(mcmc(samples))
+        # package results
+        data.frame(
+          param = 'theta',
+          mean = mean(samples),
+          lwr = hpds[,'lower'],
+          upr = hpds[,'upper'],
+          truth = exp(unlist(res_subset$beta[1])),
+          method = 'Hanks',
+          obs.interval = res_subset$obs_interval[1],
+          scenario = paste(
+            'theta = ', exp(res_subset$beta[1]),
+            ' betaAR = ', res_subset$betaAR[1],
+            sep = ''
+          )
+        )
+      })) %>% filter(scenario == 'theta = 1 betaAR = 0')
+      
+      summaries
+    }
+  ),
+  
+  tar_target(
     name = simulation_summaries_combined, 
     command = {
       
@@ -505,7 +569,6 @@ simulation_targets = list(
     memory = 'transient',
     error = 'continue'
   ),
-  
   
   tar_target(
     name = simulation_results_combined, 
