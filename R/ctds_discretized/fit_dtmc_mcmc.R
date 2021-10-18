@@ -124,8 +124,7 @@ fit_dtmc_mcmc = function(niter, delta, priors, t0, tf, dims, states, times,
     # update model parameters
     for(i in 1:length(which(est_param))) {
       update = paramSamplers[[i]]$sample(
-        x_ind = which(est_param)[i], theta = param_vec, states = ctmc$states, 
-        durations = ctmc$rt
+        x_ind = which(est_param)[i], theta = param_vec
       )
       param_vec[which(est_param)[i]] = update$x
     }
