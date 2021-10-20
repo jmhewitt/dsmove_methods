@@ -544,7 +544,7 @@ simulation_targets = list(
       # construct and run mcmc sampler
       res = fit_dtmc_mcmc(
         niter = 1e3, 
-        delta = .01,
+        delta = .025,
         priors = sim_priors,
         t0 = obs$params$t0,
         tf = obs$params$tf,
