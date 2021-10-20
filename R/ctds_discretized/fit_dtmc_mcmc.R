@@ -12,7 +12,7 @@ fit_dtmc_mcmc = function(niter, delta, priors, t0, tf, dims, states, times,
   #  states - observed locations
   #  times - times of observed locations
   #  univariate - FALSE to estimate speed parameter only (betaAR assumed 0)
-  
+
   # discretize time
   tseq = seq(from = t0, to = tf, by = delta)
   
@@ -138,7 +138,6 @@ fit_dtmc_mcmc = function(niter, delta, priors, t0, tf, dims, states, times,
   
   # package results
   res = list(list(
-    obs = obs,
     o = o,
     samples = samples
   ))
