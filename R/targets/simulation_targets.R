@@ -554,6 +554,8 @@ simulation_targets = list(
         univariate = univariate_options
       )
       
+      res$obs = obs
+      
       # save results to disk
       f = file.path('output', 'simulation')
       dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
