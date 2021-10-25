@@ -543,7 +543,7 @@ simulation_targets = list(
       
       # construct and run mcmc sampler
       res = fit_dtmc_mcmc(
-        niter = 1e3, 
+        niter = 1e3,
         delta = .025,
         priors = sim_priors,
         t0 = obs$params$t0,
@@ -566,6 +566,43 @@ simulation_targets = list(
       f
     },
     pattern = cross(map(sim_obs), univariate_options),
+    deployment = 'worker',
+    storage = 'worker',
+    memory = 'transient',
+    error = 'continue'
+  ),
+  
+  tar_target(
+    name = sim_dtmc_mcmc_catchup,
+    command = {
+      
+      # unwrap input for this specific simulated dataset
+      obs = sim_obs[[1]]
+      
+      # construct and run mcmc sampler
+      res = fit_dtmc_mcmc(
+        niter = 1e3,
+        delta = .1,
+        priors = sim_priors,
+        t0 = obs$params$t0,
+        tf = obs$params$tf,
+        dims = obs$params$dims,
+        states = obs$obs$states,
+        times = obs$obs$times,
+        univariate = univariate_options
+      )
+      
+      res$obs = obs
+      
+      # save results to disk
+      f = file.path('output', 'simulation')
+      dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
+      f = file.path(f, paste(tar_name(), '.rds', sep = ''))
+      saveRDS(res, file = f)
+      
+      # return results
+      f
+    },
     deployment = 'worker',
     storage = 'worker',
     memory = 'transient',
