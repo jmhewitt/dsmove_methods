@@ -20,8 +20,8 @@ double DepthLikBase::ll(double loc_depth) {
       return 0;
     }
 
-    // uniform likelihood if current depth if above the surface at location
-    return depth >= loc_depth ? 0 :
+    // uniform likelihood if current depth is above the surface at location
+    return depth >= loc_depth ? -std::log(std::abs(loc_depth)) :
         -std::numeric_limits<double>::infinity();
 }
 
