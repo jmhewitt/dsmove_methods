@@ -94,6 +94,7 @@ hpd.marginal = function(x, p, level = .95) {
       if(len.prop < len) {
         lwr.ind = i
         upr.ind = upr.ind.prop
+        len = len.prop
       }
     }
   }
