@@ -42,6 +42,17 @@ x_with_depth$lp = x_with_depth$lp - dsmovetools2d:::log_sum_c(x_with_depth$lp)
 x_without_depth$lp = x_without_depth$lp - 
   dsmovetools2d:::log_sum_c(x_without_depth$lp)
 
+# number of grid cells in 95% HPD region
+hpdregion_area = function(lp, cell_area = 1, level = .95) {
+  o = order(lp, decreasing = TRUE)
+  ncells = max(which(cumsum(exp(lp[o])) <= level)) + 1
+  ncells * cell_area
+}
+
+Lsq = 1187.295/1e3
+sqrt(hpdregion_area(lp = x_with_depth$lp, cell_area = Lsq))
+sqrt(hpdregion_area(lp = x_without_depth$lp, cell_area = Lsq))
+
 # crawl-based posterior location
 x_crawl = do.call(rbind, lapply(post_crawl, function(imputation) {
   ind = which.min(abs(imputation$time - pred_times[ptime_without_depth]))
