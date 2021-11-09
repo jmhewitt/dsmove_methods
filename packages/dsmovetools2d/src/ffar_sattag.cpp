@@ -406,7 +406,7 @@ std::vector<NumericMatrix> BackInfoFilteringDist(
         // save prediction distribution
         if(pred_step_iter != pred_step_end) {
             if(*pred_step_iter == step_cur) {
-                pred_distns.push_back(pvec.toNumericMatrix(false));
+                pred_distns.emplace_back(pvec.toNumericMatrix(false));
                 pred_step_iter++;
             }
         }
@@ -426,6 +426,8 @@ std::vector<NumericMatrix> BackInfoFilteringDist(
         // swap state
         pvec.swapActive();
     }
+
+    std::reverse(pred_distns.begin(), pred_distns.end());
 
     return pred_distns;
 }
