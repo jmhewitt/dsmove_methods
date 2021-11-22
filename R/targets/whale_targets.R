@@ -307,10 +307,22 @@ whale_targets = list(
     }
   ),
   
+  # combinations of posterior surfaces to merge for margianl loc. distributions
+  tar_target(
+    name = posterior_marginal_additional_location_combinations,
+    command = {
+      expand.grid(
+        time = additonal_posterior_location_times,
+        data_subset = names(whale_post_joint_parameters),
+        model_specification = names(whale_post_joint_parameters[[1]])
+      )
+    }
+  ),
+  
   tar_target(
     name = whale_marginal_location_post,
     command = {
-      whale_marginal_approx = dir(pattern = 'whale_marginal_approx')
+      # whale_marginal_approx = dir(pattern = 'whale_marginal_approx')
       # initialize container for output
       res = list(meta = posterior_marginal_location_combinations)
       # aggregate posteriors across files
@@ -371,6 +383,119 @@ whale_targets = list(
       list(res)
     },
     pattern = map(posterior_marginal_location_combinations),
+    deployment = 'worker',
+    storage = 'worker',
+    retrieval = 'worker',
+    memory = 'transient',
+    error = 'continue'
+  ),
+  
+  tar_target(
+    name = additonal_posterior_location_times,
+    command = structure(
+      c(1566239918, 1566241445, 1566248473, 1566267359, 1566294383, 1566300427, 
+        1566304884, 1566308347, 1566309605, 1566312623, 1566317064, 1566317905, 
+        1566318902), class = c("POSIXct", "POSIXt"), tzone = "GMT")
+  ),
+  
+  tar_target(
+    name = whale_marginal_approx_additional,
+    command = {
+      # compute posterior
+      tick = proc.time()[3]
+      res = marginal_distn(
+        pkg = whale_pkg[[1]], 
+        times = additonal_posterior_location_times,
+        speed = unlist(whale_ll_grid['speed']),
+        betaAR = unlist(whale_ll_grid['betaAR']),
+        cell_size = 623.7801
+      )
+      tock = proc.time()[3]
+      res$subset = whale_pkg[[1]]$subset
+      res$delta = whale_pkg[[1]]$delta
+      res$computation_time = tock - tick
+      res$computation_date = Sys.time()
+      res$computation_node = Sys.info()['nodename']
+      # save output, return file name
+      d = file.path('output', 'posterior_marginal_location_additional', 
+                    res$subset)
+      dir.create(path = d, showWarnings = FALSE, recursive = TRUE)
+      f = file.path(d, paste(tar_name(), '.rds', sep = ''))
+      saveRDS(res, file = f)
+      f
+    },
+    pattern = cross(whale_ll_grid, map(whale_pkg)),
+    deployment = 'worker',
+    storage = 'worker',
+    retrieval = 'worker',
+    memory = 'transient',
+    error = 'continue'
+  ),
+  
+  tar_target(
+    name = whale_marginal_additional_location_post,
+    command = {
+      # whale_marginal_approx = dir(pattern = 'whale_marginal_approx')
+      # initialize container for output
+      res = list(meta = posterior_marginal_additional_location_combinations)
+      # aggregate posteriors across files
+      for(f in whale_marginal_approx_additional) {
+        tick = proc.time()[3]
+        # load file containing posteriors for marginal location cdt'l. on params
+        conditional_marginal_location = readRDS(f)
+        # skip file if it does not contain fit based on specified data subset
+        if(conditional_marginal_location$subset != 
+           posterior_marginal_additional_location_combinations$data_subset) {
+          next
+        }
+        # conditional marginal location surface to process based on time index
+        tind = which(
+          posterior_marginal_additional_location_combinations$time ==
+            conditional_marginal_location$times
+        )
+        # extract log-posterior weight for data/model/parameter combination
+        lp_param = whale_post_joint_parameters[[
+          conditional_marginal_location$subset
+        ]][[
+          posterior_marginal_additional_location_combinations$model_specification
+        ]] %>% 
+          filter(speed == conditional_marginal_location$params$speed,
+                 betaAR == conditional_marginal_location$params$betaAR) %>% 
+          select(lpost) %>% 
+          unlist()
+        # extract conditional marginal location surface
+        marginal_surf = conditional_marginal_location$marginal_location[[tind]]
+        # weight conditional marginal location surface by log-posterior
+        marginal_surf$lp = marginal_surf$lp + lp_param
+        # retrieve output for the model specification being analyzed
+        posterior_for_location = res$posterior
+        # form output
+        if(is.null(posterior_for_location)) {
+          # initialize the output if necessary
+          posterior_for_location = marginal_surf
+        } else {
+          # merge conditional marginal location surface being processsed
+          posterior_for_location = full_join(
+            x = posterior_for_location,
+            y = marginal_surf, 
+            by = c('lon_to_ind', 'lat_to_ind')
+          ) 
+          # collapse probability mass
+          posterior_for_location$lp = mapply(function(lx, ly) {
+            dsmovetools2d:::log_sum_c(c(lx,ly))
+          }, lx = posterior_for_location$lp.x, ly = posterior_for_location$lp.y)
+          # remove unmerged data
+          posterior_for_location$lp.x = NULL
+          posterior_for_location$lp.y = NULL
+        }
+        # update posterior in output
+        res$posterior = posterior_for_location
+        tock = proc.time()[3]
+        print(tock- tick)
+      }
+      list(res)
+    },
+    pattern = map(posterior_marginal_additional_location_combinations),
     deployment = 'worker',
     storage = 'worker',
     retrieval = 'worker',
