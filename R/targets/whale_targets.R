@@ -392,10 +392,20 @@ whale_targets = list(
   
   tar_target(
     name = additonal_posterior_location_times,
-    command = structure(
-      c(1566239918, 1566241445, 1566248473, 1566267359, 1566294383, 1566300427, 
-        1566304884, 1566308347, 1566309605, 1566312623, 1566317064, 1566317905, 
-        1566318902), class = c("POSIXct", "POSIXt"), tzone = "GMT")
+    command = {
+      tgt_times = structure(
+        c(1566239918, 1566241445, 1566248473, 1566267359, 1566294383, 
+          1566300427, 1566304884, 1566308347, 1566309605, 1566312623, 
+          1566317064, 1566317905, 1566318902), class = c("POSIXct", "POSIXt"), 
+        tzone = "GMT")
+      structure(
+        sapply(tgt_times, function(t) {
+          whale_pkg[[1]]$mapped_times[
+            which.min(abs(t - whale_pkg[[1]]$mapped_times))
+          ]
+        }), class = c('POSIXct', 'POSIXt'), tzone = 'GMT'
+      )
+    }
   ),
   
   tar_target(
