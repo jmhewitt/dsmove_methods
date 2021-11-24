@@ -17,6 +17,10 @@ GpsLikEval <- function(obs_lons, obs_lats, semi_majors, semi_minors, orientation
     .Call('_dsmovetools2d_GpsLikEval', PACKAGE = 'dsmovetools2d', obs_lons, obs_lats, semi_majors, semi_minors, orientations, alpha, test_lon, test_lat, ind)
 }
 
+GpsLikEvalGroup <- function(obs_lons, obs_lats, semi_majors, semi_minors, orientations, alpha, test_lon, test_lat, ind) {
+    .Call('_dsmovetools2d_GpsLikEvalGroup', PACKAGE = 'dsmovetools2d', obs_lons, obs_lats, semi_majors, semi_minors, orientations, alpha, test_lon, test_lat, ind)
+}
+
 FF_DTMC <- function(lons, lats, surface_heights, init_dsts, init_srcs, init_log_probs, steps, log_self_tx, betaAR) {
     .Call('_dsmovetools2d_FF_DTMC', PACKAGE = 'dsmovetools2d', lons, lats, surface_heights, init_dsts, init_srcs, init_log_probs, steps, log_self_tx, betaAR)
 }

@@ -84,6 +84,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// GpsLikEvalGroup
+std::vector<double> GpsLikEvalGroup(std::vector<double> obs_lons, std::vector<double> obs_lats, std::vector<double> semi_majors, std::vector<double> semi_minors, std::vector<double> orientations, double alpha, std::vector<double> test_lon, std::vector<double> test_lat, int ind);
+RcppExport SEXP _dsmovetools2d_GpsLikEvalGroup(SEXP obs_lonsSEXP, SEXP obs_latsSEXP, SEXP semi_majorsSEXP, SEXP semi_minorsSEXP, SEXP orientationsSEXP, SEXP alphaSEXP, SEXP test_lonSEXP, SEXP test_latSEXP, SEXP indSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_lons(obs_lonsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type obs_lats(obs_latsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type semi_majors(semi_majorsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type semi_minors(semi_minorsSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type orientations(orientationsSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type test_lon(test_lonSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type test_lat(test_latSEXP);
+    Rcpp::traits::input_parameter< int >::type ind(indSEXP);
+    rcpp_result_gen = Rcpp::wrap(GpsLikEvalGroup(obs_lons, obs_lats, semi_majors, semi_minors, orientations, alpha, test_lon, test_lat, ind));
+    return rcpp_result_gen;
+END_RCPP
+}
 // FF_DTMC
 NumericMatrix FF_DTMC(std::vector<double> lons, std::vector<double> lats, std::vector<double> surface_heights, NumericMatrix init_dsts, NumericMatrix init_srcs, std::vector<double> init_log_probs, unsigned int steps, double log_self_tx, double betaAR);
 RcppExport SEXP _dsmovetools2d_FF_DTMC(SEXP lonsSEXP, SEXP latsSEXP, SEXP surface_heightsSEXP, SEXP init_dstsSEXP, SEXP init_srcsSEXP, SEXP init_log_probsSEXP, SEXP stepsSEXP, SEXP log_self_txSEXP, SEXP betaARSEXP) {
@@ -264,6 +283,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dsmovetools2d_LogTxProbs", (DL_FUNC) &_dsmovetools2d_LogTxProbs, 8},
     {"_dsmovetools2d_LogTxProbsElevation", (DL_FUNC) &_dsmovetools2d_LogTxProbsElevation, 10},
     {"_dsmovetools2d_GpsLikEval", (DL_FUNC) &_dsmovetools2d_GpsLikEval, 9},
+    {"_dsmovetools2d_GpsLikEvalGroup", (DL_FUNC) &_dsmovetools2d_GpsLikEvalGroup, 9},
     {"_dsmovetools2d_FF_DTMC", (DL_FUNC) &_dsmovetools2d_FF_DTMC, 9},
     {"_dsmovetools2d_ExactLocFilteredLL", (DL_FUNC) &_dsmovetools2d_ExactLocFilteredLL, 11},
     {"_dsmovetools2d_ExactSattagFilteredLL", (DL_FUNC) &_dsmovetools2d_ExactSattagFilteredLL, 14},

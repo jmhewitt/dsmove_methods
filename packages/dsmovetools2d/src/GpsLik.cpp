@@ -116,3 +116,31 @@ double GpsLikEval(
 
     return g.ll(test_lon, test_lat);
 }
+
+// [[Rcpp::export]]
+std::vector<double> GpsLikEvalGroup(
+        std::vector<double> obs_lons, std::vector<double> obs_lats,
+        std::vector<double> semi_majors, std::vector<double> semi_minors,
+        std::vector<double> orientations, double alpha,
+        std::vector<double> test_lon,
+        std::vector<double> test_lat, int ind) {
+
+    GpsLik g(alpha, obs_lons, obs_lats, semi_majors, semi_minors, orientations);
+
+    g.setLikToObs(ind);
+
+    std::vector<double> res;
+    res.reserve(test_lon.size());
+
+    auto lon_it = test_lon.begin();
+    auto lat_it = test_lat.begin();
+    auto lon_end = test_lon.end();
+    while(lon_it != lon_end) {
+        res.emplace_back(g.ll(*lon_it, *lat_it));
+        // iterate
+        ++lon_it;
+        ++lat_it;
+    }
+
+    return res;
+}
