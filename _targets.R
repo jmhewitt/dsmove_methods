@@ -20,15 +20,14 @@ if(system('command -v sbatch') == 0) {
 
 # set packages to load
 tar_option_set(
-  # packages = c('dplyr', 'lubridate', 'ggplot2', 'ggthemes', 'stringr', 
-  #              'nimble', 'expm', 'pryr', 'suncalc', 'tarchetypes', 'coda',
-  #              'tidyr', 'future', 'future.batchtools', 'viridis'),
   packages = c('dsmovetools', 'ctmcmove', 'coda', 'ggplot2', 'ggthemes', 
                'dplyr', 'bisque', 'sp', 'lubridate', 'ggnewscale', 'viridis',
-               'metR', 'fields', 'dsmovetools2d'),
+               'metR', 'fields', 'dsmovetools2d', 'raster', 'sp', 'metR',
+               'lubridate'),
   imports = 'dsmovetools',
   deployment = 'main'
 )
+
 
 ## load R files and workflows
 lapply(list.files("R", full.names = TRUE, recursive = TRUE), source)
@@ -40,7 +39,8 @@ c(
   exact_targets,
   whale_targets,
   whale_targets_approx,
-  fastloc_targets
+  fastloc_targets,
+  plot_targets
 )
 
 
