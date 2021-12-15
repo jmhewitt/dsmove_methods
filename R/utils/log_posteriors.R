@@ -57,6 +57,16 @@ mean.marginal = function(x, p) {
   sum(x * p)
 }
 
+exy.marginal = function(x, p) {
+  # E[X*Y] when given parameter values and probabilities
+  # 
+  # Parameters:
+  #  x - grid of values
+  #  p - probability of value
+  
+  sum(apply(x, 1, prod) * p)
+}
+
 var.marginal = function(x, p) {
   # Variance when given marginal parameter values and probabilities
   # 
