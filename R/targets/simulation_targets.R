@@ -255,8 +255,7 @@ simulation_targets = list(
           }))
         }))
         # transform parameter
-        samples[,'log_theta'] = exp(samples[,'log_theta'])
-        colnames(samples)[2] = 'theta'
+        samples = cbind(samples, theta = exp(samples[,'log_theta']))
         # hpds 
         hpds = HPDinterval(mcmc(samples))
         # package results
@@ -266,6 +265,7 @@ simulation_targets = list(
           lwr = hpds[,'lower'],
           upr = hpds[,'upper'],
           truth = c(unlist(res_subset[[1]]$sim_obs$params['betaAR']),
+                    unlist(res_subset[[1]]$sim_obs$params['beta']),
                     exp(unlist(res_subset[[1]]$sim_obs$params['beta']))),
           method = 'Hanks',
           obs.interval = res_subset[[1]]$sim_obs$obs_interval,
@@ -296,9 +296,13 @@ simulation_targets = list(
         x = readRDS(f)[[1]]
         burn = 1:5e3
         thin = 5
-        samples = exp(x$samples$samples[[1]]$param_vec[-burn,'log_theta'])
+        samples = cbind(
+          log_theta = x$samples$samples[[1]]$param_vec[-burn,'log_theta'],
+          theta = exp(x$samples$samples[[1]]$param_vec[-burn,'log_theta'])
+        )
         data.frame(
-          theta = samples[seq(from = 1, to = length(samples), by = thin)],
+          log_theta = samples[seq(from = 1, to = nrow(samples), by = thin), 'log_theta'],
+          theta = samples[seq(from = 1, to = nrow(samples), by = thin), 'theta'],
           rep = x$rep,
           obs_interval = x$sim_obs$obs_interval,
           beta = x$sim_obs$params$beta,
@@ -321,16 +325,19 @@ simulation_targets = list(
           )
         
         # extract parameter samples
-        samples = res_subset$theta
+        samples = res_subset[,c('log_theta','theta')]
         # hpds
         hpds = HPDinterval(mcmc(samples))
         # package results
         data.frame(
-          param = 'theta',
-          mean = mean(samples),
+          param = c('log_theta', 'theta'),
+          mean = colMeans(samples),
           lwr = hpds[,'lower'],
           upr = hpds[,'upper'],
-          truth = exp(unlist(res_subset$beta[1])),
+          truth = c(
+            unlist(res_subset$beta[1]),
+            exp(unlist(res_subset$beta[1]))
+          ),
           method = 'Hanks',
           obs.interval = res_subset$obs_interval[1],
           scenario = paste(
@@ -610,31 +617,56 @@ simulation_targets = list(
   ),
   
   tar_target(
-    name = simulation_results_combined, 
+    name = sim_dtmc_mcmc_order,
+    command = {
+      
+      # unwrap input
+      obs = sim_obs[[1]]
+      
+      list(obs)
+    },
+    pattern = cross(map(sim_obs), univariate_options),
+  ),
+  
+  tar_target(
+    name = simulation_results_combined_univariate, 
     command = {
       
       # DTMC MCMC sample files
       sample.files = dir(
         path = file.path('output', 'simulation'), 
-        pattern = 'sim_dtmc_mcmc_', 
+        pattern = 'sim_dtmc_mcmc_([A-z0-9]{8}|catchup)\\.rds', 
         full.names = TRUE
       )
       
       # compile results from DTMC MCMC samplers
       df = do.call(rbind, lapply(sample.files, function(f) {
         samples = readRDS(f)[[1]]
-        samples$samples$param_vec[,'log_theta'] = exp(
-          samples$samples$param_vec[,'log_theta']
+        if(!('obs' %in% names(samples))) {
+          if(file.exists(gsub(pattern = '\\.rds', '_obs.rds', f))) {
+            samples$obs = readRDS(gsub(pattern = '\\.rds', '_obs.rds', f))$obs
+          } else {
+            if(grepl('catchup', f)) {
+              samples$obs = sim_obs[[1]]
+            }
+          }
+        }
+        samples$samples$param_vec = cbind(
+          samples$samples$param_vec,
+          'theta' = exp(
+            samples$samples$param_vec[,'log_theta']
+          )
         )
-        colnames(samples$samples$param_vec)[2] = 'theta'
         hpd = HPDinterval(mcmc(samples$samples$param_vec))
         colnames(hpd) = c('lwr','upr')
         data.frame(
           param = colnames(samples$samples$param_vec),
           mean = colMeans(mcmc(samples$samples$param_vec)),
+          betaARFixed = all(samples$samples$param_vec[,'betaAR'] == 0),
           hpd,
           truth = c(
             samples$obs$params$betaAR,
+            samples$obs$params$beta,
             exp(samples$obs$params$beta)
           ),
           method = 'DTMC',
@@ -650,35 +682,195 @@ simulation_targets = list(
       # merge simulation results with hanks results
       df = rbind(
         df,
-        simulation_hanks_summaries %>% mutate(method = 'AID')
+        cbind(simulation_hanks_summaries %>% mutate(method = 'AID'), 
+              betaARFixed = FALSE),
+        cbind(simulation_hanks_univariate_summaries %>% mutate(method = 'AID'),
+              betaARFixed = TRUE)
       )
       
+      # table version of results
+      df %>% 
+        filter(betaARFixed == TRUE,
+               scenario == 'theta = 1 betaAR = 0',
+               param == 'log_theta') %>%
+        select(method, obs.interval, mean, lwr, upr) %>%
+        mutate(mean = round(mean, 2),
+               lwr = round(lwr, 2),
+               upr = round(upr, 2)) %>% 
+        arrange(method, -obs.interval)
+      
       # visualize results!
-      pl = ggplot(df %>% 
-               filter(scenario == 'theta = 1 betaAR = 1') %>%
-               mutate(method = gsub('DTMC', 'Time discretization', method),
-                      method = gsub('AID', 'Data augmentation', method),
-                      param = gsub('betaAR', 'beta[1]', param),
-                      param = gsub('theta', 'beta[0]', param),
-                      Approximation = method), 
-             aes(x = obs.interval, y = mean, ymin = lwr, ymax = upr,
-                 col = Approximation)) + 
+      pl_univariate = ggplot(df %>% 
+                    filter(scenario == 'theta = 1 betaAR = 0',
+                           betaARFixed == TRUE) %>%
+                    mutate(method = gsub('DTMC', 'State space', method),
+                           # method = gsub('AID', 'Data augmentation', method),
+                           param = gsub('betaAR', 'beta[1]', param),
+                           param = gsub('^theta', 'beta[0]', param),
+                           Approximation = method) %>%
+                    filter(param == 'log_theta'), 
+                  aes(x = obs.interval + 
+                        ifelse(method =='State space', .01, -.01), 
+                      y = mean, ymin = lwr, ymax = upr, col = Approximation)) + 
         # horizontal lines at truth 
         geom_hline(mapping = aes(yintercept = truth), lty = 3) + 
         # posterior means and HPD intervals
         geom_pointrange() + 
-        # split plot
-        facet_wrap(~param, scales = 'free', labeller = label_parsed) + 
         # formatting
-        xlab(expression('Time between observations'~(t[i+1]-t[i]))) + 
-        ylab('Posterior value') +
+        xlab(expression('Time between observations'~(Delta))) + 
+        ylab(expression(beta[0])) +
         scale_color_brewer(type = 'qual', palette = 'Dark2') + 
-        theme_few()
+        theme_few() + 
+        theme(axis.title.y = element_text(angle = 0, vjust = .5))
+      
+      f = file.path('output', 'figures')
+      dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
+      f = file.path(f, paste(tar_name(), '_univariate.png', sep=''))
+      ggsave(pl_univariate, filename = f)
+      
+      # visualize results!
+      pl_bivariate = ggplot(df %>% 
+         filter(scenario == 'theta = 1 betaAR = 1',
+                betaARFixed == FALSE) %>%
+         mutate(method = gsub('DTMC', 'State space', method),
+                method = gsub('AID', 'Data augmentation', method),
+                param = gsub('betaAR', 'beta[1]', param),
+                param = gsub('log_theta', 'beta[0]', param),
+                Approximation = method) %>%
+         filter(param %in% c('beta[0]', 'beta[1]')), 
+       aes(x = obs.interval + 
+             ifelse(method =='State space', .01, -.01), 
+           y = mean, ymin = lwr, ymax = upr, col = Approximation)) + 
+        # horizontal lines at truth 
+        geom_hline(mapping = aes(yintercept = truth), lty = 3) + 
+        # posterior means and HPD intervals
+        geom_pointrange() + 
+        # formatting
+        xlab(expression('Time between observations'~(Delta))) + 
+        ylab(expression(beta[0])) +
+        scale_color_brewer(type = 'qual', palette = 'Dark2') + 
+        theme_few() + 
+        theme(axis.title.y = element_text(angle = 0, vjust = .5))
+      
+      pl_bivariate
       
       f = file.path('output', 'figures')
       dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
       f = file.path(f, paste(tar_name(), '.png', sep=''))
       ggsave(pl, filename = f)
+      
+      f
+    }
+  ),
+  
+  tar_target(
+    name = simulation_results_combined_bivariate, 
+    command = {
+      
+      # DTMC MCMC sample files
+      sample.files = dir(
+        path = file.path('output_bak_20211015', 'simulation'), 
+        pattern = 'sim_dtmc_mcmc', 
+        full.names = TRUE
+      )
+      
+      # compile results from DTMC MCMC samplers
+      df = do.call(rbind, lapply(sample.files, function(f) {
+        samples = readRDS(f)[[1]]
+        if(!('obs' %in% names(samples))) {
+          if(file.exists(gsub(pattern = '\\.rds', '_obs.rds', f))) {
+            samples$obs = readRDS(gsub(pattern = '\\.rds', '_obs.rds', f))$obs
+          } else {
+            if(grepl('catchup', f)) {
+              samples$obs = sim_obs[[1]]
+            }
+          }
+        }
+        samples$samples$param_vec = cbind(
+          samples$samples$param_vec,
+          'theta' = exp(
+            samples$samples$param_vec[,'log_theta']
+          )
+        )
+        hpd = HPDinterval(mcmc(samples$samples$param_vec))
+        colnames(hpd) = c('lwr','upr')
+        data.frame(
+          param = colnames(samples$samples$param_vec),
+          mean = colMeans(mcmc(samples$samples$param_vec)),
+          betaARFixed = all(samples$samples$param_vec[,'betaAR'] == 0),
+          hpd,
+          truth = c(
+            samples$obs$params$betaAR,
+            samples$obs$params$beta,
+            exp(samples$obs$params$beta)
+          ),
+          method = 'DTMC',
+          obs.interval = samples$obs$obs_interval,
+          scenario = paste(
+            'theta = ', exp(samples$obs$params$beta),
+            ' betaAR = ', samples$obs$params$betaAR,
+            sep = ''
+          )
+        )
+      }))
+      
+      # merge simulation results with hanks results
+      df = rbind(
+        df,
+        cbind(simulation_hanks_summaries %>% mutate(method = 'AID'), 
+              betaARFixed = FALSE),
+        cbind(simulation_hanks_univariate_summaries %>% mutate(method = 'AID'),
+              betaARFixed = TRUE)
+      )
+      
+      # table version of results
+      print(
+        df %>% 
+          filter(betaARFixed == FALSE,
+                 scenario == 'theta = 1 betaAR = 1',
+                 method == 'DTMC',
+                 param %in% c('log_theta')) %>%
+          select(method, obs.interval, mean, lwr, upr, param) %>%
+          mutate(mean = round(mean, 2),
+                 lwr = round(lwr, 2),
+                 upr = round(upr, 2)) %>% 
+          arrange(param, method, -obs.interval)
+      )
+      
+      # visualize results!
+      pl_bivariate = ggplot(df %>% 
+            filter(scenario == 'theta = 1 betaAR = 1',
+                   betaARFixed == FALSE) %>%
+            mutate(method = gsub('DTMC', 'State space', method),
+                   param = gsub('betaAR', 'beta[1]', param),
+                   param = gsub('log_theta', 'beta[0]', param),
+                   Approximation = method) %>%
+            filter(param %in% c('beta[0]', 'beta[1]')), 
+          aes(x = obs.interval + 
+                ifelse(method =='State space', .01, -.01), 
+              y = mean, ymin = lwr, ymax = upr, col = Approximation)) + 
+        # horizontal lines at truth 
+        geom_hline(mapping = aes(yintercept = truth), lty = 3) + 
+        # posterior means and HPD intervals
+        geom_pointrange() + 
+        # split plot
+        facet_wrap(~param, nrow = 2, scales = 'free_y', strip.position = 'left', 
+                   labeller = label_parsed) + 
+        # formatting
+        scale_x_continuous(breaks = c(1/4,1/2,1,2)) + 
+        xlab(expression('Time between observations'~(Delta))) + 
+        scale_color_brewer(type = 'qual', palette = 'Dark2') + 
+        theme_few() + 
+        theme(strip.text.y.left = element_text(angle = 0, vjust = .5),
+              strip.placement = "outside",
+              axis.title.y = element_blank())
+      
+      pl_bivariate
+      
+      f = file.path('output', 'figures')
+      dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
+      f = file.path(f, paste(tar_name(), '.png', sep=''))
+      ggsave(pl_bivariate, filename = f)
       
       f
     }
