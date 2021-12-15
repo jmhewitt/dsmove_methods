@@ -132,12 +132,41 @@ marginal_posteriors_by_data = lapply(joint_posteriors_by_data, function(param) {
   })
 })
   
-marginal_summaries = lapply(marginal_posteriors_by_data, function(param) {
-  lapply(param, function(parameterization) {
-    browser()
+marginal_summaries = lapply(marginal_posteriors_by_data, function(subset) {
+  lapply(subset, function(parameterization) {
+    lapply(parameterization, function(param) {
+      # standardize marginal distribution
+      
+      param %>% 
+        group_by(density) %>% 
+        summarise(
+          mean = mean.marginal(x = x, p = exp(ld) * diff(x)[2]),
+          var = var.marginal(x = x, p = exp(ld) * diff(x)[2]),
+          lwr = hpd.marginal(x = x, p = exp(ld) * diff(x)[2])[1],
+          upr = hpd.marginal(x = x, p = exp(ld) * diff(x)[2])[2],
+        ) %>% 
+        ungroup() %>% 
+        mutate(
+          parameterization = param$parameterization[1],
+          parameter = param$parameter[1],
+          data_subset = param$data_subset[1]
+        )
+    })
   })
 })
-  
+
+# reducing uncertainty in movement speed and decreasing movement speed est.
+rbind(
+  marginal_summaries$with_depth$speed_parameterization$speed[1,],
+  marginal_summaries$without_depth$speed_parameterization$speed[1,]
+)
+
+# finding evidence for directional persistence
+rbind(
+  marginal_summaries$with_depth$speed_parameterization$persistence[1,],
+  marginal_summaries$without_depth$speed_parameterization$persistence[1,]
+)
+
 # plot joint posteriors
 pl = ggplot(do.call(rbind, unlist(joint_posteriors_by_data, recursive = FALSE)),
             aes(x = speed, y = betaAR, fill = exp(lpost), z = exp(lpost))) + 
@@ -249,3 +278,48 @@ ggsave(pl, filename = 'Zc073_fastloc_mu_3_sd_1_betaAR.pdf')
 #  - for weak priors, the posteriors between the two parameterizations are 
 #    relatively similar (wrt the speed parameter), but it is much easier to 
 #    interpret the (mu,\beta1) prior.
+
+
+#
+# compute correlations
+# 
+
+# compute marginal distributions for different parameterizations by data subset
+joint_summaries = lapply(joint_posteriors_by_data, function(param) {
+  # process each parameterization separately
+  lapply(param, function(r) {
+    
+    # extract grid dimensions
+    dx = diff(sort(unique(r$speed))[2:3])
+    dy = diff(sort(unique(r$betaAR))[2:3])
+    
+    # package results
+    data.frame(
+      exy = exp(dsmovetools2d:::log_sum_c(
+        log(r$speed) + log(r$betaAR) + r$lpost + log(dx) + log(dy)
+      )),
+      data_subset = r$data_subset[1],
+      parameterization = r$parameterization[1]
+    )
+  })
+})
+
+
+(joint_summaries$with_depth$speed_parameterization$exy - 
+  marginal_summaries$with_depth$speed_parameterization$speed$mean[1] * 
+  marginal_summaries$with_depth$speed_parameterization$persistence$mean[1]
+) /
+(
+  sqrt(marginal_summaries$with_depth$speed_parameterization$speed$var[1]) *
+  sqrt(marginal_summaries$with_depth$speed_parameterization$persistence$var[1])
+)
+
+
+(joint_summaries$without_depth$speed_parameterization$exy - 
+    marginal_summaries$without_depth$speed_parameterization$speed$mean[1] * 
+    marginal_summaries$without_depth$speed_parameterization$persistence$mean[1]
+) /
+  (
+    sqrt(marginal_summaries$without_depth$speed_parameterization$speed$var[1]) *
+      sqrt(marginal_summaries$without_depth$speed_parameterization$persistence$var[1])
+  )
