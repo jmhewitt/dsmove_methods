@@ -15,14 +15,16 @@ whale_pkg = whale_pkg$whale_pkg_5bc05e7c
 source('R/ctds_hanks/fit_hanks_imputed.R')
 source('R/ctds_hanks/crawl_discretization.R')
 
-pmmap = readRDS('post_marginal_map.rds')
+# pmmap = readRDS('post_marginal_map.rds')
+# 
+# pred_times = strptime(
+#   x = gsub(pattern = 'Prediction time: ', replacement = '', 
+#            x = names(pmmap$marginal_location)),
+#   format = '%Y-%m-%d %H:%M:%S', 
+#   tz = 'GMT'
+# )
 
-pred_times = strptime(
-  x = gsub(pattern = 'Prediction time: ', replacement = '', 
-           x = names(pmmap$marginal_location)),
-  format = '%Y-%m-%d %H:%M:%S', 
-  tz = 'GMT'
-)
+pred_times = targets::tar_read(additonal_posterior_location_times2)
 
 complete_imputations = crawl_discretization(
   xlocs = whale_pkg$data$loc$mapped_lon,
@@ -44,7 +46,7 @@ complete_imputations = crawl_discretization(
 )
 
 saveRDS(complete_imputations$imputations_at_times, 
-        file = 'crawl_discretized_post_locations100.rds')
+        file = 'crawl_discretized_post_locations_additional2_100.rds')
 
 post_samples = fit_hanks_imputed(
   imputed_trajectories = complete_imputations$complete_trajectories, 
@@ -69,6 +71,21 @@ param_samples_thinned = param_samples[
 ]
 
 saveRDS(param_samples_thinned, 'ctds_crawl_posterior_samples_zc95.rds')
+
+param_samples_thinned = readRDS('ctds_crawl_posterior_samples_zc95.rds')
+
+param_samples_thinned[,'log_speed'] = exp(param_samples_thinned[,'log_speed'])
+colnames(param_samples_thinned)[2] = 'speed'
+
+
+colMeans(param_samples_thinned)
+HPDinterval(mcmc(param_samples_thinned))
+
+apply(param_samples_thinned, 2, sd)
+
+cor(param_samples_thinned)
+
+# old 
 
 plot(mcmc(param_samples_thinned))
 plot(mcmc(exp(param_samples_thinned[,'log_speed'])))
