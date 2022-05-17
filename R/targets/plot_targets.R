@@ -122,18 +122,18 @@ plot_targets = list(
         loc_with_depth %>% 
           select(lon.projected, lat.projected, lp) %>% 
           filter(lp >= log(.005)) %>% 
-          mutate(Model = 'State space (w/Depth)'), 
+          mutate(Model = 'HMM (w/Depth)'), 
         loc_without_depth %>% 
           select(lon.projected, lat.projected, lp) %>% 
           filter(lp >= log(.005)) %>%
-          mutate(Model = 'State space'),
+          mutate(Model = 'HMM'),
         loc_crawl %>% 
           select(lon.projected, lat.projected, lp) %>% 
           mutate(Model = 'CTCRW-AID')
       ) %>% 
         mutate(Model = factor(Model, levels = c('CTCRW-AID', 
-                                                'State space',
-                                                'State space (w/Depth)')))
+                                                'HMM',
+                                                'HMM (w/Depth)')))
       
       pl = ggplot(mapping = aes(x = x, y = y)) + 
         # bathymetry
@@ -308,8 +308,50 @@ plot_targets = list(
            ncells * scale
          }
          
-         hpdregion_area(lp = x_with_depth$lp, scale = (1187.295/1e3)^2)
-         hpdregion_area(lp = x_without_depth$lp, scale = (1187.295/1e3)^2)
+         hpdregion = function(locs, lp, prob = .95) {
+           # Parameters:
+           #  locs - lon/lat locations associated with lp values
+           #  lp - log-probability value for point pattern
+           #  prob - probability threshold
+           o = order(x = lp, decreasing = TRUE)
+           lprob = log(prob)
+           lcdf = lp[o[1]]
+           ncells = 1
+           len = length(lp)
+           while(lcdf <= lprob) {
+             if(ncells >= len) { break }
+             ncells = ncells + 1
+             lcdf = dsmovetools2d:::log_sum_c(c(lcdf, lp[o[ncells]]))
+           }
+           # locations that comprise the hpd region
+           locs[o[1:ncells],c('lon', 'lat')]
+         }
+         
+         hpdregion_with_depth = hpdregion(
+           locs = x_with_depth[,c('lon','lat')],
+           lp = x_with_depth$lp
+         )
+         
+         hpdregion_without_depth = hpdregion(
+           locs = x_without_depth[,c('lon','lat')],
+           lp = x_without_depth$lp, 
+         )
+         
+         # project crawl posterior for marginal location
+         hpdregion_with_depth_projected = project_to_grid(
+           data = hpdregion_with_depth, 
+           data_crs = crs(whale_domain), 
+           rasterObj = bathy.projected, 
+           plot_crs = plot_crs
+         )
+         
+         # project crawl posterior for marginal location
+         hpdregion_without_depth_projected = project_to_grid(
+           data = hpdregion_without_depth, 
+           data_crs = crs(whale_domain), 
+           rasterObj = bathy.projected, 
+           plot_crs = plot_crs
+         )
          
          # package uncertainty results
          data.frame(
@@ -321,7 +363,31 @@ plot_targets = list(
              hpdregion_area(lp = x_without_depth$lp, scale = (1187.295/1e3)^2),
              hpdregion_area(lp = x_with_depth$lp, scale = (1187.295/1e3)^2)
            ),
-           method = c('CTCRW-AID', 'State space', 'State space (w/Depth)')
+           prop_ss_w_depth_contained_within_region = c(
+             mean(sp::point.in.polygon(
+               point.x = hpdregion_with_depth_projected$lon.projected,
+               point.y = hpdregion_with_depth_projected$lat.projected,
+               pol.x = crawl_pattern_hull$bdry[[1]]$x,
+               pol.y = crawl_pattern_hull$bdry[[1]]$y
+             ) != 0),
+             nrow(plyr::match_df(x = hpdregion_without_depth,
+                                 y = hpdregion_with_depth)) / 
+               nrow(hpdregion_with_depth),
+             1
+           ),
+           prop_ss_wout_depth_contained_within_region = c(
+             mean(sp::point.in.polygon(
+               point.x = hpdregion_without_depth_projected$lon.projected,
+               point.y = hpdregion_without_depth_projected$lat.projected,
+               pol.x = crawl_pattern_hull$bdry[[1]]$x,
+               pol.y = crawl_pattern_hull$bdry[[1]]$y
+             ) != 0),
+             1,
+             nrow(plyr::match_df(x = hpdregion_with_depth,
+                                 y = hpdregion_without_depth)) / 
+               nrow(hpdregion_with_depth)
+           ),
+           method = c('CTCRW-AID', 'HMM', 'HMM (w/Depth)')
          )
       }))
       
@@ -349,6 +415,105 @@ plot_targets = list(
       dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
       f = file.path(f, paste(tar_name(), '_uncertainty.png', sep = ''))
       ggsave(pl, filename = f, width = 18/2, height = 9/2, dpi = 'print')
+      
+      
+      pl = ggplot(df_uncertainty %>% 
+                    filter(method %in% c('CTCRW-AID', 'HMM')), 
+                  aes(x = time, y = prop_ss_w_depth_contained_within_region, 
+                      col = method)) + 
+        # times of location observations
+        geom_vline(xintercept = obs_times, lty = 3) + 
+        # posterior uncertainty in location
+        geom_line() + 
+        geom_point() + 
+        # formatting
+        scale_color_brewer(
+          '$\\mathcal M_{a}$', type = 'qual', palette = 'Dark2'
+        ) + 
+        ylab('$\\mathcal O(\\mathcal M_a, t;\\mathcal M_0)$') +
+        xlab('Time (UTC)') + 
+        theme_few() + 
+        theme(axis.title.y = element_text(angle = 0, vjust = .5),
+              text = element_text(family = 'sans'))
+      
+      f = file.path('output', 'figures')
+      dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
+      f = file.path(f, paste(tar_name(), '_overlap.tex', sep = ''))
+
+      tikz(
+        file = f, width = 8, height = 9/2, standAlone = TRUE,
+        packages = c(
+          "\\usepackage{tikz}",
+          "\\usepackage[active,tightpage,psfixbb]{preview}",
+          "\\PreviewEnvironment{pgfpicture}",
+          "\\setlength\\PreviewBorder{0pt}",
+          "\\usepackage{amssymb}",
+          # set font to helvetica
+          "\\tikzset{every picture/.style={/utils/exec={\\fontfamily{phv}}}}"
+        )
+      )
+      print(pl)
+      dev.off()
+      
+      cwd = getwd()
+      setwd(dirname(f))
+      tools::texi2dvi(file = basename(f), pdf = TRUE, clean = TRUE)
+      setwd(cwd)
+      
+      
+      pl = ggplot(df_uncertainty %>% filter(method %in% c('CTCRW-AID')), 
+                  aes(x = time, y = prop_ss_wout_depth_contained_within_region, 
+                      col = method)) + 
+        # times of location observations
+        geom_vline(xintercept = obs_times, lty = 3) + 
+        # posterior uncertainty in location
+        geom_line() + 
+        geom_point() + 
+        # formatting
+        scale_color_brewer(
+          '$\\mathcal M_{a}$', type = 'qual', palette = 'Dark2'
+        ) + 
+        ylab('$\\mathcal O(\\mathcal M_a, t;\\mathcal M_{a\'})$') +
+        xlab('Time (UTC)') + 
+        theme_few() + 
+        theme(axis.title.y = element_text(angle = 0, vjust = .5),
+              text = element_text(family = 'sans'))
+      
+      f = file.path('output', 'figures')
+      dir.create(path = f, showWarnings = FALSE, recursive = TRUE)
+      f = file.path(f, paste(tar_name(), '_overlap_ss_without_depth.tex', 
+                             sep = ''))
+      
+      tikz(
+        file = f, width = 8, height = 9/2, standAlone = TRUE,
+        packages = c(
+          "\\usepackage{tikz}",
+          "\\usepackage[active,tightpage,psfixbb]{preview}",
+          "\\PreviewEnvironment{pgfpicture}",
+          "\\setlength\\PreviewBorder{0pt}",
+          "\\usepackage{amssymb}",
+          # set font to helvetica
+          "\\tikzset{every picture/.style={/utils/exec={\\fontfamily{phv}}}}"
+        )
+      )
+      print(pl)
+      dev.off()
+      
+      cwd = getwd()
+      setwd(dirname(f))
+      tools::texi2dvi(file = basename(f), pdf = TRUE, clean = TRUE)
+      setwd(cwd)
+      
+      
+      # averages!
+      df_uncertainty %>% 
+        filter(method %in% c('CTCRW-AID')) %>% 
+        select(prop_ss_wout_depth_contained_within_region) %>% 
+        unlist() %>% 
+        mean()
+      
+      df_uncertainty %>% 
+        filter(method %in% c('CTCRW-AID', 'HMM'))
       
       #
       # panel plot at last predicted timepoint
@@ -490,18 +655,18 @@ plot_targets = list(
         loc_with_depth %>% 
           select(lon.projected, lat.projected, lp) %>% 
           filter(lp >= log(.005)) %>% 
-          mutate(Model = 'State space (w/Depth)'), 
+          mutate(Model = 'HMM (w/Depth)'), 
         loc_without_depth %>% 
           select(lon.projected, lat.projected, lp) %>% 
           filter(lp >= log(.005)) %>%
-          mutate(Model = 'State space'),
+          mutate(Model = 'HMM'),
         loc_crawl %>% 
           select(lon.projected, lat.projected, lp) %>% 
           mutate(Model = 'CTCRW-AID')
       ) %>% 
         mutate(Model = factor(Model, levels = c('CTCRW-AID', 
-                                                'State space',
-                                                'State space (w/Depth)')))
+                                                'HMM',
+                                                'HMM (w/Depth)')))
       
       xrange = c(15000 + 1e3, 28000 - 1e3)
       yrange = c(3765000 - 4e3, 3775000 + 3e3) - 6e3

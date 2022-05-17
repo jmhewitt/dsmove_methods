@@ -110,8 +110,8 @@ seafloor_summaries = do.call(rbind, apply(depth_times, 1, function(r) {
 pl = ggplot(seafloor_summaries %>% 
               filter(Metric == 'seafloor_depth') %>% 
               mutate(Model = gsub('CRAWL as AID', 'CTCRW-AID', Model),
-                     Model = gsub('with_depth', 'State space (w/Depth)', Model),
-                     Model = gsub('without_depth', 'State space', Model)), 
+                     Model = gsub('with_depth', 'HMM (w/Depth)', Model),
+                     Model = gsub('without_depth', 'HMM', Model)), 
        aes(x = time, y = abs(mean), ymin = abs(lwr), ymax = abs(upr))) + 
   geom_pointrange(col = '#a4b9b5') + 
   xlab('Time') + 
