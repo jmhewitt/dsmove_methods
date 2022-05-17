@@ -23,14 +23,15 @@ tar_option_set(
   packages = c('dsmovetools', 'ctmcmove', 'coda', 'ggplot2', 'ggthemes', 
                'dplyr', 'bisque', 'sp', 'lubridate', 'ggnewscale', 'viridis',
                'metR', 'fields', 'dsmovetools2d', 'raster', 'sp', 'metR',
-               'lubridate'),
+               'lubridate', 'spatstat', 'tikzDevice'),
   imports = 'dsmovetools',
   deployment = 'main'
 )
 
 
 ## load R files and workflows
-lapply(list.files("R", full.names = TRUE, recursive = TRUE), source)
+lapply(list.files("R", full.names = TRUE, recursive = TRUE, pattern = '\\.R'), 
+       source)
 
 # assemble workflow
 c(
