@@ -69,6 +69,7 @@ crawl_discretization = function(
   }
   
   # MAP for crawl model parameters
+  tick = proc.time()[3]
   fit = crwMLE(
     mov.model = ~ 1,
     err.model = list(
@@ -88,10 +89,14 @@ crawl_discretization = function(
     control = list(trace = 0),
     initialSANN = list(maxit = 1500, trace = 0)
   )
+  tock = proc.time()[3]
+  message(paste('Time to fit CTCRW model:', tock-tick, 'sec.'))
   
   #
   # 2. sample and discretize multiple imputations from AID at specific times
   #
+  
+  tick = proc.time()[3]
   
   # build an object to sample from crawl imputation posterior
   simulator = crwSimulator(
@@ -184,7 +189,10 @@ crawl_discretization = function(
     # return complete trajectory
     res
   })
+  tock = proc.time()[3]
   
+  message(paste('Avg. time to sample and discretize one imputation:', 
+                (tock - tick)/nimputed, 'sec'))
   # package results
   list(
     imputations_at_times = imputations_marginal,
