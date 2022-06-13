@@ -398,7 +398,10 @@ plot_targets = list(
         (obs_times <= max(df_uncertainty$time))
       ]
       
-      pl = ggplot(df_uncertainty, aes(x = time, y = area, col = method)) + 
+      
+      
+      pl = ggplot(df_uncertainty, aes(x = time, y = area, col = method, 
+                                      lty = method, shape = method)) + 
         # times of location observations
         geom_vline(xintercept = obs_times, lty = 3) + 
         # posterior uncertainty in location
